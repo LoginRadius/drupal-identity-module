@@ -1107,7 +1107,7 @@ $variables['header']['lr_view']['content'] = 'Profile Data';
 for ($i=0; $i < count($variables['rows']); $i++) {
 $user_link = (($variables['rows'][$i]['columns']['name']['content'][0]['field_output']['#markup'])); 
 $a = new SimpleXMLElement($user_link);
-$user = explode('user/', $a['href']); // will echo www.something.com
+$user = explode('user/', $a['href']); 
  
 $variables['rows'][$i]['columns']['lr_view']['content'][0]['field_output']['#markup'] = '<a href="'.$base_url.'/socialprofiledata/ajax/userprofile/'.$user[1].'/" title="view extended user profile">View</a>';
 }

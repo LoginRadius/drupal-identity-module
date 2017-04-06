@@ -63,7 +63,7 @@ function unLinkAccount(name, id) {
 function handleResponse(isSuccess, message, show, status) {
     status = status ? 'messages--'+status : "messages--status";
     if (status == "messages--error" && window.LoginRadiusSSO) {
-        LoginRadiusSSO.init(raasoption.appName);
+        LoginRadiusSSO.init(raasoption.appName, raasoption.appPath, raasoption.secureCookie);
         LoginRadiusSSO.logout(window.location);
     }
     if (typeof show != 'undefined' && !show) {

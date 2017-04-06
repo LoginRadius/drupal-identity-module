@@ -108,12 +108,8 @@ class CustomHttpClient  implements IHttpClient {
         if (ini_get('open_basedir') == '' && (ini_get('safe_mode') == 'Off' or !ini_get('safe_mode'))) {
             curl_setopt($curl_handle, CURLOPT_FOLLOWLOCATION, 1);
             curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, true);
-        } else {
-            curl_setopt($curl_handle, CURLOPT_HEADER, 1);
-            $effectiveUrl = curl_getinfo($curl_handle, CURLINFO_EFFECTIVE_URL);
-            curl_close($curl_handle);
-            $curl_handle = curl_init();
-            $url = str_replace('?', '/?', $effectiveUrl);
+        } else {       
+            $url = str_replace('?', '/?', $request_url);
             curl_setopt($curl_handle, CURLOPT_URL, $url);
             curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, true);
         }

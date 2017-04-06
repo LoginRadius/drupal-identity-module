@@ -1474,8 +1474,7 @@ function socialprofiledata_loginradius_facebook_events() {
         'description' => 'rsvp_status of user',
       ),
       'location' => array(
-        'type' => 'varchar',
-        'length' => 50,
+        'type' => 'text',
         'not null' => FALSE,
         'description' => 'location of user',
       ),

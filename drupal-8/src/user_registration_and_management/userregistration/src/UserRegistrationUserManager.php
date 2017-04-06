@@ -172,8 +172,8 @@ catch (LoginRadiusException $e) {
 }
 
 function create_raas_profile($data){
-  try {
-  $accountObj = new AccountAPI($this->apiKey, $this->apiSecret, array('output_format' => 'json'));
+    $accountObj = new AccountAPI($this->apiKey, $this->apiSecret, array('output_format' => 'json'));
+  try {  
 return $accountObj->createUserRegistrationProfile($data);
 }
 catch (LoginRadiusException $e) {

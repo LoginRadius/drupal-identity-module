@@ -187,7 +187,7 @@ class SocialLoginUserManager {
   }
 
   public function provideLogin($new_user, $userprofile, $status = FALSE) { 
-      
+           
       $config = \Drupal::config('sociallogin.settings');
       $apiSecret = trim($config->get('api_secret'));
       $apiKey = trim($config->get('api_key'));
@@ -198,16 +198,18 @@ class SocialLoginUserManager {
         catch (LoginRadiusException $e){
         watchdog_exception('type', $e);
         }
-   
-        if(isset($result) && !empty($result)){         
+     
+        if(isset($result) && !empty($result)){  
+    
           foreach($result as $value){            
            if(is_array($value) || is_object($value)){   
               $check_aid = db_query("SELECT user_id FROM {loginradius_mapusers} WHERE user_id = :uid AND provider_id = :providerid", array(
       ':uid' => $new_user->id(),
       ':providerid' => $value->ID,
     ))
-      ->fetchField();                   
-             if(isset($check_aid) && !$check_aid){                
+      ->fetchField(); 
+          
+             if(isset($check_aid) && !$check_aid){ 
               $this->insertSocialData($new_user->id(), $value->ID, $value->Provider);             
              }
            }
@@ -215,7 +217,8 @@ class SocialLoginUserManager {
         }     
 
     $_SESSION['spd_userprofile'] = $userprofile;
-    if ($new_user->isActive() && $new_user->getLastLoginTime() != 0) {
+ 
+    if ($new_user->isActive() && $new_user->getLastLoginTime() != 0) {      
       $url = '';
       $isNew = FALSE;
       
@@ -226,6 +229,7 @@ class SocialLoginUserManager {
       if ($this->module_config->get('update_user_profile') == 1 && !$new_user->isNew()) {
         $this->field_create_user_object($new_user, $userprofile);
         $new_user->save();
+  
         $this->downloadProfilePic($userprofile->ImageUrl, $userprofile->ID, $new_user);
       }
       
@@ -242,12 +246,17 @@ class SocialLoginUserManager {
                 $user_manager = \Drupal::service('userregistration.user_manager'); 
                 $dbuname = $user_manager->userregistration_get_raas_uname($new_user->id());
                 if(isset($dbuname) && $dbuname != ''){
-                if (isset($user_name) && $user_name != '' && $dbuname != $user_name) { 
+                    
+                if (isset($user_name) && $user_name != '' && $dbuname != $user_name) {                      
+                    try {
                           $this->connection->update('users_field_data')
-                            ->fields(array('name' => $user_name))
+                            ->fields(array('name' => $dbuname))
                             ->condition('uid', $new_user->id())
-                            ->execute();                           
-                }               
+                            ->execute();     
+                    } catch (Exception $e) {
+                        
+                      }
+                    }               
               }
             }
 
@@ -401,10 +410,12 @@ class SocialLoginUserManager {
         );
 
         $new_user = User::create($fields);
+    
         $this->field_create_user_object($new_user, $userprofile);
         $new_user->save();
         // Log notice and invoke Rules event if new user was succesfully created
         if ($new_user->id()) {
+           
           \Drupal::logger('sociallogin')
             ->notice('New user created. Username %username, UID: %uid', array(
               '%username' => $new_user->getUsername(),
@@ -419,7 +430,7 @@ class SocialLoginUserManager {
             ))
             ->execute();
           $this->downloadProfilePic($userprofile->ImageUrl, $userprofile->ID, $new_user);
-       
+      
           //Advanced module LR Code Hook Start
     if (count(\Drupal::moduleHandler()->getImplementations('add_user_data_after_save')) > 0) {
       // Call all modules that implement the hook, and let them make changes to $variables.
@@ -466,6 +477,7 @@ class SocialLoginUserManager {
               ->mail('sociallogin', 'welcome_email', $new_user->getEmail(), $new_user->getPreferredLangcode(), $params);
 
           }
+      
           return $this->provideLogin($new_user, $userprofile);
 
         }
@@ -507,8 +519,10 @@ class SocialLoginUserManager {
   }
 
   public function checkExistingUser($userprofile) {
+      
     $drupal_user = NULL;
     if (isset($userprofile->ID) && !empty($userprofile->ID)) {
+
       $uid = $this->connection->query("SELECT am.uid FROM {users} am INNER JOIN {loginradius_mapusers} sm ON am.uid = sm.user_id WHERE  sm.provider_id = :provider_id", array(
         ':provider_id' => $userprofile->ID,
       ))
@@ -516,21 +530,23 @@ class SocialLoginUserManager {
             //Advanced module LR Code Hook Start
     // Make sure at least one module implements our hook.
     if (count(\Drupal::moduleHandler()->getImplementations('check_raas_uid')) > 0) {
+       
       // Call all modules that implement the hook, and let them make changes to $variables.
       $result = \Drupal::moduleHandler()->invokeAll('check_raas_uid', $userprofile);
       $account = end($result);
     }
     //Advanced module LR Code Hook End
       if ($uid) {
+     
         $drupal_user = User::load($uid);
       }
     }
-    if (!$drupal_user) {  
-   
-      if (empty($userprofile->Email_value) && $this->module_config->get('email_required') == 0) {       
+    if (!$drupal_user) {     
+      if (empty($userprofile->Email_value) && $this->module_config->get('email_required') == 0) {
+
         $userprofile->Email_value = $this->getRandomEmail($userprofile->Provider, $userprofile->ID);
       }
-      if (!empty($userprofile->Email_value)) {          
+      if (!empty($userprofile->Email_value)) {   
         $drupal_user = $this->getUserByEmail($userprofile->Email_value);
         if ($drupal_user) {                
           $this->insertSocialData($drupal_user->id(), $userprofile->ID, $userprofile->Provider);
@@ -538,10 +554,10 @@ class SocialLoginUserManager {
       }
     }
 
-    if ($drupal_user) {  
+    if ($drupal_user) {            
       return $this->provideLogin($drupal_user, $userprofile, TRUE);
     }
-    else {        
+    else {                  
       return $this->createUser($userprofile);
     }
   }
@@ -634,6 +650,10 @@ class SocialLoginUserManager {
         'label' => t('Text'),
         'callback' => 'field_field_convert_text',
       ),
+      'email' => array(
+        'label' => t('Text'),
+        'callback' => 'field_field_convert_text',
+      ),
       'string' => array(
         'label' => t('String'),
         'callback' => 'field_field_convert_text',
@@ -722,26 +742,35 @@ class SocialLoginUserManager {
   }
 
   public function field_field_convert_date($property_name, $userprofile, $field, $instance) {
-    if (!empty($property_name)) {
-      if (isset($userprofile->$property_name)) {
-        $value = NULL;
-        $sldate = explode('/', $userprofile->$property_name);
-
-        if (count($sldate) == 3) {
-          $date = new DateObject($userprofile->$property_name);
-
-          if (date_is_date($date)) {
-            $format = $field['type'] == 'datestamp' ? DATE_FORMAT_UNIX : DATE_FORMAT_ISO;
-            $value = array(
-              'value' => $date->format($format, TRUE),
-              'date_type' => $field['type'],
-            );
-          }
+        if (!empty($property_name)) {
+            if (isset($userprofile->$property_name)) {
+                $value = NULL;
+                
+                if(strpos($userprofile->$property_name, '/') !== false) {
+                    $sldate = explode('/', $userprofile->$property_name);                  
+                    $date = strtotime($userprofile->$property_name);
+                    $formatDate = date('Y-m-d\TH:i:s', $date);
+                } else {                  
+                     $sldate = explode('-', $userprofile->$property_name);
+                     $month = isset($sldate[0])?trim($sldate[0]):'';
+                     $date = isset($sldate[1])?trim($sldate[1]):'';
+                     $year = isset($sldate[2])?trim($sldate[2]):'';
+                     $formatDate = trim($year.'-'.$month.'-'.$date,'-');
+                     $formatDate = $formatDate.'T00:00:00'; 
+                }
+       
+                if (count($sldate) == 3) {                    
+                  if(!empty($formatDate)){                       
+                        $value = array(
+                          'value' => $formatDate,
+                          'date_type' => $instance['type'],
+                        );
+                    }
+                }
+                return $value;
+            }
         }
-        return $value;
-      }
     }
-  }
 
   public function field_create_user_array(&$drupal_user, $userprofile) {
     $this->field_create_user(NULL, $drupal_user, $userprofile, TRUE);

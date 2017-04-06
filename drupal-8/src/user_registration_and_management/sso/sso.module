@@ -33,6 +33,7 @@ function sso_page_attachments(&$page) {
   $sl_config = \Drupal::config('sociallogin.settings');
 
   $site_name = $sl_config->get('sso_site_name');
+  $sso_secure_cookie = $config->get('sso_enable_secure_cookie');
 
   if ($config->get('sso_enable') == 1 && !empty($site_name)) {
    /* if (drupal_is_front_page()) {
@@ -44,6 +45,9 @@ function sso_page_attachments(&$page) {
     $sso_path = $path['path'];
     $my_settings['sso_path'] = $sso_path;
     $my_settings['site_name'] = $site_name;
+    $my_settings['secure_cookie'] = (($sso_secure_cookie == 1) ? 'https:' : '');
+    
+   
  $my_settings['logout'] = Url::fromRoute('<front>')->setAbsolute()->toString();
       if ( \Drupal::currentUser()
       ->isAnonymous()) {
@@ -51,22 +55,19 @@ function sso_page_attachments(&$page) {
         $my_settings['login_url'] = Url::fromRoute('user.login')->setAbsolute()->toString();
         $my_settings['callback']= urldecode(userregistration_get_callback_url());
       }
-      if (  !\Drupal::currentUser()
-      ->isAnonymous() && !in_array("administrator", $user)) {
+      if (  !\Drupal::currentUser()->isAnonymous() && !in_array("administrator", $user)) {
     
-         $logout = Url::fromRoute('user.logout')->setAbsolute()->toString();
+        $logout = Url::fromRoute('user.logout')->setAbsolute()->toString();
         $logout = (strpos($logout, '?') == TRUE ? ($logout . '&notlogged=1') : ($logout . '?notlogged=1'));
        
         $my_settings['isNotLoginThenLogout'] = true;
-         $my_settings['logout_url'] = $logout;
+        $my_settings['logout_url'] = $logout;
         
-      }
-    
+      }    
 
      $page['#attached']['drupalSettings']['sso']  = $my_settings;
     $page['#attached']['library'][] = 'sso/drupal.coresso';
   }
-
 }
 function sso_add_extra_sociallogin_config_settings(){
   return array('sso_site_name');

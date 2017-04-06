@@ -40,7 +40,7 @@ function userregistration_theme() {
       'path' => $path,
 
     ),
-        'raas_social_widget_container' => array(
+      'raas_social_widget_container' => array(
       'variables' => array(
         'params' => NULL,
       ),
@@ -86,7 +86,6 @@ function userregistration_theme() {
     'template' => 'user_register_form',
     'render element' => 'form',
     'path' => $path,
-
   );
 
    return $theme;
@@ -152,7 +151,7 @@ $connection = \Drupal\Core\Database\Database::getConnection();
           }
       }
       else {     
-        drupal_set_message(t("This account is already linked with an account. try to choose another account125."), 'warning');
+        drupal_set_message(t("This account is already linked with an account. try to choose another account."), 'warning');
       }
 
     return new RedirectResponse(Url::fromRoute('user.page')->toString());
@@ -220,14 +219,24 @@ function userregistration_page_attachments(&$page) {
     $emailVerificationUrl = Url::fromRoute('<front>')->setAbsolute()->toString();
     $forgotVerificationUrl = Url::fromRoute('user.login')->setAbsolute()->toString();
     $config = \Drupal::config('sociallogin.settings');
+    $sso_config = \Drupal::config('sso.settings');
+    $sso_secure_cookie = $sso_config->get('sso_enable_secure_cookie');
+
+    
+    $path = parse_url(Url::fromRoute('<front>')->toString());
+    $sso_path = $path['path'];
+    
     $my_settings = array(
     'emailVerificationUrl' => $emailVerificationUrl,  
     'forgotVerificationUrl' => $forgotVerificationUrl,  
     'appName' => trim($config->get('sso_site_name')),
     'apikey' => trim($config->get('api_key')),
+    'appPath' => trim($sso_path),
+    'secureCookie' => (($sso_secure_cookie == 1) ? 'https:' : ''),
     'callback' => urldecode(userregistration_get_callback_url()),
     'home' => Url::fromRoute('<front>')->setAbsolute()->toString()
-  );
+  );  
+
     
   if ($config->get('raas_terms_and_condition_html') != '') {
     $my_settings['termsAndConditionHtml'] = $config->get('raas_terms_and_condition_html');
@@ -379,7 +388,9 @@ function userregistration_user_presave($account) {
  if (\Drupal::moduleHandler()->moduleExists('userregistration')) { 
 
   if (isset($_POST['op']) && $_POST['op'] == 'Save') {
+    
     if(isset($_POST['form_id']) && $_POST['form_id'] == 'user_form'){
+       if(isset($_POST['mail']) && $_POST['mail'] != ''){
        if($raas_email != $_POST['mail']) {    
        $addEmail = array(
         'emailid'=> $_POST['mail'],
@@ -428,7 +439,8 @@ function userregistration_user_presave($account) {
            
            }            
         }    
-     }
+    }}
+      if(isset($_POST['name']) && $_POST['name'] != ''){
      if($raas_uname != $_POST['name']) {          
          
                $response = $user_manager->userregistration_get_accounts($raas_uid); 
@@ -457,7 +469,7 @@ function userregistration_user_presave($account) {
          exit();         
       } 
       }
-     }
+      }}
    }
  }
 }   
@@ -649,10 +661,8 @@ function userregistration_user_predelete($account) {
   $user_manager = \Drupal::service('userregistration.user_manager');
   $raas_uid = $user_manager->userregistration_get_raas_uid($account->id());
  
-  $result = $user_manager->user_delete($raas_uid);    
-//  if (isset($result->isPosted) && $result->isPosted) {    
-    $user_manager->deleteMapUser($account->id());
- // } 
+  $result = $user_manager->user_delete($raas_uid);   
+  $user_manager->deleteMapUser($account->id()); 
 }
 
 /**

@@ -8,6 +8,6 @@ dependencies:
 configure: hostedpage.settings_form
 
 # Information added by Drupal.org packaging script on 2015-11-24
-version: '8.x-2.1'
+version: '8.x-2.2.0'
 core: '8.x'
 project: 'loginradius'

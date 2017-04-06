@@ -52,7 +52,8 @@ class UserRegistrationController extends ControllerBase {
     $raasUid = $this->user_manager->userregistration_get_raas_uid($user);
 
     if (isset($post_value['emailid']) && !empty($post_value['emailid']) && isset($post_value['password']) && !empty($post_value['password'])) {
-      $params = array(
+   
+        $params = array(
         'accountid' => $raasUid,
         'password' => $post_value['password'],
         'emailid' => $post_value['emailid']
