@@ -1,9 +1,9 @@
-SOCIAL LOGIN
+User Registration and Management
 
--- SUMMARY --
+-- SUMMARY -- 
 
-Let your users log in and comment via their existing ID from popular providers 
-such as Facebook, Google, Twitter, Yahoo, Live and over 20 more!
+Fully managed registration service including Email Registration, Social Login, password management, and data collection.
+
 
  -- REQUIREMENTS --
  LoginRadius PHP SDK library. Follow the installation instructions to add require php sdk library.
@@ -23,6 +23,43 @@ further information.
 3. Click on configuration link shown in Social Login and Social Share module or click on 
 configuration tab, Then go to people block and click on Social Login and Social Share 
 4. On configuration page, you will see config option for Social Login and Social Share module .
+
+
+
+-- CHANGE LOG --
+  -- 2.2.1 --
+  *  Added readme and license files in module directory. 
+
+  -- 2.2.0 --
+  *  SSO related minor issue if hosted page is enabled
+  *  mapping related issue if type id email and date
+  *  Correct error message
+ 
+  -- 2.1.0 --
+  * Fixed all known bugs.
+  * Moduler approch with all features in plugin.
+  * Add a submodule for Hosted page enable functionality
+  * Log system for all success/error API in db and show it on admin panel.
+  * Show total number of user logged on website in extended user profile.
+  * user can verify in login/notlogin both case.
+ 
+  -- 2.0.0 --
+  * Added following options in module:- 
+        1. Email verification url
+        2. Forgot password url
+        3. In form validation message
+        4. Terms and condition html
+        5. Form render delay
+        6. Password length
+        7. V2 recaptcha
+        8. V2 recaptcha site key
+        9. Enable login on email verification
+        10.Prompt password on social login
+        11.Enable login with username
+        12.Forgot password template
+        13.Email verification template
+
+
 
  -- LIVE DEMO --
 http://demo.loginradius.com
@@ -64,7 +101,4 @@ http://demo.loginradius.com
  Current maintainers:
  * LoginRadius - http://www.loginradius.com
  * Email: hello [at] loginradius [dot] com 
-
- 
-
  
