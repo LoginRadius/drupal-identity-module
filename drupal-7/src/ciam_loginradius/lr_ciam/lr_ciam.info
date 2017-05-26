@@ -1,0 +1,10 @@
+name = CIAM
+description = Allow users to sign up through a registration form. User Registration offers fully customized options for collecting and updating user data.
+package = CIAM
+core = 7.x
+stylesheets[all][] = css/lr_ciam.min.css
+configure = admin/config/people/userregistration
+version = "7.x-2.0.0"
+project = "ciam_loginradius"
+
+

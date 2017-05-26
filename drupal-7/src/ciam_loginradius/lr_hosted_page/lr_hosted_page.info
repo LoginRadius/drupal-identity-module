@@ -1,0 +1,10 @@
+name = Hosted Page
+description = Enable Hosted Pages system it will redirect users to signup on hosted page.
+dependencies[] = lr_ciam
+package = CIAM
+core = 7.x
+configure = admin/config/people/userregistration/hosted
+version = "7.x-2.0.0"
+project = "ciam_loginradius"
+
+

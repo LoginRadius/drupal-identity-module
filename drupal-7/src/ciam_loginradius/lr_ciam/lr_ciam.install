@@ -1,0 +1,102 @@
+<?php
+
+/**
+ * @file
+ * Provides uninstall function for the lr_ciam.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function lr_ciam_uninstall() {
+  $deleted_keys = array( 
+    'lr_ciam_inform_validation_messages',
+    'lr_ciam_terms_and_condition_html',
+    'lr_ciam_form_render_delay',
+    'lr_ciam_min_password_length',
+    'lr_ciam_max_password_length',  
+    'lr_ciam_forgot_password_template',
+    'lr_ciam_email_verification_template',
+    'lr_ciam_custom_options',
+    'lr_ciam_email_verification_condition',
+    'lr_ciam_enable_login_on_email_verification',
+    'lr_ciam_prompt_password_on_social_login',
+    'lr_ciam_enable_user_name',
+    'lr_ciam_ask_email_always_for_unverified',    
+    'lr_ciam_enable_remember_me',
+    'lr_ciam_check_password_strength',
+    'lr_ciam_ask_required_field_on_traditional_login',       
+    'lr_ciam_site_name',
+    'lr_ciam_apikey',
+    'lr_ciam_apisecret',
+    'lr_ciam_label_string', 
+    'lr_ciam_disable_traditional_login',
+    'lr_ciam_identity_label_string',   
+    'lr_ciam_display_username',
+    'lr_ciam_force_registration',
+    'lr_ciam_link_account',
+    'lr_ciam_update_profile',
+    'lr_ciam_debug_mode',  
+    'lr_ciam_account_linking',
+    'lr_ciam_userlogin_redirect',
+    'lr_ciam_custom_redirection',
+    'lr_ciam_user_fields',
+    'lr_ciam_profile_fields'     
+  );
+  foreach($deleted_keys as $key){
+    variable_del($key);
+  }
+}
+
+/**
+ * Implements hook_schema().
+ */
+function lr_ciam_schema() {
+  if (!db_field_exists('users', 'lr_ciam_uid')) {
+    db_add_field('users', 'lr_ciam_uid', array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => FALSE,
+      'default' => '',
+    ));
+  }
+  if (db_table_exists('loginradius_mapusers') && !db_field_exists('loginradius_mapusers', 'user_id')) {
+    db_add_field('loginradius_mapusers', 'user_id', array(
+      'type' => 'int',
+      'length' => 11,
+      'not null' => FALSE,
+      'default' => 0,
+    ));
+  }
+   if(!db_table_exists('loginradius_mapusers')){
+  $schema['loginradius_mapusers'] = array(
+    'description' => 'Stores Engage linked account information.',
+    'fields' => array(
+      'aid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Authmap ID of the authmap table.',
+      ),
+      'provider' => array(
+        'type' => 'varchar',
+        'length' => 30,
+        'not null' => TRUE,
+        'description' => 'The provider\'s machine name.',
+      ),
+      'provider_id' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => 'The provider\'s unique id.',
+      ),
+    ),
+    'primary key' => array('aid'),
+  );
+  
+  }
+  db_update('system')
+    ->fields(array('weight' => 4))
+    ->condition('name', 'lr_ciam', '=')
+    ->execute();
+}
