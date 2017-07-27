@@ -1,0 +1,36 @@
+{% if api_key   %}
+
+
+{% include 'lr_message.html.twig' %}
+ 
+ 
+  <script>
+    jQuery(document).ready(function () {
+      initializeLoginCiamForm();
+      initializeSocialRegisterCiamForm();
+        var isClear = 1;
+          var formIntval;
+        setTimeout(show_birthdate_date_block, 1000);
+          formIntval = setInterval(function(){ jQuery('#lr-loading').hide();
+             if (isClear > 0) {
+                 clearInterval(formIntval);
+             }
+         }, 1000);
+    });
+  </script>
+
+  <label id="interfaceLabel">{{ interface_label }}</label>
+
+  <div>
+  {% include 'ciam_social_widget_container.html.twig' %}
+    
+   
+  </div>
+  <div class="ciam-lr-form my-form-wrapper">
+    <div id="login-container"></div>
+    <div id="resetpassword-container" style="display: block"></div>
+      {% include 'lr_loading.html.twig' %} 
+       {% include 'lr_ciam_popup.html.twig' %}
+  </div>
+
+{% endif %}

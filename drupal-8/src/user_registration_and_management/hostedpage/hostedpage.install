@@ -1,9 +1,0 @@
-<?php
-/**
- * Implements hook_schema().
- */
-
-function hostedpage_install(){
-	 module_set_weight('hostedpage',6);
-}
-

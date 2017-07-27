@@ -1,3 +1,0 @@
-services:
-  sociallogin.user_manager:
-    class: Drupal\sociallogin\SocialLoginUserManager

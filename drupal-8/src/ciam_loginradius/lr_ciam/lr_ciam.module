@@ -1,0 +1,739 @@
+<?php
+
+/**
+ * @file
+ * Enables the use of personal and site-wide contact forms.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Entity\EntityTypeInterface;
+use \LoginRadiusSDK\Utility\Functions;
+use \LoginRadiusSDK\LoginRadiusException;
+use \LoginRadiusSDK\Clients\IHttpClient;
+use \LoginRadiusSDK\Clients\DefaultHttpClient;
+use \LoginRadiusSDK\Utility\SOTT;
+use \LoginRadiusSDK\CustomerRegistration\Social\SocialLoginAPI;
+use \LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
+use \LoginRadiusSDK\CustomerRegistration\Management\AccountAPI;
+
+module_load_include('php', 'lr_ciam', 'customhttpclient');
+global $apiClient_class;
+$apiClient_class = 'CustomHttpClient';
+
+/**
+ * Implements hook_theme().
+ *
+ * @return array
+ */
+function lr_ciam_theme() {
+  $path = drupal_get_path('module', 'lr_ciam') . '/theme';
+  $theme =  array(
+      'user_login_form' => array(
+      'template' => 'user_login_form',
+      'render element' => 'form',
+      'path' => $path,
+    ),
+      'change_password' => array(
+      'variables' => array(
+        'params' => NULL,
+      ), 
+      'template' => 'change_password',
+      'path' => $path,
+    ),
+      'remove_email' => array(
+      'variables' => array(
+        'params' => NULL,
+      ), 
+      'template' => 'remove_email',
+      'path' => $path,
+    ),
+      'add_email' => array(
+      'variables' => array(
+        'params' => NULL,
+      ), 
+      'template' => 'add_email',
+      'path' => $path,
+    ),
+      'user_pass' => array(
+      'template' => 'user_pass',
+      'render element' => 'form',
+      'path' => $path,
+    ),
+    'ciam_social_widget_container' => array(
+      'variables' => array(
+        'params' => NULL,
+      ),
+      'template' => 'ciam_social_widget_container',
+      'path' => $path,
+    ),
+    'lr_ciam_linked' => array(
+      'variables' => array(
+        'params' => NULL,
+      ),
+      'template' => 'lr_ciam_linked',
+      'path' => $path,
+    ),
+    'lr_ciam_popup' => array(     
+      'variables' => array(
+        'params' => NULL,
+      ),
+      'template' => 'lr_ciam_popup',
+      'path' => $path,
+    ),
+    'lr_loading' => array(
+      'template' => 'lr_loading',
+      'variables' => array(
+        'params' => NULL,
+      ),
+      'path' => $path,
+    ),
+    'lr_message' => array(
+      'template' => 'lr_message',
+      'variables' => array(
+        'params' => NULL,
+      ),
+      'path' => $path,
+    ),  
+  );
+
+  $theme['user_register_form'] = array(
+    'template' => 'user_register_form',
+    'render element' => 'form',
+    'path' => $path,
+  );
+   return $theme;
+}
+
+/**
+ * Added Required variable to use in template fie.
+ *
+ * @param $vars
+ */
+function template_preprocess_lr_ciam_linked(&$vars) {
+  global $base_url;
+  $vars['currentid'] = $_SESSION['_sf2_attributes']['lrID']; 
+  $vars['currentprovider'] = $_SESSION['current_provider'];   
+  $vars['image_url'] = $base_url . '/' . drupal_get_path('module', 'lr_ciam') . '/images';
+  $vars['callback'] = lr_ciam_get_callback_url();  
+}
+
+function template_preprocess_user_pass(&$variables) {
+   $config = \Drupal::config('ciam.settings');
+   $variables['api_key'] =  trim($config->get('api_key'));
+   if (!\Drupal::currentUser()->isAnonymous()) {   
+    $variables['showpassonlogin'] = false;
+    $variables['rendered'] = drupal_render_children($variables['form']);
+    } else {           
+    $variables['showpassonlogin'] = true;
+ 
+    }
+}
+
+function lr_ciam_form_user_pass_alter(&$form, FormStateInterface $form_state) {
+    if (!\Drupal::currentUser()->isAnonymous()) {  
+      $user = \Drupal::currentUser();         
+      $form['name']['#type'] = 'value';
+      $form['name']['#value'] = $user->getEmail();
+      $form['mail'] = array(
+        '#prefix' => '<p>',
+        '#markup' => t('Password reset instructions will be mailed to %email. You must log out to use the password reset link in the email.', array('%email' => $user->getEmail())),
+        '#suffix' => '</p>',
+      );
+   
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Submit'));
+    $form['#cache']['contexts'][] = 'url.query_args';    
+    return $form;
+    }
+}
+
+function template_preprocess_user_register_form(&$variables) {  
+  $variables['admin_access'] =  true;
+  $user = \Drupal::currentUser()->getRoles();
+      if (in_array("administrator", $user)) {
+        $variables['admin_access'] =  false;
+      }
+   $config = \Drupal::config('ciam.settings');
+   $variables['interface_label'] = $config->get('interface_label');
+   $variables['api_key'] =  trim($config->get('api_key'));
+   $variables['rendered'] = drupal_render_children($variables['form']);
+}
+
+function template_preprocess_lr_ciam_popup(&$variables) {
+  $config = \Drupal::config('ciam.settings'); 
+  $variables['popup_title'] = $config->get('popup_title');
+}
+  
+function lr_ciam_preprocess(&$variables) {
+  $variables['image_path'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.gif';
+}
+
+function template_preprocess_user_login_form(&$variables) {
+  $config = \Drupal::config('ciam.settings');
+  $variables['interface_label'] = $config->get('interface_label');
+  $variables['api_key'] =  trim($config->get('api_key'));
+}
+
+function lr_ciam_add_loginradius_userdata($userprofile, $token){    
+    $config = \Drupal::config('ciam.settings');
+    $apiKey = trim($config->get('api_key'));
+    $apiSecret = trim($config->get('api_secret'));   
+  
+     $socialLoginObj = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));          
+            
+        try {                  
+             $socialProfileData = $socialLoginObj->getUserProfiledata($token);    
+          }
+         catch (LoginRadiusException $e) {                   
+             \Drupal::logger('ciam')->error($e);
+             drupal_set_message($e->getMessage(), 'error');
+             return $this->redirect('user.login');
+         } 
+           
+    $_SESSION['current_provider'] = isset($socialProfileData->data) ? $socialProfileData->data->ID : $socialProfileData->ID;
+    $_SESSION['provider'] = $userprofile->Provider;
+    
+}
+
+function lr_ciam_page_attachments(&$page) {
+    
+    $user = \Drupal::currentUser();  
+    $emailVerificationUrl = Url::fromRoute('<front>')->setAbsolute()->toString();
+    $forgotVerificationUrl = Url::fromRoute('user.login')->setAbsolute()->toString();
+    $config = \Drupal::config('ciam.settings');  
+    $path = parse_url(Url::fromRoute('<front>')->toString());
+    $sso_path = $path['path'];
+    
+   
+    if (\Drupal::currentUser()->isAnonymous()) {
+     $loggedIn = false;
+    } else {
+     $loggedIn = true;
+    }
+    
+    $my_settings = array(
+    'verificationUrl' => $emailVerificationUrl,  
+    'forgotPasswordUrl' => $forgotVerificationUrl,  
+    'loggedIn' => $loggedIn,  
+    'appName' => trim($config->get('sso_site_name')),
+    'apiKey' => trim($config->get('api_key')),
+    'sott' => lr_ciam_get_sott($config->get('api_key'),$config->get('api_secret')),
+    'appPath' => trim($sso_path),
+    'callback' => urldecode(lr_ciam_get_callback_url()),
+    'home' => Url::fromRoute('<front>')->setAbsolute()->toString()
+   );
+    
+  if ($config->get('ciam_terms_and_condition_html') != '') {
+    $my_settings['termsAndConditionHtml'] = $config->get('ciam_terms_and_condition_html');
+  }
+
+  if (is_numeric($config->get('ciam_form_render_delay')) != '0') {
+    $my_settings['formRenderDelay']= (int) $config->get('ciam_form_render_delay');
+  }
+
+  $min_length = $config->get('ciam_min_password_length');
+  $max_length = $config->get('ciam_max_password_length');
+  if (!empty($min_length)) {   
+    $my_settings['passwordminlength']=  $min_length;
+  }
+   if ( !empty($max_length)) {   
+    $my_settings['passwordmaxlength']=  $max_length;
+  }
+ 
+  if ($config->get('ciam_inform_validation_messages') != '' && $config->get('ciam_inform_validation_messages')!= 'false') {
+      $my_settings['formValidationMessage']= (boolean) $config->get('ciam_inform_validation_messages');
+  } 
+  if ($config->get('ciam_forgot_password_template') != '') {
+    $my_settings['forgotPasswordTemplate']= $config->get('ciam_forgot_password_template');
+  } 
+  
+  if ($config->get('ciam_enable_remember_me') != '' && $config->get('ciam_enable_remember_me')!= 'false') {
+        $my_settings['stayLogin']= (boolean) $config->get('ciam_enable_remember_me');
+  } 
+  
+  if ($config->get('ciam_ask_required_field_on_traditional_login') != '' && $config->get('ciam_ask_required_field_on_traditional_login')!= 'false') {
+    $my_settings['askRequiredFieldForTraditionalLogin']= (boolean) $config->get('ciam_ask_required_field_on_traditional_login');
+      
+  }
+  if ($config->get('ciam_display_password_strength') != '' && $config->get('ciam_display_password_strength')!= 'false') {
+     $my_settings['displayPasswordStrength']= (boolean) $config->get('ciam_display_password_strength');
+  }
+  
+  $emailVerifyOpt = $config->get('ciam_email_verification_condition');   
+  if(isset($emailVerifyOpt) && $emailVerifyOpt != '') {
+  if ($emailVerifyOpt == '0') { 
+     if ($config->get('ciam_enable_login_on_email_verification') != '' && $config->get('ciam_enable_login_on_email_verification')!= 'false') {
+     $my_settings['loginOnEmailVerification']= (boolean) $config->get('ciam_enable_login_on_email_verification');
+     }
+     if ($config->get('ciam_prompt_password_on_social_login') != '' && $config->get('ciam_prompt_password_on_social_login')!= 'false') {
+     $my_settings['promptPasswordOnSocialLogin']= (boolean) $config->get('ciam_prompt_password_on_social_login');
+     } if ($config->get('ciam_enable_user_name') != '' && $config->get('ciam_enable_user_name')!= 'false') {
+     $my_settings['usernameLogin']= (boolean) $config->get('ciam_enable_user_name');
+     } if ($config->get('ciam_ask_email_always_for_unverified') != '' && $config->get('ciam_ask_email_always_for_unverified')!= 'false') {
+      $my_settings['askEmailForUnverifiedProfileAlways']=  (boolean) $config->get('ciam_ask_email_always_for_unverified');
+     }
+   } elseif ($emailVerifyOpt == '1') { 
+     if ($config->get('ciam_enable_login_on_email_verification') != '' && $config->get('ciam_enable_login_on_email_verification')!= 'false') {
+          $my_settings['loginOnEmailVerification']= (boolean)  $config->get('ciam_enable_login_on_email_verification');
+   } if ($config->get('ciam_ask_email_always_for_unverified') != '' && $config->get('ciam_ask_email_always_for_unverified')!= 'false') {
+      $my_settings['askEmailForUnverifiedProfileAlways']=  (boolean) $config->get('ciam_ask_email_always_for_unverified');
+     }
+      $my_settings['optionalEmailVerification']= true;
+   } elseif ($emailVerifyOpt == '2') {
+      $my_settings['disabledEmailVerification']= true;
+   }
+  }
+  
+  if ($config->get('ciam_email_verification_template') != '') {
+        $my_settings['verificationEmailTemplate']=  $config->get('ciam_email_verification_template');
+  }
+  if ($config->get('ciam_custom_options') != '') { 
+    $my_settings['customScript'] = "";
+   $jsondata = lr_ciam_json_validate($config->get('ciam_custom_options'));   
+    if (is_object($jsondata)) {       
+        foreach($jsondata as $key => $value) {
+            $my_settings['customScript'] .= "ciamoption.".$key."=";
+            if (is_object($value) || is_array($value)) {  
+                $encodedStr = json_encode($value);   
+                $my_settings['customScript'] .= $encodedStr.';';
+            } else {                
+            $my_settings['customScript'] .= '"'.$value.'"'.';';
+            }
+        }       
+    } else {
+         if (is_string($jsondata)) {     
+             $my_settings['customScript'] = $jsondata;             
+         }
+    }     
+  }  
+ 
+
+    $page['#attached']['drupalSettings']['ciam']  = $my_settings;
+    $page['#attached']['library'][] = 'lr_ciam/drupal.coreciam';
+}
+
+function lr_ciam_get_sott($apiKey, $secret) {  
+    $sott =  new \LoginRadiusSDK\Utility\SOTT($apiKey, $secret);
+    return urlencode($sott->encrypt('10', true));
+}
+
+/**
+ * Check String is json or not.
+ *
+ * @param $string 
+ * @return json|string
+ */    
+function lr_ciam_json_validate($string){
+    $result = json_decode(str_replace("'", '"',$string));    
+    if (json_last_error() == JSON_ERROR_NONE) {         
+       return $result;        
+    } else {         
+        return $string;       
+    }
+}
+
+
+function lr_ciam_mail($key, &$message, $params) {
+  $data['user'] = $params['account'];
+  $options['langcode'] = $message['langcode'];
+  user_mail_tokens($variables, $data, $options);
+  switch ($key) {
+    case 'welcome_email':
+      $message['subject'] = t('Thank you for registering at @site', $variables, $options);
+      $message['body'][] = t("Thank you for registering at @site.
+
+You will be able to login in the future using
+
+Username : @username
+Password : @pass
+
+--  [site:name] team", $variables, $options);
+      break;
+  }
+}
+
+/**
+ * Get Callback Url For Social Login Interface.
+ *
+ * @return string
+ */
+
+function lr_ciam_get_callback_url() {
+      global $base_url;
+  $destination = (\Drupal::destination()->getAsArray());
+  $callback = $destination['destination'];
+
+  if (strpos($callback, 'ajax') !== FALSE) {
+    if (isset($_SESSION['redirect_url'])) {
+      return $_SESSION['redirect_url'];
+    }
+    else {
+      $callback = Url::fromRoute('user');
+    }
+  } 
+  
+  
+  $url = Url::fromUserInput('/user/ciamlogin', array(
+    'query' => array('destination' => $callback),
+    'absolute' => TRUE,
+  ))->toString();
+  
+    $request_uri = \Drupal::request()->getRequestUri();
+    if (strpos($request_uri, 'redirect_to') !== FALSE) {
+        $vid = \Drupal::request()->query->get('redirect_to');
+        $url .= "&redirect_to=" . urldecode($vid);
+    }
+    $parseURL = parse_url($base_url);
+    $HTTP_REFERER = isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"] : '';
+    if (isset($parseURL['host']) && !empty($parseURL['host']) && (strpos($HTTP_REFERER, $parseURL['host']) !== false)) {
+        $_SESSION['referer_url'] = $_SERVER["HTTP_REFERER"];
+    }
+    
+  return urlencode($url);
+}
+
+function lr_ciam_add_user_data_after_save($user, $userprofile) {
+$user_manager = \Drupal::service('lr_ciam.user_manager');  
+  $user_manager->lr_ciam_update_user_table($userprofile->Uid, $user->id());
+}
+
+function lr_ciam_user_update($account) {
+
+  $user_manager = \Drupal::service('lr_ciam.user_manager'); 
+  $ciam_uid = $user_manager->lr_ciam_get_ciam_uid($account->id());
+  if (isset($_POST['op']) && isset($ciam_uid) && !empty($ciam_uid)) {          
+      if (isset($_POST['action']) && $_POST['action'] == 'user_block_user_action') {            
+      $user_manager->lr_ciam_block_user($ciam_uid);
+      }
+      elseif (isset($_POST['action']) && $_POST['action'] == 'user_unblock_user_action' ) {        
+        $user_manager->lr_ciam_unblock_user($ciam_uid);        
+      }
+    } 
+}
+ 
+
+/**
+ * user form alter.
+ * @param $form
+ * @param $form_state
+ */
+function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
+   $user_manager = \Drupal::service('lr_ciam.user_manager');
+   $config = \Drupal::config('ciam.settings');
+   $user = \Drupal::currentUser()->getRoles();  
+     
+   if (!in_array("administrator", $user) &&  !\Drupal::currentUser()
+      ->isAnonymous()) {  
+       
+    unset($form['#validate'][1]);
+    unset($form['account']['pass']);
+    unset($form['account']['current_pass']);
+
+       
+        $apiKey = trim($config->get('api_key'));
+        $apiSecret = trim($config->get('api_secret'));
+        $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));
+        try {
+                $userprofile = $userObject->getProfile($_SESSION['access_token']);             
+            }
+            catch (LoginRadiusException $e) {
+               
+            }
+
+    $defaultEmail = isset($userprofile->Email) ? $userprofile->Email[0]->Value : '';        
+    if($form['account']['mail']['#default_value'] != $defaultEmail){       
+           \Drupal::database()->update('users_field_data')
+              ->condition('mail', $form['account']['mail']['#default_value'])
+              ->fields(['mail' => $defaultEmail])
+              ->execute();      
+    }        
+            
+    unset($form['account']['mail']);    
+    $form['account']['label'] = array(
+      '#markup' => t('Email address'),
+    );        
+    
+    $form['account'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Email Settings'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+
+    $header = array(
+      'email' => array('data' => 'Email'),
+      'action' => array('data' => 'Action')  
+    );
+
+    $form['account']['add'] = array(
+        '#type' => 'item',         
+        '#markup' => '<div class="addEmail" id="addEmail">Add Email</div>',
+    ); 
+
+    $emailCount = isset($userprofile->Email) ? count($userprofile->Email) : '0';
+
+    for ($i = 0; $i < $emailCount; $i++) { 
+        $email[$i] = array(
+         '#type' => 'email',  
+         '#attributes' => array('readonly' => 'readonly'),        
+         '#default_value' => ($userprofile->Email[$i]->Value ? $userprofile->Email[$i]->Value : '')  
+        );  
+        
+        $action[$i] = array(
+           '#type' => 'item',         
+           '#markup' => '<div class="removeEmail" id="removeEmail_'.$i.'">Remove</div>',
+        );  
+        
+        $rows['customize_field_' . $i] = array(
+          'data' => array(
+            'field' => array('data' => &$email[$i]),
+            'label' => array('data' => &$action[$i])           
+          )
+        );
+        
+        $data_to_send['customize_field_' . $i] = array(
+          'field' => &$email[$i],
+          'label' => &$action[$i]        
+        );            
+    }
+if($emailCount > 0){
+    $form['account']['lr_raas_hook_customize']['table'] = array(
+      '#tree' => TRUE,
+      '#theme' => 'table',
+      '#header' => $header,
+      'values' => $data_to_send,
+      '#rows' => &$rows,
+);}     
+     
+    if (\Drupal::moduleHandler()->moduleExists('lr_ciam')) {
+    $form['account']['current_pass_required_value']['#access'] = FALSE;
+    $form['account']['current_pass']['#access'] = FALSE;
+    }
+    $form['lr_ciam_linked'] = array(
+      '#type' => 'details',
+      '#title' => $config->get('linking_text') ? $config->get('linking_text') : 'Account Linking',
+      '#theme' => 'lr_ciam_linked',
+      '#attributes' => array('class' => array('lr-ciam-linked')),
+      '#weight' => -20,
+      '#open' => TRUE,
+    );
+   
+     $form['add_email'] = array(
+      '#type' => 'item',
+      '#theme' => 'add_email',
+      '#attributes' => array('class' => array('add-email')),
+      '#weight' => -20,
+      '#open' => TRUE,
+    );
+    
+     $form['remove_email'] = array(
+      '#type' => 'item', 
+      '#theme' => 'remove_email',
+      '#attributes' => array('class' => array('remove-email')),
+      '#weight' => -20,
+      '#open' => TRUE,
+    );
+    
+    $optionVal = $config->get('ciam_email_verification_condition');
+    if ($config->get('enable_linking') == 0 ||(isset($_SESSION['emailVerified']) && !$_SESSION['emailVerified']) || $optionVal == 2) { 
+        unset($form['lr_ciam_linked']);
+    } 
+  } 
+
+  return $form;
+}
+
+function lr_add_email($form, &$form_state) {
+    $form['add_email'] = array(
+      '#type' => 'details',
+      '#title' => 'Add Email',
+      '#theme' => 'add_email',
+      '#attributes' => array('class' => array('add-email')),
+      '#weight' => -20,
+      '#open' => TRUE,
+    );
+    
+    $form_state['rebuild'] = TRUE;
+}
+
+ /**
+ * Unset validation for current password.
+ *
+ * @param $fields
+ * @param $entity_type
+ */
+function lr_ciam_entity_base_field_info_alter(&$fields, EntityTypeInterface $entity_type) {
+    if (\Drupal::moduleHandler()->moduleExists('lr_ciam')) {
+    if ($entity_type->id() == 'user') {      
+      $constraints = $fields['mail']->getConstraints();
+      unset($constraints['ProtectedUserField']);
+      $fields['mail']->setConstraints($constraints);
+
+      $constraints = $fields['pass']->getConstraints();
+      unset($constraints['ProtectedUserField']);
+      $fields['pass']->setConstraints($constraints);
+     }
+    }
+}
+
+/**
+ * delete user.
+ *
+ * @param $account
+ */
+function lr_ciam_user_predelete($account) {  
+  
+  $user_manager = \Drupal::service('lr_ciam.user_manager');
+  $ciam_uid = $user_manager->lr_ciam_get_ciam_uid($account->id());
+ 
+  $result = $user_manager->user_delete($ciam_uid);   
+  $user_manager->deleteMapUser($account->id()); 
+}
+
+function lr_ciam_mail_alter(&$message) {
+    
+    $config = \Drupal::config('ciam.settings');
+    $apiKey = trim($config->get('api_key'));
+    $apiSecret = trim($config->get('api_secret'));   
+    $reset_password_url = Url::fromRoute('user.login')->setAbsolute()->toString();
+    $user = \Drupal::currentUser();
+    $email = $user->getEmail();
+    $userObj = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));     
+    
+            
+        try {                  
+             $userData = $userObj->forgotPassword($email, $reset_password_url, 'reset password');    
+             drupal_set_message(t('Further instructions have been sent to your email address.'));
+          }
+         catch (LoginRadiusException $e) {             
+             \Drupal::logger('ciam')->error($e);
+             drupal_set_message($e->getMessage(), 'error');
+             return $this->redirect('user.login');
+         } 
+
+  if ($message['key'] == 'register_admin_created') { 
+    $message['send'] = FALSE;
+  } 
+  if ($message['key'] == 'password_reset') {
+      $message['send'] = FALSE;
+  }
+}
+
+function lr_ciam_menu_local_tasks_alter(&$data, $route_name) {
+  $data['tabs'][0]['lr_ciam.settings_form']['#link']['title'] = t('CIAM settings');
+}
+
+function lr_ciam_form_advanced_settings_alter(&$form, FormStateInterface $form_state){
+  $config = \Drupal::config('ciam.settings');
+  $hd_config = \Drupal::config('hostedpage.settings');
+
+  if($hd_config->get('lr_hosted_page_enable') == '1'){
+  unset($form['lr_user_settings']['ciam_inform_validation_messages']);
+  unset($form['lr_user_settings']['ciam_terms_and_condition_html']);
+  unset($form['lr_user_settings']['ciam_form_render_delay']);
+  unset($form['lr_user_settings']['ciam_min_password_length']);
+  unset($form['lr_user_settings']['ciam_max_password_length']);
+  unset($form['lr_user_settings']['ciam_forgot_password_template']);
+  unset($form['lr_user_settings']['ciam_email_verification_template']);
+  unset($form['lr_user_settings']['ciam_custom_options']);
+  unset($form['lr_user_settings']['ciam_email_verification_condition']);
+  unset($form['lr_user_settings']['ciam_enable_login_on_email_verification']);
+  unset($form['lr_user_settings']['ciam_prompt_password_on_social_login']);
+  unset($form['lr_user_settings']['ciam_enable_user_name']);
+  unset($form['lr_user_settings']['ciam_ask_email_always_for_unverified']);
+  }
+  return $form;
+}
+
+function lr_ciam_add_extra_config_settings() {
+  return array('ciam_inform_validation_messages','ciam_terms_and_condition_html',
+    'ciam_form_render_delay','ciam_min_password_length','ciam_max_password_length',
+    'ciam_forgot_password_template','ciam_email_verification_template','ciam_custom_options',
+    'ciam_email_verification_condition','ciam_enable_login_on_email_verification',
+    'ciam_prompt_password_on_social_login','ciam_enable_user_name','ciam_ask_required_field_on_traditional_login',
+    'ciam_ask_email_always_for_unverified','ciam_enable_remember_me','ciam_display_password_strength');
+}
+
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Add Social Login interface on register page.
+ * Prefill userprofile data when force registration is off.
+ *
+ * @param $form
+ * @param FormStateInterface $form_state
+ */
+function lr_ciam_form_user_register_form_alter(&$form, FormStateInterface $form_state) {
+  $config = \Drupal::config('ciam.settings');
+
+  if (isset($_SESSION['social_lrdata'])) {
+    $userprofile = $_SESSION['social_lrdata'];
+    unset($_SESSION['social_lrdata']);
+
+    if (isset($userprofile->ID) && !empty($userprofile->ID)) {
+      $user_manager = \Drupal::service('lr_ciam.user_manager');
+      $data = $user_manager->checkExistUsername($userprofile);
+      $form['account']['name']['#default_value'] = $data['username'];
+      $form['account']['mail']['#default_value'] = '';
+
+      if ($config->get('verify_mail') == 1) {
+        $form['account']['pass']['#type'] = 'hidden';
+        $form['account']['pass']['#value'] = user_password();
+      }
+      $user_manager->field_create_user_array($form, $userprofile);
+    }
+  }
+}
+
+/**
+ * Validate LoginRadius API Credentials.
+ *
+ * @param $apikey
+ * @param $apisecret
+ * @return array
+ */
+function get_authentication($apikey, $apisecret) {
+
+  if (isset($apikey)) {   
+    $data = array();
+    try {
+      
+       $validate_url = 'https://api.loginradius.com/api/v2/app/validate?apikey=' . rawurlencode(trim($apikey)) . '&apisecret=' . rawurlencode(trim($apisecret));
+       $result = Functions::apiClient($validate_url, FALSE, array('output_format' => 'json'));
+      
+      if (empty($result)) {
+        $data['message'] = t('please check your php.ini settings to enable CURL or FSOCKOPEN');
+        $data['status'] = 'error';
+      }
+      elseif (isset($result->Status) && !$result->Status) {
+        $error = array(
+          "API_KEY_NOT_VALID" => "LoginRadius API key is invalid. Get your LoginRadius API key from LoginRadius account",
+          "API_SECRET_NOT_VALID" => "LoginRadius API Secret is invalid. Get your LoginRadius API Secret from LoginRadius account",
+          "API_KEY_NOT_FORMATED" => "LoginRadius API Key is not formatted correctly",
+          "API_SECRET_NOT_FORMATED" => "LoginRadius API Secret is not formatted correctly",
+        );
+
+        foreach ($result->Messages as $value) {
+          $data['message'] = $error["$value"];
+          $data['status'] = 'error';
+          break;
+        }
+      }
+
+      return $data;
+    }
+    catch (LoginRadiusException $e) {
+      \Drupal::logger('ciam')->error($e);
+    }
+  }
+}
+
+function lr_ciam_user_delete($account) {  
+  if (!\Drupal::moduleHandler()->moduleExists('lr_ciam')) {
+  $user_manager = \Drupal::service('lr_ciam.user_manager');   
+    $user_manager->deleteMapUser($account->id());
+  }
+}

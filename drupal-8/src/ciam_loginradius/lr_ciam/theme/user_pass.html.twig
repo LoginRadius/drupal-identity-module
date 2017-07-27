@@ -1,0 +1,25 @@
+
+{% if showpassonlogin   %}
+{% if api_key   %}
+
+{% include 'lr_message.html.twig' %}
+ 
+  <script>
+    jQuery(document).ready(function () {
+      initializeForgotPasswordCiamForms();
+    });
+  </script>
+  <div class="ciam-lr-form my-form-wrapper">
+    <div id="forgotpassword-container"></div>
+  </div>
+{% endif %}
+{% else %}
+      <script>
+    jQuery(document).ready(function () {
+          jQuery('#content .tabs').attr('style', 'display:none');
+    });
+  </script>
+{{ rendered }}
+{% endif %}
+
+

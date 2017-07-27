@@ -1,8 +1,0 @@
-hostedpage.settings_form:
-  route_name: hostedpage.settings_form
-  title: 'Hosted Page'
-  base_route: sociallogin.settings_form
-  weight: 4
-
-
-

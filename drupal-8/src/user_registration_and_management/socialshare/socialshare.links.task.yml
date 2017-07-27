@@ -1,7 +1,0 @@
-socialshare.settings_form:
-  route_name: socialshare.settings_form
-  title: 'Social Share settings'
-  base_route: sociallogin.settings_form
-
-
-
