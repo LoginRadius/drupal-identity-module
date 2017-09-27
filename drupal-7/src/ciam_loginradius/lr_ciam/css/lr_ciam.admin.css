@@ -50,8 +50,25 @@
 .form-item.form-type-radio.form-item-lr-ciam-one-click-sign-in, 
 .form-item.form-type-radio.form-item-lr-ciam-check-password-strength,
 .form-item.form-type-radio.form-item-lr-ciam-access-token-response,
-.form-item.form-type-radio.form-item-lr-ciam-display-password-strength
+.form-item.form-type-radio.form-item-lr-ciam-display-password-strength,
+.form-item.form-type-radio.form-item-lr-ciam-instant-link-login,
+.form-item.form-type-radio.form-item-lr-ciam-phone-login,
+.form-item.form-type-radio.form-item-lr-ciam-enable-recaptcha,
+.form-item.form-type-radio.form-item-lr-ciam-enable-2fa,
+.form-item.form-type-radio.form-item-lr-ciam-google-authentication,
+.form-item.form-type-radio.form-item-lr-ciam-exist-phone-number,
+.form-item.form-type-radio.form-item-lr-ciam-instant-otp-login
 {
     display: inline;
     margin-right: 17px
+}
+
+.lrTooltip
+{
+    text-decoration: none !important;
+    cursor: pointer !important;
+}
+.lrTooltipColor
+{
+   color:#3CF;
 }

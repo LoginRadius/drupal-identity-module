@@ -212,7 +212,7 @@ function lr_ciam_insert_picture($image_url, $account) {
  * @return string Contain encoded calleback where you page land.
  */
 function lr_ciam_get_callback_url() {
-
+  global $base_url;
     $destination = drupal_get_destination();
     $callback = $destination['destination'];
 
@@ -230,6 +230,18 @@ function lr_ciam_get_callback_url() {
       'query' => $query,
       'absolute' => TRUE,
     ));
+    
+    $request_uri = request_uri();
+    if (strpos($request_uri, 'redirect_to') !== FALSE) {
+        $getParam = drupal_get_query_parameters(); 
+        $url .= "&redirect_to=" . $getParam['redirect_to'];
+    }
+    $parseURL = parse_url($base_url);
+    
+    $HTTP_REFERER = isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"] : '';
+    if (isset($parseURL['host']) && !empty($parseURL['host']) && (strpos($HTTP_REFERER, $parseURL['host']) !== false)) {
+         $_SESSION['referer_url'] = $_SERVER["HTTP_REFERER"];     
+    }
 
     if (module_exists('ajax_register') || module_exists('modal_forms')) {
         $_SESSION['redirect_url'] = $url;
@@ -590,23 +602,30 @@ function lr_ciam_user_redirect($form, $account, $userprofile, $variable_path = '
         }
     }
     //Advanced module LR Code Hook End
-
     $variable_path = (!empty($variable_path) ? $variable_path : 'lr_ciam_userlogin_redirect');
     $variable_custom_path = (($variable_path == 'lr_ciam_userlogin_redirect') ? 'lr_ciam_custom_redirection' : 'lr_ciam_custom_register_redirection');
     $request_uri = request_uri();
 
-    if (strpos($request_uri, 'user/register') && $variable_path != 'lr_ciam_userregister_redirect') {
-        $variable_path = 'lr_ciam_userregister_redirect';
+    if (strpos($request_uri, 'user/register') && $variable_path != 'lr_ciam_userlogin_redirect') {
+        $variable_path = 'lr_ciam_userlogin_redirect';
         lr_ciam_user_redirect($form, $account, $userprofile, $variable_path);
     }
-    else {
-
-        if (variable_get($variable_path) == 0) {
+    else {   
+        $request_uri = request_uri();       
+        if (strpos($request_uri, 'redirect_to') !== FALSE) {              
+            $getParam = drupal_get_query_parameters();  
+               unset($_GET['destination']);    
+               $redirect_url = $getParam['redirect_to'];
+               drupal_goto($redirect_url);
+        } else if (variable_get($variable_path) == 0) {
             // Redirect to home page.
-            $url_parsed = parse_url($_GET['destination']);
-            if (isset($url_parsed['query'])) {
+            $url_parsed = parse_url($_GET['destination']);  
+            if(!empty($_SESSION['referer_url'])){
+                    $referer_url = $_SESSION['referer_url'];              
+                    drupal_goto($referer_url);
+             } else if (isset($url_parsed['query'])) {
                 parse_str($url_parsed['query'], $url_parts);
-                if (isset($url_parts['vtype']) && $url_parts['vtype'] == 'emailverification') {
+                if (isset($url_parts['vtype']) && ($url_parts['vtype'] == 'emailverification' || $url_parts['vtype'] == 'oneclicksignin' )) {
                     unset($_GET['destination']);
                     drupal_goto();
                 }
@@ -631,7 +650,7 @@ function lr_ciam_user_redirect($form, $account, $userprofile, $variable_path = '
                 drupal_redirect_form($form, $redirect = NULL);
             }
         }
-        else {
+        else {         
             // Redirect to same page.
             drupal_redirect_form($form, $redirect = NULL);
         }
@@ -644,7 +663,7 @@ function lr_ciam_user_redirect($form, $account, $userprofile, $variable_path = '
  * @param object $userprofile Contain user profile information
  * @return string Username of user
  */
-function lr_ciam_get_username($userprofile) {
+function lr_ciam_get_display_name($userprofile) {
     if (!empty($userprofile->FullName)) {
         $username = $userprofile->FullName;
     }
@@ -691,11 +710,11 @@ function lr_ciam_check_exist_username($userprofile) {
     $data['lname'] = (!empty($userprofile->LastName) ? $userprofile->LastName : '');
 
     if (empty($data['fname'])) {
-        $data['fname'] = lr_ciam_get_username($userprofile);
+        $data['fname'] = lr_ciam_get_display_name($userprofile);
     }
 
     if (empty($data['lname'])) {
-        $data['lname'] = lr_ciam_get_username($userprofile);
+        $data['lname'] = lr_ciam_get_display_name($userprofile);
     }
 
     return $data;
@@ -733,7 +752,7 @@ function lr_ciam_username_option($userprofile) {
         $username = $userprofile->Email_value;
     }
     else {
-        $username = lr_ciam_get_username($userprofile);
+        $username = lr_ciam_get_display_name($userprofile);
     }
 
     return $username;
@@ -752,9 +771,9 @@ function lr_ciam_existing_user_save($account, $userprofile, $form, $form_state) 
         module_load_include('inc', 'lr_ciam', 'includes/lr_ciam.field');
         $data = array();
 
-        lr_field_mapping_create_user($data, $userprofile, $account);
+        lr_field_mapping_ciam_create_user($data, $userprofile, $account);
         if (module_exists('profile2')) {
-            lr_field_mapping_create_profile_user($account, $userprofile, $form, $form_state);
+            lr_field_mapping_ciam_create_profile_user($account, $userprofile, $form, $form_state);
         }
 
         $account = user_save($account, $data);
@@ -772,11 +791,11 @@ function lr_ciam_existing_user_save($account, $userprofile, $form, $form_state) 
             ->condition('lr_ciam_uid', $userprofile->Uid)
             ->execute()
             ->fetchAssoc();
-        }catch (Exception $e) {       
+        } catch (Exception $e) {       
         watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
     }
 
-        if (isset($uname['name']) && $uname['name'] != 'admin') {
+    if (isset($uname['name']) && $uname['name'] != 'admin') {
             if (isset($user_name) && $user_name != $uname['name']) {
                 try {
                 db_update('users')
@@ -787,8 +806,8 @@ function lr_ciam_existing_user_save($account, $userprofile, $form, $form_state) 
                     ->execute();
                   }catch (Exception $e) {      
         watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
-    }
             }
+          }
         }
     }
     //Advanced module LR Code Hook Start
@@ -940,9 +959,7 @@ function lr_ciam_check_existing_user(&$form, &$form_state, $userprofile) {
  * @param array $form_state A keyed array containing the current state of the form
  * @return array A renderable html form
  */
-function lr_ciam_provide_login_to_unblock_user($account, $userprofile, &$form, &$form_state) {
-    // $verified = db_query('SELECT verified FROM {loginradius_mapusers} WHERE provider_id = :id', array('id' => $userprofile->ID))->fetchField();
-    // if ($verified == 1) { 
+function lr_ciam_provide_login_to_unblock_user($account, $userprofile, &$form, &$form_state) {  
     if ($account->login) {
         // Check if user is blocked.
         $form_state['values']['name'] = $account->name;
@@ -950,11 +967,21 @@ function lr_ciam_provide_login_to_unblock_user($account, $userprofile, &$form, &
 
         if (!form_get_errors()) {
             lr_ciam_existing_user_save($account, $userprofile, $form, $form_state);
-        }
+        } 
+      
+        $apiKey = trim(variable_get('lr_ciam_apikey'));
+        $secret = trim(variable_get('lr_ciam_apisecret')); 
+        $socialLoginObject = new SocialLoginAPI ($apiKey, $secret, array('output_format' => 'json'));
 
+        try {                            
+            $socialProfile = $socialLoginObject->getUserProfiledata($_SESSION['access_token']); 
+        }
+        catch (LoginRadiusException $e) {          
+            watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+        }        
         $_SESSION['current_social_provider'] = $userprofile->ID;
-        $_SESSION['current_provider'] = isset($userprofile->Identities) ? $userprofile->Identities[0]->Provider : '';
-       return lr_ciam_user_redirect($form, $account, $userprofile);
+        $_SESSION['current_provider'] = isset($socialProfile->Provider) ? $socialProfile->Provider : '';
+        return lr_ciam_user_redirect($form, $account, $userprofile);
     }
     else {
         drupal_set_message(t("You are either blocked, or have not activated your account. Please check your email."), 'error');
@@ -970,14 +997,14 @@ function lr_ciam_provide_login_to_unblock_user($account, $userprofile, &$form, &
  * @param array $form_state A keyed array containing the current state of the form
  * @return array A renderable html form
  */
-function lr_ciam_save_new_user($userprofile, &$form, &$form_state) {
+function lr_ciam_save_new_user($userprofile, &$form, &$form_state) { 
     $data = lr_ciam_check_exist_username($userprofile);
     $form_state['redirect'] = NULL;
     $form_state['values']['name'] = $data['username'];
     $form_state['values']['mail'] = $userprofile->Email_value;
     $form_state['values']['pass'] = user_password();
 
-    //if (variable_get('user_register') != 2 && (variable_get('user_register') == 1 || variable_get('lr_ciam_enable_user_registration') == 1)) {
+    
     if (variable_get('user_register') != 2 && (variable_get('user_register') == 1)) {
         $form_state['values']['status'] = 1;
     }
@@ -986,12 +1013,11 @@ function lr_ciam_save_new_user($userprofile, &$form, &$form_state) {
     $form_state['values']['field_first_name'] = array(LANGUAGE_NONE => array(array('value' => $data['fname'])));
     $form_state['values']['field_last_name'] = array(LANGUAGE_NONE => array(array('value' => $data['lname'])));
     $_SESSION['current_provider'] = isset($userprofile->Identities) ? $userprofile->Identities[0]->Provider : '';
- 
-    // if (variable_get('user_register', 1) || variable_get('user_register', 2) || variable_get('lr_ciam_enable_user_registration') == 1) {
+    
     if (variable_get('user_register', 1) || variable_get('user_register', 2)) {
         // Field module support.
         
-        lr_field_mapping_create_user($form_state['values'], $userprofile);
+        lr_field_mapping_ciam_create_user($form_state['values'], $userprofile);
         $account = user_save(NULL, $form_state['values']);
         if ($account->status && !variable_get('user_email_verification', TRUE) && !variable_get('user_verify', 1)) {
             try {
@@ -1007,7 +1033,7 @@ function lr_ciam_save_new_user($userprofile, &$form, &$form_state) {
             }
         }
         if (module_exists('profile2')) {
-            lr_field_mapping_create_profile_user($account, $userprofile, $form, $form_state);
+            lr_field_mapping_ciam_create_profile_user($account, $userprofile, $form, $form_state);
         }
 
         if (variable_get('user_pictures') == 1 && !empty($userprofile->ImageUrl)) {
@@ -1034,33 +1060,20 @@ function lr_ciam_save_new_user($userprofile, &$form, &$form_state) {
         if (!variable_get('user_email_verification', TRUE)) {
             $status = TRUE;
         }
-        //Advanced module LR Code Hook Start
-        // Make sure at least one module implements our hook.
-        if (count(module_implements('check_send_verification_email')) > 0) {
-            // Call all modules that implement the hook, and let them make changes to $variables.
-            $userprofile->Password = $form_state['values']['pass'];
-            $result = module_invoke_all('check_send_verification_email', $account, $userprofile);
-            if (isset($result['lr_social_invite_message_popup'])) {
-                return array('lr_social_invite_message_popup' => $result['lr_social_invite_message_popup']);
-            }
-            $status = end($result);
-        }
-        //Advanced module LR Code Hook End
-        
-        
+
+        //Advanced module LR Code Hook End            
+      
         if ($account->status && $status && !variable_get('user_verify', 1)) {
             watchdog('loginradius_logging', 'New user: %name (%email).', array(
               '%name' => $data['username'],
               '%email' => $userprofile->Email_value,
                 ), WATCHDOG_NOTICE, l(t('edit'), 'user/' . $account->uid . '/edit'));
 
-
-
             $form_state['uid'] = $account->uid;
             user_login_submit(array(), $form_state);
             unset($_SESSION['lrdata']);
             $_SESSION['current_social_provider'] = $userprofile->ID;           
-            return lr_ciam_user_redirect($form, $account, $userprofile, 'lr_ciam_userregister_redirect');
+            return lr_ciam_user_redirect($form, $account, $userprofile, 'lr_ciam_userlogin_redirect');
         }
         elseif (variable_get('user_register') != 2 && ($account->status || (variable_get('user_verify', 1) && $status))) {
             // Require email confirmation.   
@@ -1069,7 +1082,7 @@ function lr_ciam_save_new_user($userprofile, &$form, &$form_state) {
             drupal_set_message(t('Once you have verified your e-mail address, you may log in via Social Login.'));
             drupal_goto();
         }
-        else {
+        else {                
             _user_mail_notify('register_pending_approval', $account);
             drupal_set_message(t('Thank you for applying for an account. Your account is currently pending approval by the site administrator.<br />In the meantime, a welcome message with further instructions has been sent to your e-mail address.'));
             drupal_goto();

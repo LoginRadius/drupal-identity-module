@@ -12,15 +12,10 @@ if (!empty($ciam_api_key)):
       initializeChangePasswordCiamForms();
     });
   </script>
-  <div class="messages" style="display:none">
-    <h2 class="element-invisible">Error message</h2>
-    <ul>
-      <li class="messageinfo">
-
-      </li>
-      <div class="clear"></div>
-    </ul>
-  </div>
+  <?php
+      print theme('lr_message');      
+    ?>
+  
   <div class="my-form-wrapper">
     <div id="changepassword-container"></div>  
   </div>

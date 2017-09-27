@@ -29,7 +29,7 @@ $apiClient_class = 'CustomHttpClient';
 
 function lr_sso_menu() {
   $file_path = drupal_get_path('module', 'lr_sso');
-  $items['admin/config/people/userregistration/sso'] = array(
+  $items['admin/config/people/ciam/sso'] = array(
     'title' => 'SSO',
     'description' => 'Single Sign On',
     'page callback' => 'drupal_get_form',
@@ -130,10 +130,7 @@ function lr_sso_preprocess_page(&$vars, $hook) {
         var check_options= {};
         check_options.onError = function() {
         window.location = "'.$logout.'";
-        };
-        check_options.onSuccess = function() {
-        // console.log("success");
-        };
+        };        
         LRObject.util.ready(function() {
         LRObject.init("ssoNotLoginThenLogout", check_options);
         });

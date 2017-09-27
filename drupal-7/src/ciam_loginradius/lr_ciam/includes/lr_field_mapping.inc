@@ -8,14 +8,14 @@
  * @param array $form Nested array of form elements that comprise the form.
  * @param array $form_state A keyed array containing the current state of the form.
  */
-function lr_field_mapping_create_profile_user($account, $userprofile, $form, $form_state) {
+function lr_field_mapping_ciam_create_profile_user($account, $userprofile, $form, $form_state) {
   $field_map = variable_get('lr_ciam_profile_fields', array());
 
   foreach ($field_map as $key => $value) {
     $mapped_value[$key] = array_values($value);
   }
 
-  $field_convert_info = lr_field_mapping_field_convert_info();
+  $field_convert_info = lr_field_mapping_ciam_field_convert_info();
   foreach (field_info_instances('profile2') as $field_name => $instances) {
     if (!empty($mapped_value[$field_name]) && strlen(implode($mapped_value[$field_name])) != 0) {
       $profile = profile2_load_by_user($account->uid, $field_name);
@@ -53,13 +53,13 @@ function lr_field_mapping_create_profile_user($account, $userprofile, $form, $fo
  * @param array $form_state A keyed array containing the current state of the form.
  * @param object $userprofile User profile data that you got from social network
  */
-function lr_field_mapping_create_user(&$form_state, $userprofile, $account = '') {
+function lr_field_mapping_ciam_create_user(&$form_state, $userprofile, $account = '') {
   if (isset($account->mail)) {
     $userprofile->Email_value = $account->mail;
   }
 
   $field_map = variable_get('lr_ciam_user_fields', array());
-  $field_convert_info = lr_field_mapping_field_convert_info();
+  $field_convert_info = lr_field_mapping_ciam_field_convert_info();
   $instances = field_info_instances('user', 'user');
 
   foreach ($instances as $field_name => $instance) {
@@ -81,35 +81,35 @@ function lr_field_mapping_create_user(&$form_state, $userprofile, $account = '')
  *
  * @return array Get array of label and callback through which we can field data
  */
-function lr_field_mapping_field_convert_info() {
+function lr_field_mapping_ciam_field_convert_info() {
   $convert_info = array(
     'text' => array(
       'label' => t('Text'),
-      'callback' => 'lr_field_mapping_field_convert_text',
+      'callback' => 'lr_field_mapping_ciam_field_convert_text',
     ),
     'text_long' => array(
       'label' => t('Long text'),
-      'callback' => 'lr_field_mapping_field_convert_text',
+      'callback' => 'lr_field_mapping_ciam_field_convert_text',
     ),
     'list_text' => array(
       'label' => t('List (\'text\')'),
-      'callback' => 'lr_field_mapping_field_convert_list',
+      'callback' => 'lr_field_mapping_ciam_field_convert_list',
     ),
     'datetime' => array(
       'label' => t('Date'),
-      'callback' => 'lr_field_mapping_field_convert_date',
+      'callback' => 'lr_field_mapping_ciam_field_convert_date',
     ),
     'date' => array(
       'label' => t('Date'),
-      'callback' => 'lr_field_mapping_field_convert_date',
+      'callback' => 'lr_field_mapping_ciam_field_convert_date',
     ),
     'datestamp' => array(
       'label' => t('Date'),
-      'callback' => 'lr_field_mapping_field_convert_date',
+      'callback' => 'lr_field_mapping_ciam_field_convert_date',
     ),
   );
 
-  drupal_alter('lr_field_mapping_field_convert_info', $convert_info);
+  drupal_alter('lr_field_mapping_ciam_field_convert_info', $convert_info);
   return $convert_info;
 }
 
@@ -122,7 +122,7 @@ function lr_field_mapping_field_convert_info() {
  * @param string $instance Field instance
  * @return array  Contain value of field map data
  */
-function lr_field_mapping_field_convert_text($lr_field_mapping_property_name, $userprofile, $field, $instance) {
+function lr_field_mapping_ciam_field_convert_text($lr_field_mapping_property_name, $userprofile, $field, $instance) {
   $value = NULL;
 if(!empty($lr_field_mapping_property_name) && !(strpos($lr_field_mapping_property_name, 'ciam|') !== false)){
   if (isset($userprofile->$lr_field_mapping_property_name)) {
@@ -156,7 +156,7 @@ if(!empty($lr_field_mapping_property_name) && !(strpos($lr_field_mapping_propert
  * @param string $instance Field instance
  * @return array Contain value of field map data
  */
-function lr_field_mapping_field_convert_list($lr_field_mapping_property_name, $userprofile, $field, $instance) {
+function lr_field_mapping_ciam_field_convert_list($lr_field_mapping_property_name, $userprofile, $field, $instance) {
   if(!empty($lr_field_mapping_property_name) && !(strpos($lr_field_mapping_property_name, 'ciam|') !== false)){
   if (!isset($userprofile->$lr_field_mapping_property_name) && !is_string($userprofile->$lr_field_mapping_property_name)) {
     return;
@@ -192,7 +192,7 @@ function lr_field_mapping_field_convert_list($lr_field_mapping_property_name, $u
  * @return array Contain value of field map data
  *
  */
-function lr_field_mapping_field_convert_date($lr_field_mapping_property_name, $userprofile, $field, $instance) {
+function lr_field_mapping_ciam_field_convert_date($lr_field_mapping_property_name, $userprofile, $field, $instance) {
 if(!empty($lr_field_mapping_property_name) && !(strpos($lr_field_mapping_property_name, 'ciam|') !== false)){
   if (isset($userprofile->$lr_field_mapping_property_name)) {
     $value = NULL;
@@ -220,7 +220,7 @@ if(!empty($lr_field_mapping_property_name) && !(strpos($lr_field_mapping_propert
  *
  * @return array Get all list of user properties that will show at field mapping
  */
-function lr_field_mapping_user_properties() {
+function lr_field_mapping_ciam_user_properties() {
   $common = array(
     'ID' => array(
       'label' => t('Provider ID'),
@@ -316,8 +316,8 @@ function lr_field_mapping_user_properties() {
     ''
   );
 
-  $common = array_merge(advance_extended_columns_field_mapping(), $common);
-  drupal_alter('lr_field_mapping_user_properties', $common);
+  $common = array_merge(advance_extended_columns_ciam_field_mapping(), $common);
+  drupal_alter('lr_field_mapping_ciam_user_properties', $common);
   ksort($common);
   $common = array_map("unserialize", array_unique(array_map("serialize", $common)));
   return $common;
@@ -331,7 +331,7 @@ function lr_field_mapping_user_properties() {
  * @param array $mappingfields Basic mapping fields in field mapping
  * @return array Add extended mapping fields to basic mapping fields
  */
-function advance_extended_columns_field_mapping() {
+function advance_extended_columns_ciam_field_mapping() {
   //Check table exists in database.
   $extended_profile = array('Website','Favicon','Industry','About',
     'TimeZone','Verified', 'UpdatedTime','Created', 'RelationshipStatus', 'Quota','InterestedIn', 'Interests', 'Religion','Political',
@@ -353,9 +353,9 @@ function advance_extended_columns_field_mapping() {
  * @param $form Nested array of form elements that comprise the form.
  * @param $userprofile User profile data that you got from social network
  */
-function lr_field_mapping_show_profile_field_to_register_form(&$form, $userprofile) {
+function lr_field_mapping_show_ciam_profile_field_to_register_form(&$form, $userprofile) {
   $field_map = variable_get('lr_ciam_user_fields', array());
-  $field_convert_info = lr_field_mapping_field_convert_info();
+  $field_convert_info = lr_field_mapping_ciam_field_convert_info();
   $instances = field_info_instances('user', 'user');
 
   foreach ($instances as $field_name => $instance) {
@@ -373,7 +373,7 @@ function lr_field_mapping_show_profile_field_to_register_form(&$form, $userprofi
 
   if (module_exists('profile2')) {
     $field_map = variable_get('lr_ciam_profile_fields', array());
-    $field_convert_info = lr_field_mapping_field_convert_info();
+    $field_convert_info = lr_field_mapping_ciam_field_convert_info();
 
     foreach (field_info_instances('profile2') as $field_name => $instances) {
       foreach ($instances as $instance => $array) {

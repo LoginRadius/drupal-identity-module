@@ -21,7 +21,7 @@ function lr_hosted_settings_form($form, &$form_state) {
   );
   $form[$hosted_group]['lr_hosted_page_enable'] = array(
     '#type' => 'radios',
-    '#title' => t('Do you want to enable hosted page <a title="Choosing yes will redirect users to signin and signup on hosted page"  style="text-decoration:none">(<span style="color:#3CF;">?</span>)</a>'),
+    '#title' => t('Do you want to enable hosted page <a title="Choosing yes will redirect users to signin and signup on hosted page"  style="text-decoration:none; cursor:pointer">(<span style="color:#3CF;">?</span>)</a>'),
     '#default_value' => variable_get('lr_hosted_page_enable', 0),
     '#options' => array(
       1 => t('Yes'),

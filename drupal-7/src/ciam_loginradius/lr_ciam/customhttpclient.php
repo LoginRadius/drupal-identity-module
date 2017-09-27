@@ -111,12 +111,14 @@ class CustomHttpClient  implements IHttpClient {
         curl_setopt($curl_handle, CURLOPT_URL, $request_url);
         curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 15);
         curl_setopt($curl_handle, CURLOPT_TIMEOUT, 50);        
-        curl_setopt($curl_handle, CURLOPT_SSL_VERIFYPEER, $ssl_verify);
-     
+        curl_setopt($curl_handle, CURLOPT_SSL_VERIFYPEER, $ssl_verify);     
 
-       if (!empty($data) || $data === true) {      
+       if (!empty($data) || $data === true) {
+            if (($content_type == 'json') && (is_array($data) || is_object($data))) {
+                $data = json_encode($data);
+            }
             curl_setopt($curl_handle, CURLOPT_HTTPHEADER, array('Content-type: application/' . $content_type));
-            curl_setopt($curl_handle, CURLOPT_POSTFIELDS, (($content_type == 'json') ? json_encode($data) : Functions::queryBuild($data)));
+            curl_setopt($curl_handle, CURLOPT_POSTFIELDS, (($content_type == 'json') ? $data : Functions::queryBuild($data)));
             if ($method == 'post') {
                 curl_setopt($curl_handle, CURLOPT_POST, 1);
             } elseif ($method == 'delete') {
@@ -155,6 +157,9 @@ class CustomHttpClient  implements IHttpClient {
         $content_type = isset($options['content_type']) ? $options['content_type'] : 'form_params';
 
          if (!empty($data)) {
+            if (($content_type == 'json') && (is_array($data) || is_object($data))) {
+                $data = json_encode($data);
+            }
             $options = array('http' =>
                 array(
                     'method' => strtoupper($method),

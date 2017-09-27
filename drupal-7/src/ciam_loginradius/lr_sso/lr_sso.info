@@ -3,7 +3,8 @@ description = Enable a single login system for multiple websites: users only nee
 dependencies[] = lr_ciam
 package = CIAM
 core = 7.x
-configure = admin/config/people/userregistration/sso
-version = "7.x-2.0.0"
+configure = admin/config/people/ciam/sso
+version = "2.1.0"
 project = "ciam_loginradius"
+
 

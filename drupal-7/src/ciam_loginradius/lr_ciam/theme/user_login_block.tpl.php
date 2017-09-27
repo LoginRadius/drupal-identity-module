@@ -9,7 +9,7 @@ if (!empty($ciam_api_key)):
   <script>
     jQuery(document).ready(function () {
       initializeLoginCiamForm();
-      initializeSocialRegisterCiamForm();   
+      initializeSocialRegisterCiamForm();      
          var isClear = 1;
           var formIntval;
         setTimeout(show_birthdate_date_block, 1000);

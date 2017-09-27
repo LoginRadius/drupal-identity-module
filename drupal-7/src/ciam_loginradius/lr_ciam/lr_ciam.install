@@ -1,14 +1,25 @@
 <?php
 
 /**
- * @file
- * Provides uninstall function for the lr_ciam.
+ * Implements hook_requirements().
  */
 
+function lr_ciam_requirements($phase) {
+        $requirements = array();  
+        if ($phase == 'install') {
+            if (module_exists('lr_social_login')) {
+            $requirements['drupal'] = array(    
+            'description' => 'Please Uninstall "User Registration and Management" Plugin to Activate LoginRadius CIAM.',
+            'severity' => REQUIREMENT_ERROR
+            );
+        return $requirements;
+        }
+    }
+}
 /**
  * Implements hook_uninstall().
  */
-function lr_ciam_uninstall() {
+function lr_ciam_uninstall() {        
   $deleted_keys = array( 
     'lr_ciam_inform_validation_messages',
     'lr_ciam_terms_and_condition_html',
@@ -24,7 +35,7 @@ function lr_ciam_uninstall() {
     'lr_ciam_enable_user_name',
     'lr_ciam_ask_email_always_for_unverified',    
     'lr_ciam_enable_remember_me',
-    'lr_ciam_check_password_strength',
+    'lr_ciam_display_password_strength',
     'lr_ciam_ask_required_field_on_traditional_login',       
     'lr_ciam_site_name',
     'lr_ciam_apikey',
@@ -41,7 +52,28 @@ function lr_ciam_uninstall() {
     'lr_ciam_userlogin_redirect',
     'lr_ciam_custom_redirection',
     'lr_ciam_user_fields',
-    'lr_ciam_profile_fields'     
+    'lr_ciam_profile_fields',     
+    'lr_auto_hide_messages',     
+    'lr_ciam_enable_recaptcha',     
+    'lr_ciam_v2_recaptcha_type',     
+    'lr_ciam_v2_recaptcha_site_key',     
+    'lr_ciam_login_type',     
+    'lr_ciam_instant_link_login',     
+    'lr_ciam_instant_link_login_button_label',     
+    'lr_ciam_instant_link_login_email_template',     
+    'lr_ciam_phone_login',     
+    'lr_ciam_exist_phone_number',     
+    'lr_ciam_sms_template',     
+    'lr_ciam_sms_template_phone_verification',     
+    'lr_ciam_instant_otp_login',     
+    'lr_ciam_instant_otp_login_button_label',     
+    'lr_ciam_sms_template_one_time_passcode',     
+    'lr_ciam_enable_2fa',     
+    'lr_ciam_2fa_flow',     
+    'lr_ciam_google_authentication',     
+    'lr_ciam_sms_template_2fa',    
+    'lr_hosted_page_enable',    
+    'lr_sso_enable'    
   );
   foreach($deleted_keys as $key){
     variable_del($key);
@@ -51,7 +83,7 @@ function lr_ciam_uninstall() {
 /**
  * Implements hook_schema().
  */
-function lr_ciam_schema() {
+function lr_ciam_schema() {   
   if (!db_field_exists('users', 'lr_ciam_uid')) {
     db_add_field('users', 'lr_ciam_uid', array(
       'type' => 'varchar',

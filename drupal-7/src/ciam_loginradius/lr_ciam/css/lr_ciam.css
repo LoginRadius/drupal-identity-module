@@ -447,44 +447,6 @@ div.loginradius-validation-message {
 .lr-linked-data.lr_singleglider_200 span.lr_providericons {
   margin: 0 6px 2px;
 }
-/*
-.popupModal-body div.form-type-checkbox{
-    padding: 2px !important;
-    margin-top:5px;
-}
-.popupModal-body div.form-type-textfield{
-    padding: 0px !important;    
-}
-.popupModal-body input.form-checkbox{
-    margin-left: 100px !important;
-}
-.popupModal-body label.option{
-    margin-left: -109px !important;
-}
-.popupModal-body label {
-    margin-left: 10px !important;
-    padding: 2px !important;
-}
-.popupModal-body input[type="text"] {
-    margin-left: 10px !important;    
-    padding: 2px !important;
-    margin-top: 4px;
-}
-.popupModal-body div.form-textarea-wrapper {
-    margin-left: 10px !important;    
-    padding: 2px !important;
-    width: 456px !important;
-}
-.popupModal-body input[type="submit"] {
-   margin-top: 10px !important;
-}
-
-.popupModal-body div input.validationMessage{
-    float: left;
-    margin-top: -32px;
-    margin-left: 300px !important;
-}*/
-
 .interface_error {
     color: red
 }
@@ -925,3 +887,172 @@ div.loginradius-validation-message {
     margin: 10% auto;
 }
 
+#addemail-form .lr-popupheading,
+#removeemail-form .lr-popupheading {
+    background: #efefef;
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 20px;
+    padding: 15px;
+    border-radius: 0 20px 0 0
+}
+.closeRemove {   
+    text-align: right;
+    cursor:pointer;
+    margin-top:-22px;
+}
+.removeEmail {   
+    cursor:pointer;
+    border-radius: 5px;
+    width: 70px;
+    text-align: center;
+    background-color: darkgray;
+}
+.addEmail {     
+    cursor:pointer;
+    border-radius: 5px;
+    width: 70px;
+    text-align: center;
+    background-color: darkgray;
+}
+#addemail-form .popupmain,
+#removeemail-form .popupmain {
+    background: #fff;
+    width: 506px;
+    left: 50%;
+    top: 45%;
+    margin-left: -250px;
+    margin-top: -250px;
+    position: absolute;
+    z-index: 999999;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    border-radius: 0 23px
+}
+
+#addemail-form .lr-popup-footer,
+#removeemail-form .lr-popup-footer {
+    background: #efefef;
+    border-radius: 0 0 0 20px;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    height: 45px;
+    padding: 7px 10px 0;
+    text-align: left
+}
+#addemail-container input[type=text],
+#removeemail-container input[type=text] {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #444;
+  border: 1px solid #e2efe1;
+  width: 250px;
+  height: 27px;
+  margin-bottom: 5px !important;
+  padding-left: 10px;
+  border-radius: 0 12px;
+  background: #fff;
+  margin-left:80px;
+}
+#addemail-container label,
+#removeemail-container label{  
+  margin-top:5px;  
+  margin-left:80px;
+}
+#addemail-container input[type=submit],
+#removeemail-container input[type=submit] {
+  margin-left:66%;
+}
+.loginradius-linksignin{
+    margin-left:3px;
+}
+#authentication-container input[type=button],
+#authentication-container input[type=submit]{
+    background-color: darkseagreen;
+}
+#loginradius-submit-update{
+    background-color: darkseagreen;
+}
+.form-item-lr-ciam-custom-options,
+.form-item-lr-ciam-terms-and-condition-html{
+    width:456px;
+}
+#login-container #loginradius-button-resendotp,
+#login-container #loginradius-button-changenumber{
+    margin-left:2px;
+}
+#ui-datepicker-div{
+    z-index: 99999999 !important;   
+}
+#backupCodeSection #edit-reset .resetCode:hover {
+    background: #fff;
+    color: #29d;
+    border:1px solid #29d;
+    cursor: pointer;
+}
+#backupCodeSection #edit-reset .resetCode {
+    background: #29d;
+    float: right;
+    color: #fff;
+    padding: 6px 10px;  
+}
+#backupCodeSection .resetCode {
+      margin-right: 5px;
+}
+#backupCodeSection #edit-reset {
+      margin-top:30px;
+}
+#backupCodeSection #lr_ciam_reset_table {
+    clear: both;
+    margin-top: 45px;
+}
+div#backupcode-table-body {
+    display: inline-block;
+}
+#backupCodeSection #backupcode-table-body .form-item {
+    float: left;
+    margin-top: -8px !important;
+    width: 48%;
+    background: #eee;
+    border: 2px solid #fff;
+    padding: 5px;
+}
+#backupCodeSection #resettable p {
+    border: 1px solid red;
+    padding: 5px;
+    margin-left: 21px;
+    border-radius: 5px;
+    background: hsla(0, 100%, 50%, 0.18);
+}
+#backupCodeSection #resettable {
+    margin-right: 116px;
+}
+#backupCodeSection .mybackupcopy {
+    width: 45px;
+    float: right;
+    background-image: url(../images/copy.png);
+    height: 50px;
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    margin: 4px;
+    cursor: pointer;
+}
+#backupCodeSection {
+    margin-top:18px;
+}
+#backupCodeSection .copyMessage{
+    background-color: #eeeeee;
+    display: inline-block;
+    padding: 6px 12px 5px 12px;
+    color:#59b32c; 
+    margin-left:86%;
+    margin-bottom: -21px;   
+}
+#loginradius-login-stayLogin{
+      margin-top: 10px;  
+}
+.content-loginradius-stayLogin label{
+    margin-left: 20px;
+    margin-top: -20px;  
+}
