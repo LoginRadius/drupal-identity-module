@@ -3,14 +3,15 @@ jQuery(document).ready(function () {
     jQuery("#lr-loading").click(function () {
         jQuery('#lr-loading').hide();
     });
-
-    var url = domainName + 'admin/people/create';
-    jQuery("a[href= '" + url + "']").attr('href', 'https://secure.loginradius.com/user-management/manage-users');
-    jQuery('.action-links a').attr('target', '_blank');
-
-    if (window.location.href == window.location.origin + domainName + 'admin/people') {
-        jQuery('.dropbutton a').attr('href', 'https://secure.loginradius.com/user-management/manage-users');
+   
+    if (window.location.href == window.location.origin + domainName + 'admin/people/create') {      
+        jQuery('.form-item-mail label').attr('class', 'js-form-required form-required');
+        jQuery('#edit-mail').attr('required', 'required');  
+    } else {
+        jQuery('#edit-mail').attr('disabled', 'disabled');  
+        jQuery('#edit-mail').attr('style', 'background:#ededed');  
     }
+
     dropemailvalue = '';
     jQuery('.removeEmail').each(function () {
         jQuery(this).click(function () {
@@ -21,9 +22,12 @@ jQuery(document).ready(function () {
         });
     });
     jQuery('#addEmail').attr('onClick', 'showAddEmailPopup()');
-    showAndHideUI();
+    showLoginTypeOptions();
+    showAndHideRecaptchaOptions();
+    showAndHide2faOptions();
 });
-var LRObject = new LoginRadiusV2(ciamoption);
+
+var LRObject = new LoginRadiusV2(commonOptions);
 
 function showRemoveEmailPopup(html) {
     jQuery('#removeemail-form').show();    
@@ -44,28 +48,47 @@ function lrCloseAddEmailPopup() {
     jQuery('#addemail-form').hide();
 }
 
-function showAndHideUI() {
-    var options = jQuery('input[name=ciam_email_verification_condition]:checked').val();
-    var enableLogin = jQuery('fieldset[data-drupal-selector=edit-ciam-enable-login-on-email-verification]');
-    var enableUserName = jQuery('fieldset[data-drupal-selector=edit-ciam-enable-user-name]');
-    var askEmail = jQuery('fieldset[data-drupal-selector=edit-ciam-ask-email-always-for-unverified]');
-    var promptPassword = jQuery('fieldset[data-drupal-selector=prompt-password]');
+function showLoginTypeOptions() {
+    var loginType = jQuery('input[name=ciam_login_type]:checked').val();
+  
+    if (loginType == 'email') {
+        jQuery('#edit-lr-phone-settings').hide();
+        var verifyOptions = jQuery('input[name=ciam_email_verification_condition]:checked').val();
+        if (verifyOptions == 2) {
+            jQuery('fieldset[data-drupal-selector=email-verification-options],fieldset[data-drupal-selector=edit-ciam-instant-link-login],.form-item-ciam-instant-link-login-button-label,.form-item-ciam-instant-link-login-email-template').show();
+            jQuery('fieldset[data-drupal-selector=edit-ciam-enable-login-on-email-verification],fieldset[data-drupal-selector=prompt-password],fieldset[data-drupal-selector=edit-ciam-enable-user-name],fieldset[data-drupal-selector=edit-ciam-ask-email-always-for-unverified]').hide();
+        } else if (verifyOptions == 1) {
+            jQuery('fieldset[data-drupal-selector=email-verification-options],fieldset[data-drupal-selector=edit-ciam-enable-login-on-email-verification],fieldset[data-drupal-selector=edit-ciam-ask-email-always-for-unverified],fieldset[data-drupal-selector=edit-ciam-instant-link-login],.form-item-ciam-instant-link-login-button-label,.form-item-ciam-instant-link-login-email-template').show();
+            jQuery('fieldset[data-drupal-selector=prompt-password],fieldset[data-drupal-selector=edit-ciam-enable-user-name]').hide();
+        } else {
+            jQuery('fieldset[data-drupal-selector=email-verification-options],fieldset[data-drupal-selector=edit-ciam-enable-login-on-email-verification],fieldset[data-drupal-selector=prompt-password],fieldset[data-drupal-selector=edit-ciam-enable-user-name],fieldset[data-drupal-selector=edit-ciam-ask-email-always-for-unverified],fieldset[data-drupal-selector=edit-ciam-instant-link-login],.form-item-ciam-instant-link-login-button-label,.form-item-ciam-instant-link-login-email-template').show();
+        }
+    } else if(loginType == 'phone') {
+        jQuery('fieldset[data-drupal-selector=email-verification-options],fieldset[data-drupal-selector=edit-ciam-enable-login-on-email-verification],fieldset[data-drupal-selector=prompt-password],fieldset[data-drupal-selector=edit-ciam-enable-user-name],fieldset[data-drupal-selector=edit-ciam-ask-email-always-for-unverified],fieldset[data-drupal-selector=edit-ciam-instant-link-login],.form-item-ciam-instant-link-login-button-label,.form-item-ciam-instant-link-login-email-template').hide();
+        jQuery('#edit-lr-phone-settings').show();
+        var phoneOptions = jQuery('input[name=ciam_enable_phone_login]:checked').val();
+        if (phoneOptions == 'true') {
+            jQuery('fieldset[data-drupal-selector=edit-ciam-exist-phone-number],fieldset[data-drupal-selector=edit-ciam-instant-otp-login],.form-item-ciam-sms-template,.form-item-ciam-sms-template-phone-verification,.form-item-ciam-instant-otp-login-button-label,.form-item-ciam-sms-template-one-time-passcode').show();
+        } else {
+            jQuery('fieldset[data-drupal-selector=edit-ciam-exist-phone-number],fieldset[data-drupal-selector=edit-ciam-instant-otp-login],.form-item-ciam-sms-template,.form-item-ciam-sms-template-phone-verification,.form-item-ciam-instant-otp-login-button-label,.form-item-ciam-sms-template-one-time-passcode').hide();
+        }        
+    }
+}
 
-    if (options == 2) {
-        enableLogin.hide();
-        promptPassword.hide();
-        enableUserName.hide();
-        askEmail.hide();
-    } else if (options == 1) {
-        enableLogin.show();
-        promptPassword.hide();
-        enableUserName.hide();
-        askEmail.show();
+function showAndHide2faOptions() {
+    var options = jQuery('input[name=ciam_enable_2fa]:checked').val();
+    if (options == 'true') {
+        jQuery('.form-item-ciam-2fa-flow,.form-item-ciam-sms-template-2fa,fieldset[data-drupal-selector=edit-ciam-google-authentication]').show();       
     } else {
-        enableLogin.show();
-        promptPassword.show();
-        askEmail.show();
-        enableUserName.show();
+        jQuery('.form-item-ciam-2fa-flow,.form-item-ciam-sms-template-2fa,fieldset[data-drupal-selector=edit-ciam-google-authentication]').hide();
+    }
+}
+function showAndHideRecaptchaOptions() {
+    var options = jQuery('input[name=ciam_enable_recaptcha]:checked').val();   
+    if (options == 'true') {     
+        jQuery('.form-item-ciam-v2-recaptcha-type,.form-item-ciam-v2-recaptcha-site-key').show();       
+    } else {  
+        jQuery('.form-item-ciam-v2-recaptcha-type,.form-item-ciam-v2-recaptcha-site-key').hide();
     }
 }
 
@@ -137,12 +160,18 @@ function handleResponse(isSuccess, message, show, status) {
 
         jQuery(".messages").removeClass("messages--error messages--status");
         jQuery(".messages").addClass(status);
+        if(autoHideTime != "" && autoHideTime != "0"){
+        setTimeout(fade_out, autoHideTime*1000);
+        }
 
     } else {
         jQuery(".messages__wrapper").hide();
         jQuery('.messages').hide();
         jQuery('.messages').text("");
     }
+}
+function fade_out() {
+    jQuery(".messages").hide();
 }
 
 LRObject.$hooks.register('startProcess', function () {
@@ -151,14 +180,20 @@ LRObject.$hooks.register('startProcess', function () {
 );
 
 LRObject.$hooks.register('endProcess', function () {
-    if (ciamoption.formRenderDelay) {
+    if (commonOptions.formRenderDelay) {
         setTimeout(function () {
             jQuery('#lr-loading').hide();
-        }, ciamoption.formRenderDelay - 1);
+        }, commonOptions.formRenderDelay - 1);
     }
     jQuery('#lr-loading').hide();
 }
 );
+
+LRObject.$hooks.call('setButtonsName', {
+        removeemail: "Remove",  
+        instantLinkLoginButtonLabel: commonOptions.instantLinkLoginButtonLabel,
+        instantOTPLoginButtonLabel: commonOptions.instantOTPLoginButtonLabel
+});
 
 LRObject.$hooks.register('socialLoginFormRender', function () {
     //on social login form render
@@ -167,32 +202,76 @@ LRObject.$hooks.register('socialLoginFormRender', function () {
     show_birthdate_date_block();
 });
 
-LRObject.$hooks.call(
-        'passwordMeterConfiguration', [{
-                case: "worst",
-                message: "6 length is required", //Your minimum password length message.
-                color: "Red"
-            }, {
-                case: "bad",
-                message: "Bad",
-                color: "Red"
-            }, {
-                case: "weak",
-                message: "weak",
-                color: "yellow"
-            }, {
-                case: "good",
-                message: "Good",
-                color: "Green"
-            }, {
-                case: "strong",
-                message: "Strong",
-                color: "Green"
-            }, {
-                case: "secure",
-                message: "Secure",
-                color: "Blue"
-            }]);
+        
+function getBackupCodes() {
+    LRObject.api.getBackupCode(accessToken,
+            function (response) {
+                jQuery('#backupcode-table-body').empty();
+                for(var i=0; i < response.BackUpCodes.length; i++){ 
+                     var html = '';
+                        jQuery('#resettable').hide();
+                        jQuery('#lr_ciam_reset_table').show();
+                      
+                        html += '<div class="form-item code-list" id="backup-codes-' + i + '-field">';
+                        html += '<span class="backupCode">' + response.BackUpCodes[i] + '</span>';
+                        html += '</div>';
+              
+                        jQuery('#backupcode-table-body').append(html);                        
+                }
+                jQuery('.mybackupcopy').click(function () {
+                    setClipboard(jQuery(this).parent('.form-item').find('span').text());
+                });
+            }, function (errors) {
+                   jQuery('#resettable').show();       
+    })
+}
+
+function resetBackupCodes() {
+    LRObject.api.resetBackupCode(accessToken,
+            function (response) {    
+                 
+                jQuery('#backupcode-table-body').empty();
+                for(var i=0; i < response.BackUpCodes.length; i++){ 
+                     var html = '';
+                        jQuery('#resettable').hide();
+                        jQuery('#lr_ciam_reset_table').show();
+                      
+                        html += '<div class="form-item code-list" id="backup-codes-' + i + '-field">';
+                        html += '<span class="backupCode">' + response.BackUpCodes[i] + '</span>';
+                        html += '</div>';
+              
+                        jQuery('#backupcode-table-body').append(html);                        
+                }
+                jQuery('.mybackupcopy').click(function () {
+                    setClipboard(jQuery(this).parent('.form-item').find('span').text());
+                });
+            }, function (errors) {   
+    });
+}
+
+function setClipboard() {
+    var value = '';
+    jQuery('.code-list').find('span').each(function () {
+        value += jQuery(this).html() + "\n";
+    });
+    var tempInput = document.createElement("textarea");
+    tempInput.style = "position: absolute; left: -1000px; top: -1000px";
+    tempInput.value = value;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempInput);
+    jQuery('.copyMessage').show();
+    setTimeout(removeCodeCss, 5000);
+}
+
+function removeCodeCss() {
+    jQuery('.code-list').find('span').removeAttr('style');
+    jQuery('.copyMessage').hide();
+}
+function changeIconColor() {
+    jQuery('.code-list').find('span').css({'background-color': '#29d', 'color': '#fff'});
+}
 
 function callSocialInterface() {
     var custom_interface_option = {};
@@ -206,9 +285,17 @@ function callSocialInterface() {
 function initializeLoginCiamForm() {
     //initialize Login form
     var login_options = {};
-    login_options.onSuccess = function (response) {
-        handleResponse(true, "");
-        ciamRedirect(response.access_token);
+    login_options.onSuccess = function (response) {        
+        if (response.access_token) {
+           handleResponse(true);
+           ciamRedirect(response.access_token);
+        } else {
+            if (jQuery('#loginradius-login-username').length !== 0) {
+               handleResponse(true, "An email has been sent to " + jQuery("#loginradius-login-username").val() + ".Please verify your email address");
+            } else if(jQuery('#loginradius-login-emailid').length !== 0) {
+                handleResponse(true, "An email has been sent to " + jQuery("#loginradius-login-emailid").val() + ".Please verify your email address");
+            }            
+        }
     };
     login_options.onError = function (response) {
         handleResponse(false, response[0].Description, "", "error");
@@ -229,14 +316,13 @@ function initializeRegisterCiamForm() {
             ciamRedirect(response.access_token);
         } else {
             handleResponse(true, "An email has been sent to " + jQuery("#loginradius-registration-emailid").val() + ".Please verify your email address");
-            window.setTimeout(function () {
-                window.location.replace(homeDomain);
-            }, 7000);
+            jQuery('html, body').animate({ scrollTop: 0}, 1000);
         }
     };
     registration_options.onError = function (response) {
         if (response[0].Description != null) {
             handleResponse(false, response[0].Description, "", "error");
+            jQuery('html, body').animate({ scrollTop: 0}, 1000);
         }
     };
     registration_options.container = "registration-container";
@@ -246,7 +332,7 @@ function initializeRegisterCiamForm() {
     jQuery('#lr-loading').hide();
 }
 
-function initializeResetPasswordCiamForm(ciamoption) {
+function initializeResetPasswordCiamForm(commonOptions) {
     //initialize reset password form and handel email verifaction
     var vtype = LRObject.util.getQueryParameterByName("vtype");
     if (vtype != null && vtype != "") {
@@ -257,10 +343,10 @@ function initializeResetPasswordCiamForm(ciamoption) {
             jQuery('.interfacecontainerdiv').hide();
             jQuery('#interfaceLabel').hide();
             resetpassword_options.onSuccess = function (response) {
-                handleResponse(true, "Password reset successfully");
+                handleResponse(true, "Password reset successfully, Now you can login with changed password.");
                 window.setTimeout(function () {
-                    window.location.replace(ciamoption.verificationUrl);
-                }, 5000);
+                    window.location.replace(commonOptions.verificationUrl);
+                }, 3000);
             };
             resetpassword_options.onError = function (errors) {
                 handleResponse(false, errors[0].Description, "", "error");
@@ -271,30 +357,36 @@ function initializeResetPasswordCiamForm(ciamoption) {
         } else if (vtype == "emailverification") {
             var verifyemail_options = {};
             verifyemail_options.onSuccess = function (response) {
-                if (response != undefined) {
-                    if (typeof response.access_token != "undefined" && response.access_token != null && response.access_token != "") {
-                        if (ciamoption.loginOnEmailVerification) {
-                            ciamRedirect(response.access_token);
-                        } else {
-                            jQuery('.region.region-highlighted').html(getMessage('status', 'Your email has been verified successfully'));
-                        }
-                    } else if (response.Data != null && response.Data.access_token != null && response.Data.access_token != "") {
-                        if (ciamoption.loginOnEmailVerification) {
-                            ciamRedirect(response.Data.access_token);
-                        } else {
-                            jQuery('.region.region-highlighted').html(getMessage('status', 'Your email has been verified successfully'));
-                        }
+                if (typeof response != 'undefined') {
+                    if (!loggedIn && commonOptions.loginOnEmailVerification && typeof response.access_token != "undefined" && response.access_token != null && response.access_token != "") {
+                        ciamRedirect(response.access_token);
+                    } else if (!loggedIn && commonOptions.loginOnEmailVerification && response.Data != null && response.Data.access_token != null && response.Data.access_token != "") {
+                        ciamRedirect(response.Data.access_token);
                     } else {
-                        jQuery('.region.region-highlighted').html(getMessage('status', 'Your email has been verified successfully'));
+                        lrSetCookie('lr_message', 'Your email has been verified successfully.');
+                        window.location.href = window.location.href.split('?')[0] + '?lrresponse=true';
                     }
-                }
+                }   
             };
             verifyemail_options.onError = function (errors) {
-                jQuery('.region.region-highlighted').html(getMessage('error', errors[0].Description));              
+                 lrSetCookie('lr_message', errors[0].Description);  
+                 window.location.href = window.location.href.split('?')[0] + '?lrresponse=false';             
             }
 
             LRObject.util.ready(function () {
-                LRObject.init("verifyEmail", verifyemail_options);
+                LRObject.init("verifyEmail", verifyemail_options);          
+            });
+         } else if (vtype == "oneclicksignin") {     
+            var options = {};
+            options.onSuccess = function (response) {  
+                ciamRedirect(response.access_token);               
+            };
+            options.onError = function (errors) {               
+                handleResponse(false, errors[0].Description, "", "error");   
+            };
+
+            LRObject.util.ready(function () {
+                LRObject.init("instantLinkLogin", options);
             });
         }
     }
@@ -335,10 +427,11 @@ function initializeForgotPasswordCiamForms() {
     var forgotpassword_options = {};
     forgotpassword_options.container = "forgotpassword-container";
     forgotpassword_options.onSuccess = function (response) {
-        handleResponse(true, "An email has been sent to " + jQuery("#loginradius-forgotpassword-emailid").val() + " with reset Password link");
-        window.setTimeout(function () {
-            window.location.replace(homeDomain);
-        }, 7000);
+        if(commonOptions.phoneLogin){
+            handleResponse(true, "Password reset successfully");
+        }else{        
+           handleResponse(true, "An email has been sent to " + jQuery("#loginradius-forgotpassword-emailid").val() + " with reset Password link");
+        }        
     };
     forgotpassword_options.onError = function (response) {
         if (response[0].Description != null) {
@@ -360,7 +453,8 @@ function initializeAccountLinkingCiamForms() {
             handleResponse(true, "");
             ciamRedirect(response);
         } else {
-            jQuery('.region.region-highlighted').html(getMessage('status', 'Account linked successfully'));
+            lrSetCookie('lr_message', 'Account linked successfully');    
+            window.location.href = window.location.href.split('?')[0] + '?lrresponse=true'; 
             window.setTimeout(function () {
                 window.location.reload();
             }, 3000);
@@ -369,14 +463,16 @@ function initializeAccountLinkingCiamForms() {
     };
     la_options.onError = function (errors) {
         if (errors[0].Description != null) {
-            jQuery('.region.region-highlighted').html(getMessage('error', errors[0].Description));
+            lrSetCookie('lr_message', errors[0].Description);    
+            window.location.href = window.location.href.split('?')[0] + '?lrresponse=false'; 
         }
     }
 
     var unlink_options = {};
     unlink_options.onSuccess = function (response) {
         if (response.IsDeleted == true) {
-            jQuery('.region.region-highlighted').html(getMessage('status', 'Account unlinked successfully'));
+            lrSetCookie('lr_message', 'Account unlinked successfully');    
+            window.location.href = window.location.href.split('?')[0] + '?lrresponse=true'; 
             window.setTimeout(function () {
                 window.location.reload();
             }, 3000);
@@ -384,10 +480,10 @@ function initializeAccountLinkingCiamForms() {
     };
     unlink_options.onError = function (errors) {
         if (errors[0].Description != null) {
-            jQuery('.region.region-highlighted').html(getMessage('error', errors[0].Description));
+            lrSetCookie('lr_message', errors[0].Description);    
+            window.location.href = window.location.href.split('?')[0] + '?lrresponse=false'; 
         }
     }
-
     LRObject.util.ready(function () {
         LRObject.init("linkAccount", la_options);
         LRObject.init("unLinkAccount", unlink_options);
@@ -395,8 +491,50 @@ function initializeAccountLinkingCiamForms() {
     jQuery('#lr-loading').hide();
 }
 
-function getMessage(status, msg) {
-   return '<div class="messages__wrapper layout-container"><div role="contentinfo" aria-label="Status message" class="messages messages--' + status + '"><h2 class="visually-hidden">Status message</h2>' + msg + '</div></div>';
+function initializeTwoFactorAuthenticator() {
+    //initialize two factor authenticator button
+    var authentication_options = {};
+    authentication_options.container = "authentication-container";
+    authentication_options.onSuccess = function(response) {
+        if (response.IsDeleted) {
+                lrSetCookie('lr_message', 'Disabled successfully.');
+                window.location.href = window.location.href.split('?')[0] + '?lrresponse=true'; 
+                jQuery('html, body').animate({ scrollTop: 0}, 1000);
+            } else {
+                lrSetCookie('lr_message', 'Verified successfully.');
+                window.location.href = window.location.href.split('?')[0] + '?lrresponse=true';  
+                jQuery('html, body').animate({ scrollTop: 0}, 1000);
+            }        
+    };
+    authentication_options.onError = function(errors) { 
+        if (errors[0].Description != null) {
+            lrSetCookie('lr_message', errors[0].Description);    
+            window.location.href = window.location.href.split('?')[0] + '?lrresponse=false'; 
+        }
+    }
+    LRObject.util.ready(function() {
+    LRObject.init("createTwoFactorAuthentication", authentication_options);
+    });   
+}
+function initializePhoneUpdate() {
+    var updatephone_options = {};
+    updatephone_options.container = "updatephone-container";
+    updatephone_options.onSuccess = function (response) {
+         lrSetCookie('lr_message', 'Updated successfully.');        
+         window.location.href = window.location.href.split('?')[0] + '?lrresponse=true';  
+         jQuery('html, body').animate({ scrollTop: 0}, 1000);
+    };
+    updatephone_options.onError = function (errors) {
+        if (errors[0].Description != null) {
+            lrSetCookie('lr_message', errors[0].Description);    
+            window.location.href = window.location.href.split('?')[0] + '?lrresponse=false';    
+            jQuery('html, body').animate({ scrollTop: 0}, 1000);
+        }
+    };
+
+    LRObject.util.ready(function () {
+        LRObject.init("updatePhone", updatephone_options);
+    });   
 }
 
 function initializeAddEmailCiamForms() {
@@ -404,12 +542,15 @@ function initializeAddEmailCiamForms() {
     addemail_options.container = "addemail-container";
     addemail_options.onSuccess = function (response) {
         jQuery('#addemail-form').hide(); 
-        jQuery('.region.region-highlighted').html(getMessage('status', 'Email added successfully, Please verify your email address.'));
-         
+         lrSetCookie('lr_message', 'Email added successfully, Please verify your email address.');
+         window.location.href = window.location.href.split('?')[0] + '?lrresponse=true';
+         jQuery('html, body').animate({ scrollTop: 0}, 1000);
     };
-    addemail_options.onError = function (response) {
-            jQuery('#addemail-form').hide(); 
-            jQuery('.region.region-highlighted').html(getMessage('error', response[0].Description));
+    addemail_options.onError = function (errors) {
+            jQuery('#addemail-form').hide();  
+            lrSetCookie('lr_message', errors[0].Description);    
+            window.location.href = window.location.href.split('?')[0] + '?lrresponse=false';
+            jQuery('html, body').animate({ scrollTop: 0}, 1000);
     };
     LRObject.util.ready(function () {         
         LRObject.init("addEmail", addemail_options);
@@ -422,12 +563,16 @@ function initializeRemoveEmailCiamForms(divhtml) {
     removeemail_options.container = "removeemail-container";
     removeemail_options.onSuccess = function (response) {
          jQuery('#removeemail-form').hide(); 
-         jQuery('.region.region-highlighted').html(getMessage('status', 'Email removed successfully'));
+         lrSetCookie('lr_message', 'Email has been removed successfully.');
+         window.location.href = window.location.href.split('?')[0] + '?lrresponse=true';
          divhtml.remove();  
+         jQuery('html, body').animate({ scrollTop: 0}, 1000);
     };
-    removeemail_options.onError = function (response) {
-            jQuery('#removeemail-form').hide(); 
-            jQuery('.region.region-highlighted').html(getMessage('error', response[0].Description));
+    removeemail_options.onError = function (errors) {
+            jQuery('#removeemail-form').hide();           
+            lrSetCookie('lr_message', errors[0].Description);    
+            window.location.href = window.location.href.split('?')[0] + '?lrresponse=false';
+            jQuery('html, body').animate({ scrollTop: 0}, 1000);
     };
     LRObject.util.ready(function () {       
         LRObject.init("removeEmail", removeemail_options);
@@ -439,7 +584,7 @@ function initializeChangePasswordCiamForms() {
     var changepassword_options = {};
     changepassword_options.container = "changepassword-container";
     changepassword_options.onSuccess = function (response) {
-        handleResponse(true, "Password has been updated successfully");
+        handleResponse(true, "Password has been updated successfully.");
     };
     changepassword_options.onError = function (errors) {
         handleResponse(false, errors[0].Description, "", "error");
@@ -452,17 +597,6 @@ function initializeChangePasswordCiamForms() {
 }
 
 function ciamRedirect(token, name) {
-    var vtype = LRObject.util.getQueryParameterByName("vtype");
-    if (vtype != null && vtype != "" && loggedIn) {
-        if (vtype == "emailverification") {
-            jQuery('.region.region-highlighted').html(getMessage('status', 'Your email has been verified successfully'));
-            LocalDomain = homeDomain + "user/ciamlogin?destination=" + domainName + "user";
-        }
-    }
-    setTimeout(function () {
-        jQuery('#lr-loading').show();
-    }, 700);
-
     if (window.redirect) {
         redirect(token, name);
     } else {
@@ -492,3 +626,10 @@ LRObject.$hooks.register('afterFormRender', function (name) {
        jQuery('#loginradius-removeemail-emailid').val(dropemailvalue);      
     }    
 });
+
+function lrSetCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    var expires = "expires=" + d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}

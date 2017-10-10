@@ -36,6 +36,12 @@ class CiamUserManager {
         $this->apiKey = trim($this->module_config->get('api_key'));
     }
 
+    /**
+     * Update uid.
+     * @param $ciam_uid
+     * @param $user_id
+     * @return mixed
+     */
     function lr_ciam_update_user_table($ciam_uid, $user_id) {
         try {
             $this->connection->update('users')
@@ -47,7 +53,12 @@ class CiamUserManager {
 
         }
     }
-
+       
+    /**
+     * Delete users.
+     * @param $user_id
+     * @return mixed
+     */
     function user_delete($user_id) {
         $accountObj = new AccountAPI($this->apiKey, $this->apiSecret, array('output_format' => 'json'));
         try {
@@ -60,22 +71,29 @@ class CiamUserManager {
 
 
     /**
-     * Get Ciam uid.
-     * @param $user_id user id
-     * @return mixed
+     * Get Ciam uid from users table.
+     * @param $user_id
+     * @return $uid
      */
     function lr_ciam_get_ciam_uid($user_id) {
-        return $this->connection->query('SELECT lr_ciam_uid FROM {users} WHERE uid = :id', array('id' => $user_id))->fetchField();
+        $query = \Drupal::database()->select('users', 'u');
+        $query->addField('u', 'lr_ciam_uid');
+        $query->condition('u.uid', $user_id);
+        $uid = $query->execute()->fetchField();
+        return $uid;
     }
-
-  
+   
     /**
-     * Get Ciam uid.
-     * @param $user_id user id
-     * @return mixed
+     * Get uname from users_field_data table.
+     * @param $user_id
+     * @return $uname
      */
     function lr_ciam_get_ciam_uname($user_id) {
-        return $this->connection->query('SELECT name FROM {users_field_data} WHERE uid = :id', array('id' => $user_id))->fetchField();
+        $query = \Drupal::database()->select('users_field_data', 'u');
+        $query->addField('u', 'name');
+        $query->condition('u.uid', $user_id);
+        $uname = $query->execute()->fetchField();
+        return $uname;      
     }
 
     /**
@@ -97,6 +115,8 @@ class CiamUserManager {
      
         }
     }
+    
+    
 
     /**
      * Unblock user at ciam.
@@ -117,20 +137,25 @@ class CiamUserManager {
                
         }
     }
-
-    function lr_ciam_get_ciam_provider_id($account_id) {
-        return $this->connection->query('SELECT provider_id FROM {loginradius_mapusers} WHERE user_id = :id and provider = :name', array(
-              'id' => $account_id,
-              'name' => 'Email',
-            ))->fetchField();
-    }
-
+    
+    /**
+     * Delete mapped provider
+     *
+     * @param $aid
+     * @return mixed
+     */
     public function deleteMapUser($aid) {
         return $this->connection->delete('loginradius_mapusers')
                 ->condition('user_id', $aid)
                 ->execute();
     }
 
+    /**
+     * Get user profile data
+     *
+     * @param $userprofile
+     * @return mixed
+     */
     public function getUserData($userprofile) {
         $userprofile->Email_value = (sizeof($userprofile->Email) > 0 ? $userprofile->Email[0]->Value : '');
         $userprofile->Company_name = (isset($userprofile->Company->Name) ? $userprofile->Company->Name : '');
@@ -139,6 +164,14 @@ class CiamUserManager {
         return $userprofile;
     }
 
+    /**
+     * Insert social provider data
+     *
+     * @param $user_id
+     * @param $provider_id
+     * @param $provider
+     * @return mixed
+     */
     public function insertSocialData($user_id, $provider_id, $provider) {
         $this->connection->insert('loginradius_mapusers')
             ->fields(array(
@@ -149,10 +182,22 @@ class CiamUserManager {
             ->execute();
     }
 
+    /**
+     * Get user by mail
+     *
+     * @param $email
+     * @return mixed
+     */
     public function getUserByEmail($email) {
         return user_load_by_mail($email);
     }
 
+    /**
+     * Removed unescaped character
+     *
+     * @param $str
+     * @return mixed
+     */
     public function removeUnescapedChar($str) {
         $in_str = str_replace(array(
           '<',
@@ -190,7 +235,13 @@ class CiamUserManager {
         }
     }
 
-    public function getUsername($userprofile) {
+     /**
+     * Get user name
+     *
+     * @param $userprofile
+     * @return username
+     */
+    public function getDisplayName($userprofile) {
         if (!empty($userprofile->FullName)) {
             $username = $userprofile->FullName;
         }
@@ -228,7 +279,11 @@ class CiamUserManager {
                 if ($userprofile->Provider == 'Email' && $userprofile->UserName != '') {
                     $username = $userprofile->UserName;
                 }
+                if($username == ''){
+                  $username = $this->getNameAccordingToDisplayOption($userprofile);
+            }
         }
+       
         else if (!empty($userprofile->FirstName) && !empty($userprofile->LastName) && $option != 2) {
             if ($option == 1) {
                 $username = $userprofile->FirstName . '-' . $userprofile->LastName;
@@ -241,11 +296,41 @@ class CiamUserManager {
             $username = $userprofile->Email_value;
         }
         else {
-            $username = $this->getUsername($userprofile);
+            $username = $this->getDisplayName($userprofile);
+        }
+        return $username;
+    }
+    
+    /**
+     * get username based on username option
+     *
+     * @param object $userprofile
+     * @return string Username of user
+     */
+    
+    public function getNameAccordingToDisplayOption($userprofile){
+        $option = $this->module_config->get('username_option');
+        if (!empty($userprofile->FirstName) && !empty($userprofile->LastName) && $option != 2) {
+            if ($option == 1) {
+                $username = $userprofile->FirstName . '-' . $userprofile->LastName;
+            }
+            else {
+                $username = $userprofile->FirstName . ' ' . $userprofile->LastName;
+            }
+        }
+        elseif ($option == 2 && !empty($userprofile->Email_value)) {
+            $username = $userprofile->Email_value;
         }
         return $username;
     }
 
+     /**
+     * Check exist username
+     *
+     * @param object $userprofile
+     * @return string Username of user
+     */
+    
     public function checkExistUsername($userprofile) {
         $user_name = $this->usernameOption($userprofile);
         $index = 0;
@@ -259,24 +344,30 @@ class CiamUserManager {
                 break;
             }
         }
-
         $data['username'] = $this->removeUnescapedChar($user_name);
         $data['fname'] = (!empty($userprofile->FirstName) ? $userprofile->FirstName : '');
         $data['lname'] = (!empty($userprofile->LastName) ? $userprofile->LastName : '');
 
         if (empty($data['fname'])) {
-            $data['fname'] = $this->getUsername($userprofile);
+            $data['fname'] = $this->getDisplayName($userprofile);
         }
 
         if (empty($data['lname'])) {
-            $data['lname'] = $this->getUsername($userprofile);
+            $data['lname'] = $this->getDisplayName($userprofile);
         }
 
         return $data;
     }
 
+    
+    /**
+     * Provider login to user
+     *
+     * @param object $new_user
+     * @param object $userprofile
+     * @return mixed
+     */
     public function provideLogin($new_user, $userprofile, $status = FALSE) {
-
         $config = \Drupal::config('ciam.settings');
         $apiSecret = trim($config->get('api_secret'));
         $apiKey = trim($config->get('api_key'));
@@ -285,38 +376,35 @@ class CiamUserManager {
             $result = $accountObj->getProfileByUid($userprofile->Uid);
         }
         catch (LoginRadiusException $e) {
-            watchdog_exception('type', $e);
+                 \Drupal::logger('ciam')->error($e);                              
         }
 
         if (isset($result) && !empty($result)) {
  
             if (is_array($result) || is_object($result)) {
-                $check_aid = db_query("SELECT user_id FROM {loginradius_mapusers} WHERE user_id = :uid AND provider_id = :providerid", array(
-                  ':uid' => $new_user->id(),
-                  ':providerid' => $result->ID,
-                    ))
-                    ->fetchField();
+                
+                $query = \Drupal::database()->select('loginradius_mapusers', 'lu');
+                $query->addField('lu', 'user_id');
+                $query->condition('lu.user_id', $new_user->id());
+                $query->condition('lu.provider_id', $result->ID);
+                $check_aid = $query->execute()->fetchField();
 
                 if (isset($check_aid) && !$check_aid) {
                     $this->insertSocialData($new_user->id(), $result->ID, $result->Provider);
                 }
             }
-        }
-    
+        }   
 
-        $_SESSION['spd_userprofile'] = $userprofile;
-        
-
-        if ($new_user->isActive()) {
-      //  if ($new_user->isActive() && $new_user->getLastLoginTime() != 0) {
+        $_SESSION['spd_userprofile'] = $userprofile;      
+        if ($new_user->isActive()) { 
             $url = '';
             $isNew = FALSE;
-
+           
             if ($userprofile->FirstLogin) {
                 $url = 'register_redirection';
             }
 
-            if (!$new_user->isNew()) {
+            if (!$new_user->isNew()) {    
                 $this->field_create_user_object($new_user, $userprofile);
                 $new_user->save();
 
@@ -345,7 +433,8 @@ class CiamUserManager {
                                 ->execute();
                         }
                         catch (Exception $e) {
-                            
+                               \Drupal::logger('ciam')->error($e);
+                                drupal_set_message($e->getMessage(), 'error');
                         }
                     }
                 }
@@ -353,12 +442,11 @@ class CiamUserManager {
 
             user_login_finalize($new_user);
             if ($status) {
-                drupal_set_message(t('You are now logged in as %username.', array('%username' => $new_user->getUsername())));
+                drupal_set_message(t('You are now logged in as %username.', array('%username' => $new_user->getDisplayName())));
             }
             else {
-                drupal_set_message(t('You are now logged in as %username.', array('%username' => $new_user->getUsername())));
-            }
-
+                drupal_set_message(t('You are now logged in as %username.', array('%username' => $new_user->getDisplayName())));
+            }   
             return $this->redirectUser($url);
         }
         else {
@@ -367,24 +455,31 @@ class CiamUserManager {
         }
     }
 
-    public function checkProviderID($pid) {
-        return $this->connection->query("SELECT am.uid FROM {users} am INNER JOIN {loginradius_mapusers} sm ON am.uid = sm.user_id WHERE  sm.provider_id = :provider_id", array(
-                  ':provider_id' => $pid,
-                ))
-                ->fetchField();
+     /**
+     * check provider id exist or not
+     *
+     * @param string $pid provider id  
+     * @return provider id
+     */
+    public function checkProviderID($pid) {        
+        $query = db_select('users', 'u');
+        $query->join('loginradius_mapusers', 'lu', 'u.uid = lu.user_id');
+        $query->addField('u', 'uid');
+        $query->condition('lu.provider_id', $pid);
+        $check_aid = $query->execute()->fetchField();
+        return $check_aid;
     }
-
-    public function getMappedAccounts($uid) {
-        return $this->connection->query("SELECT am.uid, sm.provider, sm.provider_id FROM {users} am INNER JOIN {loginradius_mapusers} sm ON am.uid = sm.user_id WHERE am.uid = :uid", array(
-                  ':uid' => $uid
-                ))
-                ->fetchAll();
-    }
-
+     
+    /**
+     * redirect user
+     *
+     * @param string $variable_path   
+     * @return mixed
+     */
+    
     public function redirectUser($variable_path = '') {
 
         $user = \Drupal::currentUser();
-        $config = \Drupal::config('hostedpage.settings');
         //Advanced module LR Code Hook Start
         // Make sure at least one module implements our hook.
         if (count(\Drupal::moduleHandler()->getImplementations('before_user_redirect')) > 0) {
@@ -401,18 +496,17 @@ class CiamUserManager {
         $variable_custom_path = (($variable_path == 'login_redirection') ? 'custom_login_url' : 'custom_register_url');
  
         $request_uri = \Drupal::request()->getRequestUri();
-        if (strpos($request_uri, 'redirect_to') !== FALSE) {     
+        if (strpos($request_uri, 'redirect_to') !== FALSE) {        
             $redirectUrl = \Drupal::request()->query->get('redirect_to');           
             $response = new RedirectResponse($redirectUrl);             
             return $response->send();
         } elseif ($this->module_config->get($variable_path) == 1) {
-            // Redirect to profile.   
+            // Redirect to profile.               
             $response = new RedirectResponse($user->id() . '/edit');
             return $response->send();
         } elseif ($this->module_config->get($variable_path) == 2) {
-            // Redirect to custom page.          
+            // Redirect to custom page.                             
             $custom_url = $this->module_config->get($variable_custom_path);
-
             if (!empty($custom_url)) {
                 $response = new RedirectResponse($custom_url);
                 return $response->send();
@@ -422,18 +516,31 @@ class CiamUserManager {
             }
         } else {      
             // Redirect to same page.   
-             if(!empty($_SESSION['referer_url'])){
+             if(!empty($_SESSION['referer_url'])){                               
                     $refererUrl = $_SESSION['referer_url'];              
                     $response = new RedirectResponse($refererUrl);             
                     return $response->send();
-             } else {
-                $destination = (\Drupal::destination()->getAsArray());          
-                $response = new RedirectResponse($destination['destination']);
+             } else {               
+                $destination = (\Drupal::destination()->getAsArray());         
+                if(isset($destination['destination']) && $destination['destination'] != ''){                  
+                    $response = new RedirectResponse($destination['destination']);
+                } else {               
+                    $response = new RedirectResponse(Url::fromRoute('<front>')->toString());
+                }
                 return $response->send();
              }
         }
     }
 
+     /**
+     * Get profile pic
+     *
+     * @param string $picture_url   
+     * @param string $id   
+     * @param string $user   
+     * @return mixed
+     */
+    
     public function downloadProfilePic($picture_url, $id, $user) {
         if (user_picture_enabled()) {
             // Make sure that we have everything we need
@@ -471,6 +578,13 @@ class CiamUserManager {
         }
     }
 
+     /**
+     * Create user
+     *
+     * @param string $userprofile     
+     * @return mixed
+     */
+    
     public function createUser($userprofile) {
         if (isset($userprofile->ID) && !empty($userprofile->ID)) {
             $user_config = \Drupal::config('user.settings');
@@ -481,6 +595,7 @@ class CiamUserManager {
                 if ($user_register != 'visitors_admin_approval' && ($user_register == 'visitors')) {
                     $newUserStatus = 1;
                 }
+
                 $data = $this->checkExistUsername($userprofile);
                 //set up the user fields
                 $password = user_password(32);
@@ -501,7 +616,7 @@ class CiamUserManager {
 
                     \Drupal::logger('ciam')
                         ->notice('New user created. Username %username, UID: %uid', array(
-                          '%username' => $new_user->getUsername(),
+                          '%username' => $new_user->getDisplayName(),
                           '%uid' => $new_user->id(),
                     ));
                     //  return $new_user;
@@ -517,8 +632,6 @@ class CiamUserManager {
                     //Advanced module LR Code Hook Start
                     if (count(\Drupal::moduleHandler()->getImplementations('add_user_data_after_save')) > 0) {
                         // Call all modules that implement the hook, and let them make changes to $variables.
-
-
                         \Drupal::moduleHandler()->invokeAll('add_user_data_after_save', [$new_user, $userprofile]);
                     }
                     //Advanced module LR Code Hook End
@@ -573,6 +686,14 @@ class CiamUserManager {
         }
     }
 
+    /**
+     * Get random email
+     *
+     * @param string $provider     
+     * @param string $id     
+     * @return mixed
+     */
+    
     public function getRandomEmail($provider, $id) {
         $email_name = substr(str_replace(array(
           "-",
@@ -589,32 +710,27 @@ class CiamUserManager {
         return $email;
     }
 
+    /**
+     * Check existing user
+     *
+     * @param $userprofile           
+     * @return mixed
+     */
+    
     public function checkExistingUser($userprofile) {
 
         $drupal_user = NULL;
         if (isset($userprofile->ID) && !empty($userprofile->ID)) {
 
-            $uid = $this->connection->query("SELECT am.uid FROM {users} am INNER JOIN {loginradius_mapusers} sm ON am.uid = sm.user_id WHERE  sm.provider_id = :provider_id", array(
-                  ':provider_id' => $userprofile->ID,
-                ))
-                ->fetchField();
-            //Advanced module LR Code Hook Start
-            // Make sure at least one module implements our hook.
-//            if (count(\Drupal::moduleHandler()->getImplementations('check_ciam_uid')) > 0) {
-//
-//                // Call all modules that implement the hook, and let them make changes to $variables.
-//                $result = \Drupal::moduleHandler()->invokeAll('check_ciam_uid', $userprofile);
-//                $account = end($result);
-//            }
+            $uid = $this->checkProviderID($userprofile->ID);
             //Advanced module LR Code Hook End
             if ($uid) {
-
                 $drupal_user = User::load($uid);
             }
         }
+        
         if (!$drupal_user) {
             if (empty($userprofile->Email_value)) {
-
                 $userprofile->Email_value = $this->getRandomEmail($userprofile->Provider, $userprofile->ID);
             }
             if (!empty($userprofile->Email_value)) {
@@ -631,65 +747,81 @@ class CiamUserManager {
         else {      
             return $this->createUser($userprofile);
         }
-    }
-    public function handleAccountLinking($userprofile) {
+    }    
+
+    /**
+     * create user
+     *
+     * @param $data           
+     * @return array
+     */
+    function lr_ciam_create_user($data) {
         
-    return new RedirectResponse(Url::fromRoute('user.page')->toString());
-  }
-
-    public function getPopupForm($params) {
-        return array(
-          '#type' => 'item',
-          '#title' => '',
-          '#theme' => 'lr_popup',
-          '#popup_params' => $params,
-          '#attached' => array(
-            'library' => array('lr_ciam/drupal.ciam_email_popup'),
-          ),
-        );
-    }
-
-    public function emailPopupSubmit() {
-
-        if (isset($_SESSION['lrdata']) && !empty($_SESSION['lrdata'])) {
-            $userprofile = $_SESSION['lrdata'];
-            $userprofile->Email_value = trim($_POST['email']);
-
-            if (!\Drupal::service('email.validator')
-                    ->isValid($userprofile->Email_value)
-            ) {
-
-                $popup_params = array(
-                  'msg' => t('This email is invalid. Please choose another one.'),
-                  'provider' => $userprofile->Provider,
-                  'msgtype' => 'warning'
-                );
-                $popup_params['message_title'] = $this->module_config->get('popup_title');
-                return $form['email_popup'] = $this->getPopupForm($popup_params);
-            }
-            else {
-                $check_mail = user_load_by_mail($userprofile->Email_value);
-
-                if (!empty($check_mail)) {
-                    $email_wrong = 'This email is already registered';
-                    $popup_params = array(
-                      'msg' => t($email_wrong),
-                      'provider' => $userprofile->Provider,
-                      'msgtype' => 'warning',
-                    );
-                    $popup_params['message_title'] = $this->module_config->get('popup_title');
-                    return $form['email_popup'] = $this->getPopupForm($popup_params);
-                }
-                else {
-                    unset($_SESSION['lrdata']);
-                    $_SESSION['user_verify'] = 1;
-                    return $this->createUser($userprofile);
-                }
+        try {
+            $accountObj = new AccountAPI($this->apiKey, $this->apiSecret, array('output_format' => 'json'));
+            return $accountObj->create($data);
+        }
+        catch (LoginRadiusException $e) {
+            if (isset($e->getErrorResponse()->description) && $e->getErrorResponse()->description) {
+                return $e->getErrorResponse()->description;
             }
         }
-        return new RedirectResponse(Url::fromRoute('<current>')->toString());
+    }
+   
+    /**
+     * set password
+     *
+     * @param $uid           
+     * @param $password           
+     * @return mixed
+     */
+        
+    function lr_ciam_set_password($uid, $password) {
+        try {
+            $accountObj = new AccountAPI($this->apiKey, $this->apiSecret, array('output_format' => 'json'));
+            $accountObj->setPassword($uid, $password);
+        }
+        catch (LoginRadiusException $e) {
+           
+        }
     }
 
+    /**
+     * forgot password
+     *
+     * @param $email           
+     * @param $reset_password_url           
+     * @return mixed
+     */
+    function lr_ciam_forgot_password($email, $reset_password_url) {
+        try {
+            $userObj = new UserAPI($this->apiKey, $this->apiSecret, array('output_format' => 'json'));
+            return $userObj->forgotPassword($email, $reset_password_url);
+        }
+        catch (LoginRadiusException $e) {
+            if (isset($e->getErrorResponse()->description) && $e->getErrorResponse()->description) {
+                return $e->getErrorResponse()->description;
+            }
+        }
+    }    
+
+    /**
+     * Handle user callback
+     *
+     * @param string $userprofile           
+     * @return mixed
+     */
+    
+    public function handleUserCallback($userprofile) {        
+       return new RedirectResponse(Url::fromRoute('user.page')->toString());
+    }
+
+    /**
+     * Convert field data.
+     *
+     * @return array
+     */
+    
     public function field_field_convert_info() {
         $convert_info = array(
           'text' => array(
@@ -748,11 +880,10 @@ class CiamUserManager {
         if (!empty($property_name)) {
             if (isset($userprofile->$property_name)) {
                 if (is_string($userprofile->$property_name)) {
-                    $value = $userprofile->$property_name;
+                    $value = $userprofile->$property_name;    
                 }
                 elseif (is_object($userprofile->$property_name)) {
                     $object = $userprofile->$property_name;
-
                     if (isset($object->name)) {
                         $value = $object->name;
                     }
@@ -762,6 +893,15 @@ class CiamUserManager {
         }
     }
 
+    /**
+     * Convert list data.
+     *
+     * @param string $property_name User profile property name thorugh which data mapped
+     * @param object $userprofile User profile data that you got from social network
+     * @param string User field name stored in database
+     * @param string $instance Field instance
+     * @return array  Contain value of field map data
+     */
     public function field_field_convert_list($property_name, $userprofile, $field, $instance) {
         if (!empty($property_name)) {
             if (!isset($userprofile->$property_name) && !is_string($userprofile->$property_name)) {
@@ -787,7 +927,18 @@ class CiamUserManager {
         }
     }
 
+     /**
+     * Convert date data.
+     *
+     * @param string $property_name User profile property name thorugh which data mapped
+     * @param object $userprofile User profile data that you got from social network
+     * @param string User field name stored in database
+     * @param string $instance Field instance
+     * @return array  Contain value of field map data
+     */
+    
     public function field_field_convert_date($property_name, $userprofile, $field, $instance) {
+     
         if (!empty($property_name)) {
             if (isset($userprofile->$property_name)) {
                 $value = NULL;
@@ -795,15 +946,15 @@ class CiamUserManager {
                 if (strpos($userprofile->$property_name, '/') !== false) {
                     $sldate = explode('/', $userprofile->$property_name);
                     $date = strtotime($userprofile->$property_name);
-                    $formatDate = date('Y-m-d\TH:i:s', $date);
+                    $formatDate = date('Y-m-d\TH:i:s', $date);                   
                 }
                 else {
-                    $sldate = explode('-', $userprofile->$property_name);
+                    $sldate = explode('-', $userprofile->$property_name);              
                     $month = isset($sldate[0]) ? trim($sldate[0]) : '';
                     $date = isset($sldate[1]) ? trim($sldate[1]) : '';
                     $year = isset($sldate[2]) ? trim($sldate[2]) : '';
                     $formatDate = trim($year . '-' . $month . '-' . $date, '-');
-                    $formatDate = $formatDate . 'T00:00:00';
+                    $formatDate = $formatDate . 'T00:00:00';               
                 }
 
                 if (count($sldate) == 3) {
@@ -814,19 +965,46 @@ class CiamUserManager {
                         );
                     }
                 }
+              
                 return $value;
             }
         }
     }
 
-    public function field_create_user_array(&$drupal_user, $userprofile) {
+    /**
+     * Field create user array
+     *
+     * @param string $drupal_user
+     * @param object $userprofile User profile data that you got from social network  
+     * @return array
+     */
+    
+    public function field_create_user_array(&$drupal_user, $userprofile) {       
         $this->field_create_user(NULL, $drupal_user, $userprofile, TRUE);
     }
 
+    /**
+     * Field create user object
+     *
+     * @param string $drupal_user
+     * @param object $userprofile User profile data that you got from social network  
+     * @return object
+     */
+    
     public function field_create_user_object($drupal_user, $userprofile) {
         $this->field_create_user($drupal_user, $drupal_user, $userprofile, FALSE);
     }
 
+    /**
+     * Field create user
+     *
+     * @param string $drupal_user
+     * @param string $drupal_user_ref
+     * @param object $userprofile User profile data that you got from social network  
+     * @param $register_form
+     *
+     */
+    
     public function field_create_user($drupal_user, &$drupal_user_ref, $userprofile, $register_form = FALSE) {
         $field_map = $this->module_config->get('user_fields');
         $field_convert_info = $this->field_field_convert_info();

@@ -46,11 +46,7 @@ if (drupalSettings.sso.isNotLoginThenLogout) {
         };
 
         LRObject.util.ready(function () {
-            var vtype = LRObject.util.getQueryParameterByName("vtype");
-            var vtoken = LRObject.util.getQueryParameterByName("vtoken");
-            if (vtype != "emailverification" && (vtoken != null || vtoken != "")) {
-                LRObject.init("ssoNotLoginThenLogout", check_options);
-            }
+                LRObject.init("ssoNotLoginThenLogout", check_options);       
         });
     });
 

@@ -73,7 +73,7 @@ class SSOSettingsForm extends ConfigFormBase {
         }
 
         module_load_include('inc', 'lr_ciam');
-        $data = get_authentication($apiKey, $apiSecret);
+        $data = lr_ciam_get_authentication($apiKey, $apiSecret);
         if (isset($data['status']) && $data['status'] != 'status') {
             drupal_set_message($data['message'], $data['status']);
             return FALSE;

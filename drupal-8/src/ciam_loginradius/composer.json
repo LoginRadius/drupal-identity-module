@@ -1,6 +1,6 @@
 {
     "name": "drupal/lr_ciam",
     "require": {
-        "loginradius/php-sdk-2.0": "dev-master"
+        "loginradius/php-sdk": "4.3.0"
     }
 }

@@ -42,9 +42,7 @@ function lr_sso_page_attachments(&$page) {
       }
       if (  !\Drupal::currentUser()->isAnonymous() && !in_array("administrator", $user)) {
               
-        $logout = Url::fromRoute('user.logout')->setAbsolute()->toString();
-        //$logout = (strpos($logout, '?') == TRUE ? ($logout . '&notlogged=1') : ($logout . '?notlogged=1'));
-       
+        $logout = Url::fromRoute('user.logout')->setAbsolute()->toString();       
         $my_settings['isNotLoginThenLogout'] = true;
         $my_settings['logout_url'] = $logout;
         
@@ -53,7 +51,4 @@ function lr_sso_page_attachments(&$page) {
     $page['#attached']['drupalSettings']['sso']  = $my_settings;
     $page['#attached']['library'][] = 'lr_sso/drupal.coresso';
   }
-}
-function lr_sso_add_extra_lr_ciam_config_settings(){
-  return array('sso_site_name');
 }

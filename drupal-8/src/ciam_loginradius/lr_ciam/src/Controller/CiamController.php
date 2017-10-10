@@ -56,6 +56,10 @@ class CiamController extends ControllerBase {
         return $output;
     }
     
+    /**
+     * Show change password form
+     *        
+     */
     public function changePasswordAccess() {
         $config = \Drupal::config('ciam.settings');
         $user = \Drupal::currentUser()->getRoles();
@@ -91,28 +95,25 @@ class CiamController extends ControllerBase {
      */
     public function userRegisterValidate() {
         $config = \Drupal::config('ciam.settings');
-       
-        $request_token = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';  
+        if (isset($_GET['action_completed']) && $_GET['action_completed'] == 'register') {
+            drupal_set_message('Email for verification has been sent to your provided email id, check email for further instructions');
+            return $this->redirect("<front>");
+        }
 
-        // handle email popup.
-        if (isset($_POST['lr_emailclick'])) {
-            return $this->user_manager->emailPopupSubmit();
-        }
-        //clear session of loginradius data when email popup cancel.
-        elseif (isset($_POST['lr_emailclick_cancel'])) {
-            unset($_SESSION['lrdata']);
-            return $this->redirect('<current>');
-        }
-        
-        elseif (isset($_REQUEST['token'])) {
-        
+        if (isset($_GET['action_completed']) && $_GET['action_completed'] == 'forgotpassword') {
+            drupal_set_message('Password reset information sent to your provided email id, check email for further instructions');
+            return $this->redirect("<front>");
+        }        
+
+        $request_token = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';        
+        if (isset($_REQUEST['token'])) {        
             $apiKey = trim($config->get('api_key'));
             $apiSecret = trim($config->get('api_secret'));
 
             try {
                 $socialLoginObj = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));
             }
-            catch (LoginRadiusException $e) {
+            catch (LoginRadiusException $e) {                   
                 \Drupal::logger('ciam')->error($e);
                 drupal_set_message($e->getMessage(), 'error');
                 return $this->redirect('user.login');
@@ -120,13 +121,13 @@ class CiamController extends ControllerBase {
             try {
                 $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));
             }
-            catch (LoginRadiusException $e) {
+            catch (LoginRadiusException $e) {    
                 \Drupal::logger('ciam')->error($e);
                 drupal_set_message($e->getMessage(), 'error');
                 return $this->redirect('user.login');
             } 
             
-             //Get Access token.
+            //Get Access token.
             try {
                 $result_accesstoken = $socialLoginObj->exchangeAccessToken(trim($_REQUEST['token']));
                 }
@@ -140,10 +141,10 @@ class CiamController extends ControllerBase {
               //Get Userprofile form Access Token.
             try {
                 $userprofile = $userObject->getProfile($result_accesstoken->access_token);
-                $userprofile->widget_token = $result_accesstoken->access_token;
+                $userprofile->widget_token = isset($result_accesstoken) ? $result_accesstoken->access_token : '';
             }
-            catch (LoginRadiusException $e) {
-                \Drupal::logger('ciam')->error($e);
+            catch (LoginRadiusException $e) {                
+                \Drupal::logger('ciam')->error($e); 
                 drupal_set_message($e->getMessage(), 'error');
                 return $this->redirect('user.login');
             }
@@ -177,26 +178,14 @@ class CiamController extends ControllerBase {
                         if (isset($drupal_user) && $drupal_user->id()) {
                             return $this->user_manager->provideLogin($drupal_user, $userprofile);
                         }
-                        else {
-                            $_SESSION['lrdata'] = $userprofile;
-                            $text_email_popup = 'status';
-
-                            $popup_params = array(
-                              'msg' => $this->t($text_email_popup, array('@provider' => t($userprofile->Provider))),
-                              'provider' => $userprofile->Provider,
-                              'msgtype' => 'status',
-                            );
-                            $popup_params['message_title'] = $config->get('popup_title');
-                            return $form['email_popup'] = $this->user_manager->getPopupForm($popup_params);
-                        }
                     }
                     return $this->user_manager->checkExistingUser($userprofile);
                 }
-            }else {          
-               return $this->user_manager->handleAccountLinking($userprofile);
+            } else {          
+               return $this->user_manager->handleUserCallback($userprofile);
             }
         }
-        else {
+        else {    
             return $this->redirect('user.login');
         }
     }

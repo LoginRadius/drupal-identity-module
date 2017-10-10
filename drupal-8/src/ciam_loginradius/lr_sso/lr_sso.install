@@ -1,6 +1,6 @@
 <?php
 /**
- * Implements hook_schema().
+ * Implements hook_install().
  */
 
 function lr_sso_install(){

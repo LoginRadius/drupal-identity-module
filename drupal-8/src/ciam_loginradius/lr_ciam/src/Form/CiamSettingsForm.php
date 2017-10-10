@@ -179,7 +179,7 @@ class CiamSettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     
     module_load_include('inc', 'lr_ciam');
-    $data = get_authentication($form_state->getValue('api_key'), $form_state->getValue('api_secret'));
+    $data = lr_ciam_get_authentication($form_state->getValue('api_key'), $form_state->getValue('api_secret'));
     if (isset($data['status']) && $data['status'] != 'status') {
       drupal_set_message($data['message'], $data['status']);
       return FALSE;
@@ -196,23 +196,8 @@ class CiamSettingsForm extends ConfigFormBase {
       ->set('custom_register_url', $form_state->getValue('custom_register_url'))
       ->set('enable_linking', $form_state->getValue('enable_linking'))
       ->set('linking_text', $form_state->getValue('linking_text'))
-      ->save();
-        if (count(\Drupal::moduleHandler()->getImplementations('add_extra_lr_ciam_config_settings')) > 0) {
-    // Call all modules that implement the hook, and let them make changes to $variables.
-    $config_data = \Drupal::moduleHandler()->invokeAll('add_extra_lr_ciam_config_settings');
-   
-  }
+      ->save();       
 
-  if(isset($config_data) && is_array($config_data)){
-  foreach ($config_data as $key => $value) {
-  
-  $this->config('ciam.settings')
-  ->set($value, $form_state->getValue($value))
-  ->save();  
-  } 
-}
-
-    //  drupal_set_message(t('CIAM settings have been saved.'), 'status');
     //Clear page cache
     foreach (Cache::getBins() as $service_id => $cache_backend) {
       if ($service_id == 'dynamic_page_cache') {

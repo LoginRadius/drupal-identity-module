@@ -4,21 +4,13 @@
 
 {% include 'lr_message.html.twig' %}
  
-  <script>
-    jQuery(document).ready(function () {
-      initializeForgotPasswordCiamForms();
-    });
-  </script>
   <div class="ciam-lr-form my-form-wrapper">
     <div id="forgotpassword-container"></div>
+     {% include 'lr_loading.html.twig' %} 
   </div>
 {% endif %}
 {% else %}
-      <script>
-    jQuery(document).ready(function () {
-          jQuery('#content .tabs').attr('style', 'display:none');
-    });
-  </script>
+  {{ attach_library('lr_ciam/drupal.user_pass') }}
 {{ rendered }}
 {% endif %}
 

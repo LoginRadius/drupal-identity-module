@@ -1,7 +1,4 @@
 <?php
-/**
- * Implements hook_schema().
- */
 
 /**
  * Implements hook_requirements().
@@ -10,15 +7,19 @@ function lr_ciam_requirements($phase) {
   $requirements = array();
 
   if ($phase == 'install') {
-    if (!class_exists('\LoginRadiusSDK\Utility\Functions')) {
-       
+    if (\Drupal::moduleHandler()->moduleExists('sociallogin')) {  
+      $requirements['ciam'] = array(    
+            'description' => 'Please Uninstall "User Registration and Management" Plugin to Activate LoginRadius CIAM.',
+            'severity' => REQUIREMENT_ERROR
+            ); 
+    }         
+    if (!class_exists('\LoginRadiusSDK\Utility\Functions')) {       
       $requirements['lr_ciam'] = [
-        'description' => t('Ciam requires LoginRadius PHP SDK library. Make sure the library is installed via Composer. Check README.txt for installation instructions.'),
+        'description' => t('Ciam requires LoginRadius PHP SDK V2 library. Make sure the library is installed. Check README.txt for installation instructions.'),
         'severity' => REQUIREMENT_ERROR,
       ];
     }
   }
-
   return $requirements;
 }
 
@@ -27,7 +28,7 @@ function lr_ciam_requirements($phase) {
  */
 
 function lr_ciam_schema() {  
-    $schema = array();    
+ $schema = array();    
  if (!\Drupal\Core\Database\Database::getConnection()->schema()->fieldExists('users', 'lr_ciam_uid')) {
     \Drupal\Core\Database\Database::getConnection()->schema()->addField('users', 'lr_ciam_uid', array(
       'type' => 'varchar',
@@ -64,7 +65,10 @@ function lr_ciam_schema() {
     return $schema;
 }
 
-function lr_ciam_install(){
+/**
+ * Implements hook_install().
+ */
+function lr_ciam_install() {
 	 module_set_weight('lr_ciam', 4);
 }
 

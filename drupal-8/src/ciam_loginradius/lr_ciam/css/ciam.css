@@ -2,7 +2,7 @@
   vertical-align: middle;
 }
 .ui-datepicker{
-    z-index: 999999 !important;
+    z-index: 9999999 !important;
 }
 #edit-thanks-block{
     background-color: rgb(255, 255, 224);
@@ -536,7 +536,87 @@ div.loginradius-ciam-validation-message {
 }
 #addemail-container input[type=submit],
 #removeemail-container input[type=submit] {
-  margin-left:57%;
+  margin-left:62%;
+}
+#authentication-container input[type=button],
+#authentication-container input[type=submit]{
+    background-color: darkseagreen;
+}
+.loginradius-linksignin{
+    margin-left: 2px;
 }
 
-
+#edit-reset .resetCode:hover {
+    background: #fff;
+    color: #29d;
+    border:1px solid #29d;
+    cursor: pointer;
+}
+#edit-reset .resetCode {
+    background: #29d;
+    float: right;
+    color: #fff;
+    padding: 6px 10px;
+}
+.resetCode {
+      margin-right: 5px;
+}
+#lr_ciam_reset_table {
+    clear: both;
+    margin-top: 45px;
+}
+div#backupcode-table-body {
+    display: inline-block;
+}
+#backupcode-table-body .form-item {
+    float: left;
+    margin-top: -8px !important;
+    width: 48%;
+    background: #eee;
+    border: 2px solid #fff;
+    padding: 5px;
+}
+#resettable p {
+    border: 1px solid red;
+    padding: 5px;
+    border-radius: 5px;
+    background: hsla(0, 100%, 50%, 0.18);
+}
+#resettable {
+    margin-right: 100px;
+}
+.mybackupcopy {
+    width: 32px;
+    float: right;
+    background-image: url(../images/copy.png);
+    height: 40px;
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    margin: 5px;
+    cursor: pointer;
+}
+.copyMessage{
+    background-color: #eeeeee;
+    display: inline-block;
+    padding: 6px 12px 5px 10px;
+    color:#59b32c; 
+    margin-left:86%;
+    margin-bottom: -21px;   
+}
+#login-container .linksignin-loginradius-Send{
+    padding:4px;
+}
+.content-loginradius-stayLogin label{
+    margin-top: -22px;
+    margin-left: 20px;
+}
+.loginType {
+ font-weight: bold;
+}
+.loginTypeTooltip {
+ text-decoration:none !important; 
+ cursor:pointer !important;
+}
+.logintypeColor{
+    color:#3CF;
+}

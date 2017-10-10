@@ -51,7 +51,7 @@ class CustomHttpClient  implements IHttpClient {
         $config = \Drupal::config('ciam.settings');
         $debug_mode = $config->get('ciam_debug_mode');
         if(isset($debug_mode) && $debug_mode == '1'){
-        $response_type = 'error';
+            $response_type = 'error';
             if (!empty($response)) {
                 $result = json_decode($response);
                 if (!isset($result->errorCode)) {

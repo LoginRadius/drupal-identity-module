@@ -10,7 +10,7 @@
 
  <span class="lr-linked-label" style="margin-right:4px;"> <#= Name #> is
 
-    <# if ("{{ currentprovider }}" == providerId) { #>
+    <# if ("{{ currentprovider }}" == Name.toLowerCase()) { #>
    </span> <span style="color:green">{{ 'Currently Connected'|t }}</span> 
     <# } else { #>
     </span> <span class="lr-linked-label" style="margin-right:4px;"> {{ 'Connected'|t }}
@@ -39,9 +39,5 @@
   <div id="interfacecontainerdiv" class="lr_singleglider_200 interfacecontainerdiv"></div>
   <div style="clear:both"></div>
 </div>
-<script>
-  jQuery(document).ready(function () {
-    initializeAccountLinkingCiamForms();
-  });
-</script>
+{{ attach_library('lr_ciam/drupal.account_linking') }}
 

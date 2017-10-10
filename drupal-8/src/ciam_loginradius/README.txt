@@ -1,4 +1,4 @@
-cIAM LoginRadius
+CIAM LoginRadius
 
 -- SUMMARY -- 
 
@@ -12,21 +12,29 @@ Fully managed registration service including Email Registration, Social Login, p
 1. Install as usual, 
 see https://www.drupal.org/documentation/install/modules-themes/modules-8 for
 further information.
-2. After successfully installing, you will see cIAM LoginRadius module in modules list in your site's admin account but do NOT enable the module yet because the required LoginRadius PHP SDK library is not installed.
-3. Module comes with a file loginradius/lr_ciam/composer.json. This file contains the dependency to LoginRadius PHP SDK so that Composer will know to download the SDK library in the next step.
+2. After successfully installing, you will see CIAM LoginRadius module in modules list in your site's admin account but do NOT enable the module yet because the required LoginRadius PHP SDK library is not installed.
+3. Module comes with a file loginradius/composer.json. This file contains the dependency to LoginRadius PHP SDK so that Composer will know to download the SDK library in the next step.
 3. Download and initialize Composer Manager to the /modules directory.
 4. Let Composer download LoginRadius PHP SDK library for you. On command line of your server:
   1. Go to the root directory of your Drupal installation.
   2. Execute the following command to install php sdk only 
-     composer require loginradius/php-sdk-2.0:4.2.0
-5. After Successfully install LoginRadius PHP SDK, Enable cIAM Module.
-3. Click on configuration link shown in cIAM or click on 
-   configuration tab, Then go to people block and click on cIAM LoginRadius 
-4. On configuration page, you will see config option for cIAM module .
+     composer require loginradius/php-sdk:4.3.0
+5. After Successfully install LoginRadius PHP SDK, Enable CIAM Module.
+3. Click on configuration link shown in CIAM or click on 
+   configuration tab, Then go to people block and click on CIAM LoginRadius 
+4. On configuration page, you will see config option for CIAM module .
 
 
 
 -- CHANGE LOG --
+
+  -- 3.1.0 --
+  *  Added google v2 recaptcha feature.
+  *  Added One Click Sign In feature.
+  *  Added login with phone number feature.
+  *  Added two factor authentication feature.
+  *  Added hosted page module to login, registration, forgot password etc via loginradius hosted page.
+
   -- 3.0.0 --
   *  Migrated plugin on V2 APIs.
   *  Removed social login, social Profile Data, social sharing from package.
