@@ -1,0 +1,19 @@
+lr_auth.settings_form:
+  path: 'admin/config/people/ciam/auth'
+  defaults:
+    _title: 'auth settings'
+    _form: '\Drupal\lr_auth\Form\AuthSettingsForm'
+  requirements:
+    _permission: 'administer user registration settings'
+  options:
+    no_cache: TRUE
+    
+lr_auth.authentication:
+  path: 'lrauth/authentication'
+  defaults:
+    _controller: '\Drupal\lr_auth\Controller\AuthController::getOauthAuthorize'
+    _title: 'Auth Setting'
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE

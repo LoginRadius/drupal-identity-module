@@ -182,7 +182,6 @@ function lr_ciam_form_user_pass_alter(&$form, FormStateInterface $form_state) {
     }
 }
 
-
 /**
  * Add variable to register form.
  *

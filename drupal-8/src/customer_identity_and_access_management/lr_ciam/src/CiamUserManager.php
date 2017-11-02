@@ -7,6 +7,7 @@
 namespace Drupal\lr_ciam;
 
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\user\Entity\User;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Url;
@@ -25,6 +26,7 @@ use \LoginRadiusSDK\CustomerRegistration\Management\AccountAPI;
 class CiamUserManager {
 
     public $module_config;
+    public $module_auth_config;
     protected $connection;
     protected $apiSecret;
     protected $apiKey;
@@ -32,9 +34,11 @@ class CiamUserManager {
     public function __construct() {
         $this->connection = \Drupal\Core\Database\Database::getConnection();
         $this->module_config = \Drupal::config('ciam.settings');
+        $this->module_auth_config = \Drupal::config('auth.settings');
         $this->apiSecret = trim($this->module_config->get('api_secret'));
         $this->apiKey = trim($this->module_config->get('api_key'));
-    }
+    }  
+    
 
     /**
      * Update uid.
@@ -496,9 +500,16 @@ class CiamUserManager {
         $variable_custom_path = (($variable_path == 'login_redirection') ? 'custom_login_url' : 'custom_register_url');
  
         $request_uri = \Drupal::request()->getRequestUri();
-        if (strpos($request_uri, 'redirect_to') !== FALSE) {        
-            $redirectUrl = \Drupal::request()->query->get('redirect_to');           
-            $response = new RedirectResponse($redirectUrl);             
+        if (strpos($request_uri, 'redirect_to') !== FALSE) {
+            // Redirect to front site.   
+            if (\Drupal::moduleHandler()->moduleExists('lr_auth') && $this->module_auth_config->get('auth_enable') == '1' && $this->module_auth_config->get('auth_secret') != '') {
+                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
+                $_SESSION['frontsiteurl']  = \Drupal::request()->query->get('redirect_to');
+                $redirectUrl = $domain . 'lrauth/authentication?response_type=token';
+            } else {                     
+                $redirectUrl = \Drupal::request()->query->get('redirect_to');    
+            }
+            $response = new TrustedRedirectResponse($redirectUrl);             
             return $response->send();
         } elseif ($this->module_config->get($variable_path) == 1) {
             // Redirect to profile.               
@@ -514,9 +525,9 @@ class CiamUserManager {
             else {
                 return new RedirectResponse(Url::fromRoute('<front>')->toString());
             }
-        } else {      
+        } else {
             // Redirect to same page.   
-             if(!empty($_SESSION['referer_url'])){                               
+             if(!empty($_SESSION['referer_url'])){                     
                     $refererUrl = $_SESSION['referer_url'];              
                     $response = new RedirectResponse($refererUrl);             
                     return $response->send();

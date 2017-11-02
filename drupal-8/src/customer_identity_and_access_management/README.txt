@@ -28,6 +28,10 @@ further information.
 
 -- CHANGE LOG --
 
+  -- 3.2.0 --
+  *  Added lr auth module to generate access token of simple oauth module.
+  *  Updated composer.json file.
+
   -- 3.1.0 --
   *  Added google v2 recaptcha feature.
   *  Added One Click Sign In feature.

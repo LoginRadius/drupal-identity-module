@@ -28,8 +28,9 @@ class CiamController extends ControllerBase {
     protected $user_manager;
     protected $connection;
 
+   
     public function __construct($user_manager) {
-        $this->user_manager = $user_manager;
+        $this->user_manager = $user_manager;    
     }
 
     /**
@@ -37,9 +38,9 @@ class CiamController extends ControllerBase {
      */
     public static function create(ContainerInterface $container) {
         return new static(
-            $container->get('lr_ciam.user_manager')
+            $container->get('lr_ciam.user_manager')     
         );
-    }
+    }   
 
     /**
      * Return change password form

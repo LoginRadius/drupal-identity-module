@@ -1,5 +1,5 @@
 {
-    "name": "drupal/lr_ciam",
+    "name": "drupal/customer_identity_and_access_management",
     "require": {
         "loginradius/php-sdk": "4.3.0"
     }

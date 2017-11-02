@@ -1,0 +1,9 @@
+<?php
+/**
+ * Implements hook_install().
+ */
+
+function lr_auth_install(){
+	 module_set_weight('lr_auth',4);
+}
+

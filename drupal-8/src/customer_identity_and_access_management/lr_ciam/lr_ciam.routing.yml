@@ -6,8 +6,7 @@ lr_ciam.change_password:
   requirements:
     _custom_access: '\Drupal\lr_ciam\Controller\CiamController::changePasswordAccess'
   options:
-    no_cache: TRUE
-    
+    no_cache: TRUE    
   
 lr_ciam.user_register_validate:
   path: 'user/ciamlogin'
