@@ -61,33 +61,33 @@ class CiamController extends ControllerBase {
      * Show change password form
      *        
      */
-    public function changePasswordAccess() {
+   public function changePasswordAccess() {
         $config = \Drupal::config('ciam.settings');
         $user = \Drupal::currentUser()->getRoles();
         $access_granted = in_array("administrator", $user);
-        $optionVal = $config->get('ciam_email_verification_condition');
+        $optionVal = $config->get('ciam_email_verification_condition');    
         if ($access_granted) {
             return AccessResult::forbidden();
         }
-        elseif ($optionVal == 1) {           
+        else if ($optionVal === '0' || $optionVal === '2') {
+            if ($_SESSION['provider'] == 'Email') {
+                return AccessResult::allowed();
+            }
+            else {        
+                return AccessResult::forbidden();
+            }
+        }
+        elseif ($optionVal === '1') {      
             if ($_SESSION['provider'] == 'Email' || $_SESSION['emailVerified']) {
                 return AccessResult::allowed();
             }
             else {
                 return AccessResult::forbidden();
             }
-        }
-        else if ($optionVal == 2) {
-            if ($_SESSION['provider'] == 'Email') {
-                return AccessResult::allowed();
-            }
-            else {
-                return AccessResult::forbidden();
-            }
-        }
-        return AccessResult::allowed();
+        }        
+        return AccessResult::forbidden();
     }
-
+    
     /**
      * Response for path 'user/login'
      *
