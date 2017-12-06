@@ -28,7 +28,7 @@ further information.
 
 -- CHANGE LOG --
 
-  -- 3.3.1 --
+  -- 8.x-3.4 --
   *  Added lr simple oauth module to authenticate user using LR API. 
   *  Removed lr auth module.
 
