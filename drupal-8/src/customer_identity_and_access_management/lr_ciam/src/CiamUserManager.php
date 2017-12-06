@@ -380,13 +380,11 @@ class CiamUserManager {
             $result = $accountObj->getProfileByUid($userprofile->Uid);
         }
         catch (LoginRadiusException $e) {
-                 \Drupal::logger('ciam')->error($e);                              
+            \Drupal::logger('ciam')->error($e);                              
         }
 
         if (isset($result) && !empty($result)) {
- 
-            if (is_array($result) || is_object($result)) {
-                
+            if (is_array($result) || is_object($result)) {               
                 $query = \Drupal::database()->select('loginradius_mapusers', 'lu');
                 $query->addField('lu', 'user_id');
                 $query->condition('lu.user_id', $new_user->id());
@@ -432,7 +430,7 @@ class CiamUserManager {
                     if (isset($user_name) && $user_name != '' && $dbuname != $user_name) {
                         try {
                             $this->connection->update('users_field_data')
-                                ->fields(array('name' => $dbuname))
+                                ->fields(array('name' => $user_name))
                                 ->condition('uid', $new_user->id())
                                 ->execute();
                         }
@@ -501,14 +499,8 @@ class CiamUserManager {
  
         $request_uri = \Drupal::request()->getRequestUri();
         if (strpos($request_uri, 'redirect_to') !== FALSE) {
-            // Redirect to front site.   
-            if (\Drupal::moduleHandler()->moduleExists('lr_auth') && $this->module_auth_config->get('auth_enable') == '1' && $this->module_auth_config->get('auth_secret') != '') {
-                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
-                $_SESSION['frontsiteurl']  = \Drupal::request()->query->get('redirect_to');
-                $redirectUrl = $domain . 'lrauth/authentication?response_type=token';
-            } else {                     
-                $redirectUrl = \Drupal::request()->query->get('redirect_to');    
-            }
+            // Redirect to front site.                     
+            $redirectUrl = \Drupal::request()->query->get('redirect_to');            
             $response = new TrustedRedirectResponse($redirectUrl);             
             return $response->send();
         } elseif ($this->module_config->get($variable_path) == 1) {

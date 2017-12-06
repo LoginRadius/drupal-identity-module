@@ -217,7 +217,7 @@ function template_preprocess_lr_ciam_popup(&$variables) {
  * @param $variables
  * 
  */
-function lr_ciam_preprocess(&$variables) {
+function lr_ciam_preprocess(&$variables) {  
     $variables['image_path'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.gif';
 }
 
@@ -232,6 +232,7 @@ function template_preprocess_user_login_form(&$variables) {
     $variables['interface_label'] = $config->get('interface_label');
     $variables['api_key'] = trim($config->get('api_key'));
 }
+
 
 /**
  * Get provider name.
@@ -266,6 +267,7 @@ function lr_ciam_add_loginradius_userdata($userprofile, $token) {
 function lr_ciam_page_attachments(&$page) {
     $config = \Drupal::config('ciam.settings');
     if (isset($_COOKIE['lr_message']) && $_COOKIE['lr_message'] != '') { 
+        
         $sec = $config->get('ciam_auto_hide_messages');
         $message = isset($_COOKIE['lr_message']) ? $_COOKIE['lr_message'] : '';                       
         $response = (isset($_GET['lrresponse']) && $_GET['lrresponse'] != 'true') ? "error" : "success" ;
@@ -475,7 +477,7 @@ function lr_ciam_page_attachments(&$page) {
 function lr_ciam_get_sott($apiKey, $secret) {
     if ($apiKey != '' && $secret != '') {
         $accountObj = new AccountAPI($apiKey, $secret, array('output_format' => 'json'));
-        try {  
+        try { 
             $result = $accountObj->generateSOTT('10');
             return $result = isset($result->Sott) ? $result->Sott : '';
         }
@@ -775,7 +777,7 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
         unset($form['#validate'][1]);
         unset($form['account']['pass']);
         unset($form['account']['current_pass']);
-        $form['account']['mail']['#disabled'] = TRUE;
+       // $form['account']['mail']['#disabled'] = TRUE;
         $apiKey = trim($config->get('api_key'));
         $apiSecret = trim($config->get('api_secret'));
         $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));

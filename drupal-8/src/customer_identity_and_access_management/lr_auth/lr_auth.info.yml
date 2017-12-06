@@ -1,9 +1,0 @@
-name: Auth
-type: module
-description: 'Allow users to authenticate using simaple oauth.'
-package: CIAM LoginRadius
-dependencies:
-  - simple_oauth
-core: 8.x
-version: '3.3.0'
-project: 'customer_identity_and_access_management'

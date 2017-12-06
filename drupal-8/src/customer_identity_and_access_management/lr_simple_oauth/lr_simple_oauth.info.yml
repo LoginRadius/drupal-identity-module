@@ -1,0 +1,9 @@
+name: LoginRadius Simple OAuth
+type: module
+description: LoginRadius OAuth authentication integration with Simple OAuth.
+core: 8.x
+version: 3.3.1
+package: CIAM LoginRadius
+dependencies:
+  - drupal:lr_ciam
+  - drupal:simple_oauth

@@ -87,25 +87,21 @@ class AdvancedSettingsForm extends ConfigFormBase {
           '#description' => t('If you want to set password length validation then set both minimum and maximum password length, otherwise it will not work.'),
           '#attributes' => array('placeholder' => t('32')),
         ];
-
         $form['lr_user_settings']['ciam_welcome_email_template'] = [
           '#type' => 'textfield',
           '#title' => t('Enter template name for welcome email'),
           '#default_value' => $config->get('ciam_welcome_email_template'),    
-        ];
-        
+        ];        
         $form['lr_user_settings']['ciam_email_verification_template'] = [
           '#type' => 'textfield',
           '#title' => t('Enter template name for email verification email'),
           '#default_value' => $config->get('ciam_email_verification_template'),    
-        ];
-        
+        ];        
         $form['lr_user_settings']['ciam_forgot_password_template'] = [
           '#type' => 'textfield',
           '#title' => t('Enter template name for forgot password email'),
           '#default_value' => $config->get('ciam_forgot_password_template'),         
-        ];
-        
+        ];        
         $form['lr_user_settings']['ciam_custom_options'] = [
           '#type' => 'textarea',
           '#title' => t('Please enter custom user registration options for LoginRadius interface.<a title="Custom User Registration options that are added in the LoginRadius js."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
@@ -170,7 +166,7 @@ class AdvancedSettingsForm extends ConfigFormBase {
             'false' => t('No'),
           ),
         ];     
-        
+       
         $form['lr_user_settings']['ciam_auto_hide_messages'] = [
           '#type' => 'textfield',
           '#title' => t('Auto hide success and error message<a title="Please enter the duration (in seconds) after which the response messages will get hidden."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),

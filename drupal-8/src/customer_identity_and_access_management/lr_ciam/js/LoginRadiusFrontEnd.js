@@ -357,18 +357,18 @@ function initializeResetPasswordCiamForm(commonOptions) {
                         lrSetCookie('lr_message', 'Your email has been verified successfully.');
                         window.location.href = window.location.href.split('?')[0] + '?lrresponse=true';
                     }
-                }   
+                } 
             };
             verifyemail_options.onError = function (errors) {
                  lrSetCookie('lr_message', errors[0].Description);  
-                 window.location.href = window.location.href.split('?')[0] + '?lrresponse=false';             
+                 window.location.href = window.location.href.split('?')[0] + '?lrresponse=false';
             }
-
-            LRObject.init("verifyEmail", verifyemail_options);         
             
-         } else if (vtype == "oneclicksignin") {     
+            LRObject.init("verifyEmail", verifyemail_options);
+            
+         } else if (vtype == "oneclicksignin") {   
             var options = {};
-            options.onSuccess = function (response) {  
+            options.onSuccess = function (response) {
                 ciamRedirect(response.access_token);               
             };
             options.onError = function (errors) {               

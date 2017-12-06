@@ -1,8 +1,0 @@
-lr_auth.settings_form:
-  route_name: lr_auth.settings_form
-  title: 'Auth'
-  base_route: lr_ciam.settings_form
-  weight: 6
-
-
-

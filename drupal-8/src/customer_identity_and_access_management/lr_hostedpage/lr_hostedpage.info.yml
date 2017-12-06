@@ -1,10 +1,10 @@
 name: Hosted Page
 type: module
-description: 'Allow users to sign up/login/forgot password etc on hosted pages.'
+description: Allow users to sign up/login/forgot password etc on hosted pages.
 package: CIAM LoginRadius
 dependencies:
   - lr_ciam
 core: 8.x
 configure: lr_hostedpage.settings_form
-version: '3.3.0'
-project: 'customer_identity_and_access_management'
+version: 3.3.1
+project: customer_identity_and_access_management

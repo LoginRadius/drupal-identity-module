@@ -16,9 +16,7 @@ use \LoginRadiusSDK\LoginRadiusException;
 use \LoginRadiusSDK\Clients\IHttpClient;
 use \LoginRadiusSDK\Clients\DefaultHttpClient;
 use \LoginRadiusSDK\Utility\SOTT;
-use \LoginRadiusSDK\CustomerRegistration\Social\SocialLoginAPI;
 use \LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
-use \LoginRadiusSDK\CustomerRegistration\Management\AccountAPI;
 
 /**
  * Returns responses for Social Login module routes.
@@ -70,7 +68,7 @@ class CiamController extends ControllerBase {
             return AccessResult::forbidden();
         }
         else if ($optionVal === '0' || $optionVal === '2') {
-            if ($_SESSION['provider'] == 'Email') {
+            if (isset($_SESSION['provider']) && $_SESSION['provider'] == 'Email') {
                 return AccessResult::allowed();
             }
             else {        
@@ -78,7 +76,7 @@ class CiamController extends ControllerBase {
             }
         }
         elseif ($optionVal === '1') {      
-            if ($_SESSION['provider'] == 'Email' || $_SESSION['emailVerified']) {
+            if ((isset($_SESSION['provider']) && $_SESSION['provider'] == 'Email') || (isset($_SESSION['emailVerified']) && $_SESSION['emailVerified'])) {
                 return AccessResult::allowed();
             }
             else {
@@ -105,46 +103,27 @@ class CiamController extends ControllerBase {
             drupal_set_message('Password reset information sent to your provided email id, check email for further instructions');
             return $this->redirect("<front>");
         }        
-
-        $request_token = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';        
-        if (isset($_REQUEST['token'])) {        
+  
+        if (isset($_REQUEST['token'])) {     
             $apiKey = trim($config->get('api_key'));
             $apiSecret = trim($config->get('api_secret'));
 
             try {
-                $socialLoginObj = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));
-            }
-            catch (LoginRadiusException $e) {                   
-                \Drupal::logger('ciam')->error($e);
-                drupal_set_message($e->getMessage(), 'error');
-                return $this->redirect('user.login');
-            }
-            try {
                 $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));
             }
-            catch (LoginRadiusException $e) {    
-                \Drupal::logger('ciam')->error($e);
-                drupal_set_message($e->getMessage(), 'error');
-                return $this->redirect('user.login');
-            } 
-            
-            //Get Access token.
-            try {
-                $result_accesstoken = $socialLoginObj->exchangeAccessToken(trim($_REQUEST['token']));
-                }
             catch (LoginRadiusException $e) {
                 \Drupal::logger('ciam')->error($e);
                 drupal_set_message($e->getMessage(), 'error');
                 return $this->redirect('user.login');
             }
 
-            $_SESSION['access_token'] = $result_accesstoken->access_token;     
+            $_SESSION['access_token'] = trim($_REQUEST['token']);     
               //Get Userprofile form Access Token.
             try {
-                $userprofile = $userObject->getProfile($result_accesstoken->access_token);
-                $userprofile->widget_token = isset($result_accesstoken) ? $result_accesstoken->access_token : '';
+                $userprofile = $userObject->getProfile(trim($_REQUEST['token']));
+                $userprofile->widget_token = isset($_REQUEST['token']) ? $_REQUEST['token'] : '';
             }
-            catch (LoginRadiusException $e) {                
+            catch (LoginRadiusException $e) {
                 \Drupal::logger('ciam')->error($e); 
                 drupal_set_message($e->getMessage(), 'error');
                 return $this->redirect('user.login');
@@ -186,7 +165,7 @@ class CiamController extends ControllerBase {
                return $this->user_manager->handleUserCallback($userprofile);
             }
         }
-        else {    
+        else { 
             return $this->redirect('user.login');
         }
     }
