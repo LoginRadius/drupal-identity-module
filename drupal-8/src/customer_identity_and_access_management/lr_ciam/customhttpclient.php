@@ -14,13 +14,17 @@ use \LoginRadiusSDK\Clients\DefaultHttpClient;
 class CustomHttpClient  implements IHttpClient {
     
     public function request($path, $query_array = array(), $options = array())
-    {        
+    {
         $parse_url = parse_url($path);
         $request_url = '';
         if (!isset($parse_url['scheme']) || empty($parse_url['scheme'])) {
             $request_url .= API_DOMAIN;
         }
         $request_url .= $path;
+        $method = isset($options['method']) ? strtolower($options['method']) : 'GET';
+        $post_data = isset($options['post_data']) ? $options['post_data'] : array();
+        $content_type = isset($options['content_type']) ? trim($options['content_type']) : 'x-www-form-urlencoded';
+      
         if ($query_array !== false) {     
             if(isset($options['authentication']) && $options['authentication'] == 'headsecure'){
                 $options = array_merge($options, Functions::authentication(array(), $options['authentication']));
@@ -44,6 +48,33 @@ class CustomHttpClient  implements IHttpClient {
             throw new LoginRadiusException('cURL or FSOCKOPEN is not enabled, enable cURL or FSOCKOPEN to get response from LoginRadius API.');
         }
         
+        $requestedData = array('GET' => $query_array,
+          'POST' => (isset($options['post_data']) ? $options['post_data'] : array()));
+        $config = \Drupal::config('ciam.settings');
+        $debug_mode = $config->get('ciam_debug_mode');
+        if (isset($debug_mode) && $debug_mode == '1') {
+            $response_type = 'error';
+            if (!empty($response)) {
+                $result = json_decode($response);
+                if (!isset($result->errorCode)) {
+                    $response_type = 'success';
+                }
+            }
+            $logData['endpoint'] = $request_url;
+            $logData['method'] = $method;
+            $logData['data'] = !empty($requestedData) ? json_encode($requestedData) : '';
+            $logData['response'] = json_encode($response);
+            $logData['response_type'] = ucfirst($response_type);
+            $logData['created_date'] = REQUEST_TIME;
+
+            if ($response_type != 'success') {
+                \Drupal::logger('ciam')->error(serialize($logData));
+            }
+            else {
+                \Drupal::logger('ciam')->info(serialize($logData));
+            }
+        }
+
         if (!empty($response)) {
             $result = json_decode($response);
             if (isset($result->ErrorCode) && !empty($result->ErrorCode)) {
@@ -79,7 +110,6 @@ class CustomHttpClient  implements IHttpClient {
         if(isset($options['proxy']) && $options['proxy']['host'] != '' && $options['proxy']['port'] != ''){  
              curl_setopt($curl_handle, CURLOPT_PROXY, 'http://'.$options['proxy']['user'] .':'.$options['proxy']['password'].'@'.$options['proxy']['host'].':'.$options['proxy']['port']);
         }
-        
         if (!empty($data) || $data === true) {
             if (($content_type == 'json') && (is_array($data) || is_object($data))) {
                 $data = json_encode($data);
@@ -114,8 +144,7 @@ class CustomHttpClient  implements IHttpClient {
      * @param type $options
      * @return type
      */
-     private function fsockopenApiMethod($request_url, $options = array())
-    {
+    private function fsockopenApiMethod($request_url, $options = array()) {
         $ssl_verify = isset($options['ssl_verify']) ? $options['ssl_verify'] : false;
         $method = isset($options['method']) ? strtolower($options['method']) : 'get';
         $data = isset($options['post_data']) ? $options['post_data'] : array();
@@ -123,30 +152,37 @@ class CustomHttpClient  implements IHttpClient {
         $sott_header_content = isset($options['X-LoginRadius-Sott']) ? trim($options['X-LoginRadius-Sott']) : '';
         $apikey_header_content = isset($options['X-LoginRadius-ApiKey']) ? trim($options['X-LoginRadius-ApiKey']) : '';
         $secret_header_content = isset($options['X-LoginRadius-ApiSecret']) ? trim($options['X-LoginRadius-ApiSecret']) : '';
-        if (!empty($data)) {
-            if(($content_type == 'json') && (is_array($data) || is_object($data))){
+        
+        $optionsArray = array('http' =>
+          array(
+            'method' => strtoupper($method),
+            'timeout' => 50,
+            'ignore_errors' => true,            
+            'header' => 'Content-Type: application/' . $content_type
+            ),
+            "ssl" => array(
+                    "verify_peer" => $ssl_verify
+            )
+        );
+        if (!empty($data) || $data === true) {
+            if (($content_type == 'json') && (is_array($data) || is_object($data))) {
                 $data = json_encode($data);
             }
-            $options = array('http' =>
-                array(
-                    'method' => strtoupper($method),
-                    'timeout' => 50,
-                    'header' => 'Content-type :application/' . $content_type .',X-LoginRadius-Sott:'.$sott_header_content . ',X-LoginRadius-ApiKey:'.$apikey_header_content.',X-LoginRadius-ApiSecret:'.$secret_header_content,
-                    'content' => (($content_type == 'json') ? $data : Functions::queryBuild($data))
-                ),
-                "ssl" => array(
-                    "verify_peer" => $ssl_verify
-                )
-            );
-            $context = stream_context_create($options);
-        } else {
-            $context = NULL;
-            if ($method == 'delete') {
-                $options = array('http' =>
-                    array('method' => strtoupper($method)));
-            }
+            $optionsArray['http']['header'] .= "\r\n".'Content-Length:' .(($data === true)?'0':strlen($data));
+            $optionsArray['http']['content'] = (($content_type == 'json') ? $data : Functions::queryBuild($data));
         }
-        $json_response = @file_get_contents($request_url, false, $context);
+        if ($sott_header_content != '') {
+            $optionsArray['http']['header'] .= "\r\n" . 'X-LoginRadius-Sott: ' . $sott_header_content;
+        }
+        if ($apikey_header_content != '') {
+            $optionsArray['http']['header'] .= "\r\n" . 'X-LoginRadius-ApiKey: ' . $apikey_header_content;
+        }
+        if ($secret_header_content != '') {
+            $optionsArray['http']['header'] .= "\r\n" . 'X-LoginRadius-ApiSecret: ' . $secret_header_content;
+        }        
+          
+        $context = stream_context_create($optionsArray);
+        $json_response = file_get_contents($request_url, false, $context);
         if (!$json_response) {
             throw new LoginRadiusException('file_get_contents error');
         }

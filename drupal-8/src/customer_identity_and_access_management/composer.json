@@ -3,7 +3,7 @@
     "description": "The LoginRadius Customer Identity and Access Management",
     "type": "drupal-module",
     "require": {
-        "loginradius/php-sdk": "4.5.0"
+        "loginradius/php-sdk": "4.5.1"
     },
     "license": "GPL-2.0+"
 }

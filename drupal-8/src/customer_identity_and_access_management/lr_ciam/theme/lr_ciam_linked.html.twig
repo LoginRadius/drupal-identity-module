@@ -10,15 +10,11 @@
 
  <span class="lr-linked-label" style="margin-right:4px;"> <#= Name #> is
 
-    <# if ("{{ currentprovider }}" == Name.toLowerCase()) { #>
-   </span> <span style="color:green">{{ 'Currently Connected'|t }}</span> 
-    <# } else { #>
     </span> <span class="lr-linked-label" style="margin-right:4px;"> {{ 'Connected'|t }}
 </span> 
        <span> <a style="margin-left:10px;cursor: pointer"
                  onclick='return <#=ObjectName#>.util.unLinkAccount(\"<#= Name.toLowerCase() #>\",\"<#= providerId #>\")'>Unlink</a></span>
-    <# } #>
-        
+         
       </div>
     </div>
     </div>

@@ -16,7 +16,6 @@ use \LoginRadiusSDK\Utility\Functions;
 use \LoginRadiusSDK\LoginRadiusException;
 use \LoginRadiusSDK\Clients\IHttpClient;
 use \LoginRadiusSDK\Clients\DefaultHttpClient;
-use \LoginRadiusSDK\CustomerRegistration\Social\SocialLoginAPI;
 use \LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
 use \LoginRadiusSDK\CustomerRegistration\Management\AccountAPI;
 
@@ -37,7 +36,7 @@ class CiamUserManager {
         $this->module_auth_config = \Drupal::config('auth.settings');
         $this->apiSecret = trim($this->module_config->get('api_secret'));
         $this->apiKey = trim($this->module_config->get('api_key'));
-    }  
+    }
     
 
     /**
@@ -72,8 +71,7 @@ class CiamUserManager {
             
         }
     }
-
-
+    
     /**
      * Get Ciam uid from users table.
      * @param $user_id
@@ -115,8 +113,8 @@ class CiamUserManager {
            return $accountObj->update($uid, $data);   
            
         }
-        catch (LoginRadiusException $e) {    
-     
+        catch (LoginRadiusException $e) {   
+            \Drupal::logger('ciam')->error($e);   
         }
     }
     
@@ -134,11 +132,10 @@ class CiamUserManager {
             $data = array(
               "IsActive" => "true"
             );          
-            return $accountObj->update($uid, $data);   
-             
+            return $accountObj->update($uid, $data);             
         }
         catch (LoginRadiusException $e) {   
-               
+               \Drupal::logger('ciam')->error($e);   
         }
     }
     
@@ -259,6 +256,12 @@ class CiamUserManager {
             $user_name = explode('@', $userprofile->Email_value);
             $username = $user_name[0];
         }
+        elseif (!empty($userprofile->PhoneId)) {
+           $username = str_replace(array(
+          "-",         
+          "+",
+                ), "", $userprofile->PhoneId);
+        }
         else {
             $username = $userprofile->ID;
         }
@@ -272,62 +275,18 @@ class CiamUserManager {
      * @return string Username of user
      */
     public function usernameOption($userprofile) {
-        $option = $this->module_config->get('username_option');
-        $enableUname = $this->module_config->get('ciam_enable_user_name');
-        $emailVerifyOption = $this->module_config->get('ciam_email_verification_condition');
-        if (isset($emailVerifyOption) && $emailVerifyOption == '1') {
-            $enableUname = 'false';
-        }
-        if (isset($enableUname) && $enableUname == 'true') {
-                $username = '';          
-                if ($userprofile->Provider == 'Email' && $userprofile->UserName != '') {
-                    $username = $userprofile->UserName;
-                }
-                if($username == ''){
-                  $username = $this->getNameAccordingToDisplayOption($userprofile);
-            }
-        }
-       
-        else if (!empty($userprofile->FirstName) && !empty($userprofile->LastName) && $option != 2) {
-            if ($option == 1) {
-                $username = $userprofile->FirstName . '-' . $userprofile->LastName;
-            }
-            else {
-                $username = $userprofile->FirstName . ' ' . $userprofile->LastName;
-            }
-        }
-        elseif ($option == 2 && !empty($userprofile->Email_value)) {
-            $username = $userprofile->Email_value;
-        }
-        else {
+        if (isset($userprofile->Provider) && $userprofile->Provider == 'Email' && isset($userprofile->UserName) && $userprofile->UserName != '') {
+            $username = $userprofile->UserName;
+        } elseif (!empty($userprofile->FirstName) && !empty($userprofile->LastName)) {
+                $username = $userprofile->FirstName . ' ' . $userprofile->LastName;            
+        } elseif (!empty($userprofile->Email_value)) {
+                $username = $userprofile->Email_value;           
+        } else {
             $username = $this->getDisplayName($userprofile);
         }
         return $username;
     }
     
-    /**
-     * get username based on username option
-     *
-     * @param object $userprofile
-     * @return string Username of user
-     */
-    
-    public function getNameAccordingToDisplayOption($userprofile){
-        $option = $this->module_config->get('username_option');
-        if (!empty($userprofile->FirstName) && !empty($userprofile->LastName) && $option != 2) {
-            if ($option == 1) {
-                $username = $userprofile->FirstName . '-' . $userprofile->LastName;
-            }
-            else {
-                $username = $userprofile->FirstName . ' ' . $userprofile->LastName;
-            }
-        }
-        elseif ($option == 2 && !empty($userprofile->Email_value)) {
-            $username = $userprofile->Email_value;
-        }
-        return $username;
-    }
-
      /**
      * Check exist username
      *
@@ -380,11 +339,11 @@ class CiamUserManager {
             $result = $accountObj->getProfileByUid($userprofile->Uid);
         }
         catch (LoginRadiusException $e) {
-            \Drupal::logger('ciam')->error($e);                              
+                 \Drupal::logger('ciam')->error($e);                              
         }
 
         if (isset($result) && !empty($result)) {
-            if (is_array($result) || is_object($result)) {               
+            if (is_array($result) || is_object($result)) {                
                 $query = \Drupal::database()->select('loginradius_mapusers', 'lu');
                 $query->addField('lu', 'user_id');
                 $query->condition('lu.user_id', $new_user->id());
@@ -396,16 +355,11 @@ class CiamUserManager {
                 }
             }
         }   
-
-        $_SESSION['spd_userprofile'] = $userprofile;      
+        
         if ($new_user->isActive()) { 
             $url = '';
             $isNew = FALSE;
            
-            if ($userprofile->FirstLogin) {
-                $url = 'register_redirection';
-            }
-
             if (!$new_user->isNew()) {    
                 $this->field_create_user_object($new_user, $userprofile);
                 $new_user->save();
@@ -415,7 +369,6 @@ class CiamUserManager {
 
             \Drupal::service('session')->migrate();
             \Drupal::service('session')->set('lrID', $userprofile->ID);
-            \Drupal::service('session')->set('provide_name', $userprofile->Provider);
             $_SESSION['emailVerified'] = false;
             if (isset($userprofile->EmailVerified)) {
                 $_SESSION['emailVerified'] = $userprofile->EmailVerified;
@@ -426,7 +379,6 @@ class CiamUserManager {
                 $user_manager = \Drupal::service('lr_ciam.user_manager');
                 $dbuname = $user_manager->lr_ciam_get_ciam_uname($new_user->id());
                 if (isset($dbuname) && $dbuname != '') {
-
                     if (isset($user_name) && $user_name != '' && $dbuname != $user_name) {
                         try {
                             $this->connection->update('users_field_data')
@@ -495,12 +447,12 @@ class CiamUserManager {
         }
         //Advanced module LR Code Hook End
         $variable_path = (!empty($variable_path) ? $variable_path : 'login_redirection');
-        $variable_custom_path = (($variable_path == 'login_redirection') ? 'custom_login_url' : 'custom_register_url');
+        $variable_custom_path = (($variable_path == 'login_redirection') ? 'custom_login_url' : '');
  
         $request_uri = \Drupal::request()->getRequestUri();
         if (strpos($request_uri, 'redirect_to') !== FALSE) {
-            // Redirect to front site.                     
-            $redirectUrl = \Drupal::request()->query->get('redirect_to');            
+            // Redirect to front site.                                 
+            $redirectUrl = \Drupal::request()->query->get('redirect_to');               
             $response = new TrustedRedirectResponse($redirectUrl);             
             return $response->send();
         } elseif ($this->module_config->get($variable_path) == 1) {
@@ -600,6 +552,7 @@ class CiamUserManager {
                 }
 
                 $data = $this->checkExistUsername($userprofile);
+                
                 //set up the user fields
                 $password = user_password(32);
                 $fields = array(
@@ -609,14 +562,13 @@ class CiamUserManager {
                   'pass' => $password,
                   'status' => $newUserStatus,
                 );
-
-                $new_user = User::create($fields);
-
+                
+                $new_user = User::create($fields);                
                 $this->field_create_user_object($new_user, $userprofile);
                 $new_user->save();
-                // Log notice and invoke Rules event if new user was succesfully created
+               
+                // Log notice and invoke Rules event if new user was succesfully created                
                 if ($new_user->id()) {
-
                     \Drupal::logger('ciam')
                         ->notice('New user created. Username %username, UID: %uid', array(
                           '%username' => $new_user->getDisplayName(),
@@ -648,7 +600,7 @@ class CiamUserManager {
                     }
                 }
                 else {
-                    // Something went wrong
+                    // Something went wrong                                
                     drupal_set_message(t('Creation of user account failed. Please contact site administrator.'), 'error');
                     \Drupal::logger('ciam')->error('Could not create new user.');
                     return FALSE;
@@ -683,7 +635,6 @@ class CiamUserManager {
             }
             else {
                 drupal_set_message(t('Only site administrators can create new user accounts.'), 'error');
-
                 return new RedirectResponse(Url::fromRoute('user.login')->toString());
             }
         }
@@ -692,23 +643,24 @@ class CiamUserManager {
     /**
      * Get random email
      *
-     * @param string $provider     
+     * @param string $host     
      * @param string $id     
      * @return mixed
      */
     
-    public function getRandomEmail($provider, $id) {
+    public function getRandomEmail($host, $id) {        
         $email_name = substr(str_replace(array(
           "-",
           "/",
           ".",
-                ), "_", $id), -10);
-        $email = $email_name . '@' . $provider . '.com';
+          "+",
+                ), "", $id), -13);
+        $email = $email_name . '@' . $host . '.com';
         $account = user_load_by_mail($email);
 
         if ($account) {
             $id = $email_name . rand();
-            $email = $this->getRandomEmail($id, $provider);
+            $email = $this->getRandomEmail($id, $host);
         }
         return $email;
     }
@@ -734,7 +686,8 @@ class CiamUserManager {
         
         if (!$drupal_user) {
             if (empty($userprofile->Email_value)) {
-                $userprofile->Email_value = $this->getRandomEmail($userprofile->Provider, $userprofile->ID);
+                $phoneid = isset($userprofile->PhoneId) ? $userprofile->PhoneId : $userprofile->ID;                
+                $userprofile->Email_value = $this->getRandomEmail($_SERVER['HTTP_HOST'], $phoneid);
             }
             if (!empty($userprofile->Email_value)) {
                 $drupal_user = $this->getUserByEmail($userprofile->Email_value);
@@ -743,7 +696,7 @@ class CiamUserManager {
                 }
             }
         }
-
+           
         if ($drupal_user) {     
             return $this->provideLogin($drupal_user, $userprofile, TRUE);
         }

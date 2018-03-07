@@ -7,12 +7,14 @@
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Core\Entity\EntityTypeInterface;
 use \LoginRadiusSDK\Utility\Functions;
 use \LoginRadiusSDK\LoginRadiusException;
 use \LoginRadiusSDK\Clients\IHttpClient;
 use \LoginRadiusSDK\Clients\DefaultHttpClient;
 use \LoginRadiusSDK\Utility\SOTT;
+use \LoginRadiusSDK\Advance\CloudAPI;
 use \LoginRadiusSDK\CustomerRegistration\Social\SocialLoginAPI;
 use \LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
 use \LoginRadiusSDK\CustomerRegistration\Management\AccountAPI;
@@ -34,13 +36,33 @@ function lr_ciam_theme() {
         'render element' => 'form',
         'path' => $path,
       ),
+      'user_login' => array(
+        'template' => 'user_login',
+        'render element' => 'form',
+        'path' => $path,
+      ),
+      'user_register' => array(
+        'template' => 'user_register',
+        'render element' => 'form',
+        'path' => $path,
+      ),
+      'user_register_form' => array(
+        'template' => 'user_register_form',
+        'render element' => 'form',
+        'path' => $path,
+      ),
+      'set_password' => array(
+        'template' => 'set_password',
+        'render element' => 'form',
+        'path' => $path,
+      ),
       'change_password' => array(
         'variables' => array(
           'params' => NULL,
         ),
         'template' => 'change_password',
         'path' => $path,
-      ),
+      ),      
       '2fa_container' => array(
         'variables' => array(
           'params' => NULL,
@@ -76,6 +98,11 @@ function lr_ciam_theme() {
         'template' => 'add_email',
         'path' => $path,
       ),
+       'user_pass_form' => array(
+        'template' => 'user_pass_form',
+        'render element' => 'form',
+        'path' => $path,
+      ),   
       'user_pass' => array(
         'template' => 'user_pass',
         'render element' => 'form',
@@ -117,12 +144,6 @@ function lr_ciam_theme() {
         'path' => $path,
       ),
     );
-
-    $theme['user_register_form'] = array(
-      'template' => 'user_register_form',
-      'render element' => 'form',
-      'path' => $path,
-    );
     return $theme;
 }
 
@@ -134,9 +155,30 @@ function lr_ciam_theme() {
 function template_preprocess_lr_ciam_linked(&$vars) {
     global $base_url;
     $vars['currentid'] = $_SESSION['_sf2_attributes']['lrID'];
-    $vars['currentprovider'] = $_SESSION['current_provider'];
     $vars['image_url'] = $base_url . '/' . drupal_get_path('module', 'lr_ciam') . '/images';
     $vars['callback'] = lr_ciam_get_callback_url();
+}
+
+/**
+ * Show and hide user pass form block.
+ *
+ * @param $variables
+ */
+function template_preprocess_user_pass(&$variables) {
+    $config = \Drupal::config('ciam.settings');
+    $variables['api_key'] = trim($config->get('api_key'));
+       
+    $blocks = \Drupal\block\Entity\Block::loadMultiple();
+        foreach ($blocks as $key => $block) {       
+        $settings = $block->get('settings'); 
+        if($key == 'userforgotpasswordblock'){  
+            $block_settings = array();
+            $block_settings = $settings;
+        } 
+    }    
+     
+    $variables['link_login'] = isset($block_settings['forgot_block_link_login']) ? $block_settings['forgot_block_link_login'] : ''; 
+    $variables['link_register'] = isset($block_settings['forgot_block_link_register']) ? $block_settings['forgot_block_link_register'] : ''; 
 }
 
 /**
@@ -144,7 +186,8 @@ function template_preprocess_lr_ciam_linked(&$vars) {
  *
  * @param $variables
  */
-function template_preprocess_user_pass(&$variables) {
+  
+function template_preprocess_user_pass_form(&$variables) {
     $config = \Drupal::config('ciam.settings');
     $variables['api_key'] = trim($config->get('api_key'));
     if (!\Drupal::currentUser()->isAnonymous()) {
@@ -164,7 +207,7 @@ function template_preprocess_user_pass(&$variables) {
  * 
  * return $form
  */
-function lr_ciam_form_user_pass_alter(&$form, FormStateInterface $form_state) {
+function lr_ciam_form_user_pass_form_alter(&$form, FormStateInterface $form_state) {
     if (!\Drupal::currentUser()->isAnonymous()) {
         $user = \Drupal::currentUser();
         $form['name']['#type'] = 'value';
@@ -201,6 +244,35 @@ function template_preprocess_user_register_form(&$variables) {
 }
 
 /**
+ * Add variable to user register form block.
+ *
+ * @param $variables
+ */
+
+function template_preprocess_user_register(&$variables) {
+    $variables['admin_access'] = true;
+    $user = \Drupal::currentUser()->getRoles();
+    if (in_array("administrator", $user)) {
+        $variables['admin_access'] = false;
+    }
+    $config = \Drupal::config('ciam.settings');
+    $blocks = \Drupal\block\Entity\Block::loadMultiple();
+        foreach ($blocks as $key => $block) {       
+        $settings = $block->get('settings'); 
+        if($key == 'userregisterblock'){  
+            $block_settings = array();
+            $block_settings = $settings;
+        } 
+     }    
+     
+    $variables['link_login'] = isset($block_settings['register_block_link_login']) ? $block_settings['register_block_link_login'] : ''; 
+    $variables['link_forgot'] = isset($block_settings['register_block_link_forgot']) ? $block_settings['register_block_link_forgot'] : ''; 
+    $variables['interface_label'] = $config->get('interface_label');
+    $variables['api_key'] = trim($config->get('api_key'));
+    $variables['rendered'] = drupal_render_children($variables['form']);
+}
+
+/**
  * Get pop up title.
  *
  * @param $variables
@@ -217,8 +289,8 @@ function template_preprocess_lr_ciam_popup(&$variables) {
  * @param $variables
  * 
  */
-function lr_ciam_preprocess(&$variables) {  
-    $variables['image_path'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.gif';
+function lr_ciam_preprocess(&$variables) {
+    $variables['image_path'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.png';
 }
 
 /**
@@ -233,6 +305,28 @@ function template_preprocess_user_login_form(&$variables) {
     $variables['api_key'] = trim($config->get('api_key'));
 }
 
+/**
+ * Add variable to user login form block.
+ *
+ * @param $variables
+ */
+function template_preprocess_user_login(&$variables) {    
+    $config = \Drupal::config('ciam.settings');
+    
+    $blocks = \Drupal\block\Entity\Block::loadMultiple();
+        foreach ($blocks as $key => $block) {       
+        $settings = $block->get('settings');  
+        if($key == 'userloginblock'){  
+            $block_settings = array();
+            $block_settings = $settings;
+        } 
+     }
+ 
+    $variables['interface_label'] = $config->get('interface_label');
+    $variables['api_key'] = trim($config->get('api_key'));  
+    $variables['link_register'] = isset($block_settings['login_block_link_register']) ? $block_settings['login_block_link_register'] : ''; 
+    $variables['link_forgot'] = isset($block_settings['login_block_link_forgot']) ? $block_settings['login_block_link_forgot'] : ''; 
+}
 
 /**
  * Get provider name.
@@ -242,20 +336,9 @@ function template_preprocess_user_login_form(&$variables) {
  * 
  * return array
  */
-function lr_ciam_add_loginradius_userdata($userprofile, $token) {
-    $config = \Drupal::config('ciam.settings');
-    $apiKey = trim($config->get('api_key'));
-    $apiSecret = trim($config->get('api_secret'));
-
-    $socialLoginObj = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));
-    try {
-        $socialProfileData = $socialLoginObj->getUserProfiledata($token);
-    }
-    catch (LoginRadiusException $e) {
-         \Drupal::logger('ciam')->error($e);
-    }
-    $_SESSION['current_provider'] = isset($socialProfileData->Provider) ? $socialProfileData->Provider : '';
-    $_SESSION['provider'] = isset($userprofile->Provider) ? $userprofile->Provider : '';;
+function lr_ciam_add_loginradius_userdata($userprofile, $token) {    
+    $provider =  isset($userprofile->Provider) ? $userprofile->Provider : '';
+    \Drupal::service('session')->set('provider', $provider);         
 }
 
 
@@ -266,8 +349,7 @@ function lr_ciam_add_loginradius_userdata($userprofile, $token) {
  */
 function lr_ciam_page_attachments(&$page) {
     $config = \Drupal::config('ciam.settings');
-    if (isset($_COOKIE['lr_message']) && $_COOKIE['lr_message'] != '') { 
-        
+    if (isset($_COOKIE['lr_message']) && $_COOKIE['lr_message'] != '') {
         $sec = $config->get('ciam_auto_hide_messages');
         $message = isset($_COOKIE['lr_message']) ? $_COOKIE['lr_message'] : '';                       
         $response = (isset($_GET['lrresponse']) && $_GET['lrresponse'] != 'true') ? "error" : "success" ;
@@ -284,7 +366,7 @@ function lr_ciam_page_attachments(&$page) {
                     header("Refresh:$sec");
                 }
             }
-        }                             
+        }                            
     }
     $user = \Drupal::currentUser();
     $emailVerificationUrl = Url::fromRoute('<front>')->setAbsolute()->toString();
@@ -292,19 +374,17 @@ function lr_ciam_page_attachments(&$page) {
 
     $path = parse_url(Url::fromRoute('<front>')->toString());
     $sso_path = $path['path'];
-
+    $loggedIn = true;
     if (\Drupal::currentUser()->isAnonymous()) {
         $loggedIn = false;
-    }
-    else {
-        $loggedIn = true;
-    }
-    $access_token = isset($_SESSION['access_token']) ? $_SESSION['access_token'] : '';
+    }    
+   
     $my_settings = array(
       'verificationUrl' => $emailVerificationUrl,
-      'forgotPasswordUrl' => $forgotVerificationUrl,
+      'resetPasswordUrl' => $forgotVerificationUrl,
       'loggedIn' => $loggedIn,
-      'accessToken' => $access_token,
+      'accessToken' => isset($_SESSION['_sf2_attributes']['access_token']) ? $_SESSION['_sf2_attributes']['access_token'] : '',
+      'phoneId' => isset($_SESSION['_sf2_attributes']['phoneId']) ? $_SESSION['_sf2_attributes']['phoneId'] : '',
       'appName' => trim($config->get('sso_site_name')),
       'apiKey' => trim($config->get('api_key')),  
       'autoHideTime' => trim($config->get('ciam_auto_hide_messages')),     
@@ -315,129 +395,65 @@ function lr_ciam_page_attachments(&$page) {
 
     if ($config->get('ciam_terms_and_condition_html') != '') {
         $my_settings['termsAndConditionHtml'] = $config->get('ciam_terms_and_condition_html');
+    }  
+    if ($config->get('ciam_ask_required_fields_on_traditional_login') != '' && $config->get('ciam_ask_required_fields_on_traditional_login') != 'false') {
+        $my_settings['askRequiredFieldForTraditionalLogin'] = (boolean) $config->get('ciam_ask_required_fields_on_traditional_login');
     }
-
-    if (is_numeric($config->get('ciam_form_render_delay')) != '0') {
-        $my_settings['formRenderDelay'] = (int) $config->get('ciam_form_render_delay');
+    if ($config->get('ciam_display_password_strength') != '' && $config->get('ciam_display_password_strength') != 'false') {
+        $my_settings['displayPasswordStrength'] = (boolean) $config->get('ciam_display_password_strength');
+    }   
+    if ($config->get('ciam_ask_email_for_unverified_user_login') != '' && $config->get('ciam_ask_email_for_unverified_user_login') != 'false') {
+        $my_settings['askEmailForUnverifiedProfileAlways'] = (boolean) $config->get('ciam_ask_email_for_unverified_user_login');
     }
-
-    $min_length = $config->get('ciam_min_password_length');
-    $max_length = $config->get('ciam_max_password_length');
-    if (!empty($min_length)) {
-        $my_settings['passwordminlength'] = $min_length;
+    if ($config->get('ciam_user_name_login') != '' && $config->get('ciam_user_name_login') != 'false') {
+        $my_settings['usernameLogin'] = (boolean) $config->get('ciam_user_name_login');
     }
-    if (!empty($max_length)) {
-        $my_settings['passwordmaxlength'] = $max_length;
+    if ($config->get('ciam_prompt_password_on_social_login') != '' && $config->get('ciam_prompt_password_on_social_login') != 'false') {
+        $my_settings['promptPasswordOnSocialLogin'] = (boolean) $config->get('ciam_prompt_password_on_social_login');
     }
-
-    if ($config->get('ciam_inform_validation_messages') != '' && $config->get('ciam_inform_validation_messages') != 'false') {
-        $my_settings['formValidationMessage'] = (boolean) $config->get('ciam_inform_validation_messages');
+    if ($config->get('ciam_check_phone_no_availability') != '' && $config->get('ciam_check_phone_no_availability') != 'false') {
+        $my_settings['existPhoneNumber'] = (boolean) $config->get('ciam_check_phone_no_availability');
+    }
+    if ($config->get('ciam_instant_link_login') != '' && $config->get('ciam_instant_link_login') != 'false') {
+        $my_settings['instantLinkLogin'] = (boolean) $config->get('ciam_instant_link_login');
+    }
+    if ($config->get('ciam_instant_otp_login') != '' && $config->get('ciam_instant_otp_login') != 'false') {
+        $my_settings['instantOTPLogin'] = (boolean) $config->get('ciam_instant_otp_login');
+    }
+    $my_settings['sott'] = lr_ciam_get_sott($config->get('api_key'), $config->get('api_secret'));    
+    if ($config->get('ciam_debug_mode') != '' && $config->get('ciam_debug_mode') != 'false') {
+        $my_settings['debugMode'] = (boolean) $config->get('ciam_debug_mode');
     }
     if ($config->get('ciam_welcome_email_template') != '') {
         $my_settings['welcomeEmailTemplate'] = $config->get('ciam_welcome_email_template');
     }
-    if ($config->get('ciam_forgot_password_template') != '') {
-        $my_settings['resetPasswordEmailTemplate'] = $config->get('ciam_forgot_password_template');
-    }
     if ($config->get('ciam_email_verification_template') != '') {
         $my_settings['verificationEmailTemplate'] = $config->get('ciam_email_verification_template');
-    }    
-    if ($config->get('ciam_enable_remember_me') != '' && $config->get('ciam_enable_remember_me') != 'false') {
-        $my_settings['stayLogin'] = (boolean) $config->get('ciam_enable_remember_me');
+    }  
+    if ($config->get('ciam_reset_password_email_template') != '') {
+        $my_settings['resetPasswordEmailTemplate'] = $config->get('ciam_reset_password_email_template');
+    }     
+    if ($config->get('ciam_instant_link_login_email_template') != '') {
+        $my_settings['instantLinkLoginEmailTemplate'] = $config->get('ciam_instant_link_login_email_template');
+    }                  
+    if ($config->get('ciam_welcome_sms_template') != '') {
+        $my_settings['smsTemplateWelcome'] = $config->get('ciam_welcome_sms_template');
     }
-    if ($config->get('ciam_ask_required_field_on_traditional_login') != '' && $config->get('ciam_ask_required_field_on_traditional_login') != 'false') {
-        $my_settings['askRequiredFieldForTraditionalLogin'] = (boolean) $config->get('ciam_ask_required_field_on_traditional_login');
+    if ($config->get('ciam_sms_template_phone_verification') != '') {
+        $my_settings['smsTemplatePhoneVerification'] = $config->get('ciam_sms_template_phone_verification');
     }
-    if ($config->get('ciam_display_password_strength') != '' && $config->get('ciam_display_password_strength') != 'false') {
-        $my_settings['displayPasswordStrength'] = (boolean) $config->get('ciam_display_password_strength');
+    if ($config->get('ciam_sms_template_reset_password') != '') {
+        $my_settings['smsTemplateForgot'] = $config->get('ciam_sms_template_reset_password');
     }
-    if ($config->get('ciam_enable_recaptcha') != '' && $config->get('ciam_enable_recaptcha') != 'false') {
-        $my_settings['enableGoogleRecaptcha'] = true;
-        $my_settings['recaptchaType'] = $config->get('ciam_v2_recaptcha_type');
-        if ($config->get('ciam_v2_recaptcha_site_key') != '') {
-            $my_settings['v2RecaptchaSiteKey'] = $config->get('ciam_v2_recaptcha_site_key');
-        }
-    } else {
-          $my_settings['sott'] = lr_ciam_get_sott($config->get('api_key'), $config->get('api_secret'));
+    if ($config->get('ciam_sms_template_change_phone_no') != '') {
+        $my_settings['smsTemplateChangePhoneNo'] = $config->get('ciam_sms_template_change_phone_no');
     }
-    if ($config->get('ciam_debug_mode') != '' && $config->get('ciam_debug_mode') != 'false') {
-        $my_settings['debugMode'] = (boolean) $config->get('ciam_debug_mode');
-    }
-
-    if ($config->get('ciam_login_type') != '' && $config->get('ciam_login_type') == 'email') {
-        $emailVerifyOpt = $config->get('ciam_email_verification_condition');
-        if (isset($emailVerifyOpt) && $emailVerifyOpt != '') {
-            $my_settings['loginTypeEmail'] = true;
-            if ($emailVerifyOpt == '0') {          
-                if ($config->get('ciam_enable_login_on_email_verification') != '' && $config->get('ciam_enable_login_on_email_verification') != 'false') {
-                    $my_settings['loginOnEmailVerification'] = (boolean) $config->get('ciam_enable_login_on_email_verification');
-                } if ($config->get('ciam_prompt_password_on_social_login') != '' && $config->get('ciam_prompt_password_on_social_login') != 'false') {
-                    $my_settings['promptPasswordOnSocialLogin'] = (boolean) $config->get('ciam_prompt_password_on_social_login');
-                } if ($config->get('ciam_enable_user_name') != '' && $config->get('ciam_enable_user_name') != 'false') {
-                    $my_settings['usernameLogin'] = (boolean) $config->get('ciam_enable_user_name');
-                } if ($config->get('ciam_ask_email_always_for_unverified') != '' && $config->get('ciam_ask_email_always_for_unverified') != 'false') {
-                    $my_settings['askEmailForUnverifiedProfileAlways'] = (boolean) $config->get('ciam_ask_email_always_for_unverified');
-                }
-            }
-            elseif ($emailVerifyOpt == '1') {
-                if ($config->get('ciam_enable_login_on_email_verification') != '' && $config->get('ciam_enable_login_on_email_verification') != 'false') {
-                    $my_settings['loginOnEmailVerification'] = (boolean) $config->get('ciam_enable_login_on_email_verification');
-                } if ($config->get('ciam_ask_email_always_for_unverified') != '' && $config->get('ciam_ask_email_always_for_unverified') != 'false') {
-                    $my_settings['askEmailForUnverifiedProfileAlways'] = (boolean) $config->get('ciam_ask_email_always_for_unverified');
-                }
-                $my_settings['optionalEmailVerification'] = true;
-            }
-            elseif ($emailVerifyOpt == '2') {
-                $my_settings['disabledEmailVerification'] = true;
-            }
-        }
-    }
-
-    if ($config->get('ciam_login_type') != '' && $config->get('ciam_login_type') == 'phone') {
-        if ($config->get('ciam_enable_phone_login') != '' && $config->get('ciam_enable_phone_login') != 'false') {
-            $my_settings['loginTypePhone'] = true;
-            $my_settings['phoneLogin'] = true;
-            if ($config->get('ciam_exist_phone_number') != '' && $config->get('ciam_exist_phone_number') != 'false') {
-                $my_settings['existPhoneNumber'] = (boolean) $config->get('ciam_exist_phone_number');
-            }            
-            if ($config->get('ciam_sms_template') != '') {
-                $my_settings['smsTemplateWelcome'] = $config->get('ciam_sms_template');
-            }
-            if ($config->get('ciam_sms_template_phone_verification') != '') {
-                $my_settings['smsTemplatePhoneVerification'] = $config->get('ciam_sms_template_phone_verification');
-            }
-            if ($config->get('ciam_instant_otp_login') != '' && $config->get('ciam_instant_otp_login') != 'false') {
-                $my_settings['instantOTPLogin'] = (boolean) $config->get('ciam_instant_otp_login');
-            }
-            if ($config->get('ciam_sms_template_one_time_passcode') != '') {
-                $my_settings['smsTemplateInstantOTPLogin'] = $config->get('ciam_sms_template_one_time_passcode');
-            }
-            if ($config->get('ciam_instant_otp_login_button_label') != '') {
-                $my_settings['instantOTPLoginButtonLabel'] = $config->get('ciam_instant_otp_login_button_label');
-            }
-        }
-    }
-    elseif ($config->get('ciam_instant_link_login') != '' && $config->get('ciam_instant_link_login') != 'false') {
-        $my_settings['instantLinkLogin'] = (boolean) $config->get('ciam_instant_link_login');
-        if ($config->get('ciam_instant_link_login_email_template') != '') {
-            $my_settings['instantLinkLoginEmailTemplate'] = $config->get('ciam_instant_link_login_email_template');
-        }
-        if ($config->get('ciam_instant_link_login_button_label') != '') {
-            $my_settings['instantLinkLoginButtonLabel'] = $config->get('ciam_instant_link_login_button_label');
-        }
-    }
-
-    if ($config->get('ciam_enable_2fa') != '' && $config->get('ciam_enable_2fa') != 'false') {
-        $my_settings['enableTwoFactorAuth'] = true;
-        $my_settings['twoFactorAuthFlow'] = $config->get('ciam_2fa_flow');
-
-        if ($config->get('ciam_google_authentication') != '' && $config->get('ciam_google_authentication') != 'false') {
-            $my_settings['googleAuthentication'] = (boolean) $config->get('ciam_google_authentication');
-        }
-        if ($config->get('ciam_sms_template_2fa') != '') {
-            $my_settings['smsTemplate2FA'] = $config->get('ciam_sms_template_2fa');
-        }
-    }
+    if ($config->get('ciam_sms_template_one_time_passcode') != '') {
+        $my_settings['smsTemplateInstantOTPLogin'] = $config->get('ciam_sms_template_one_time_passcode');
+    }           
+    if ($config->get('ciam_sms_template_2fa') != '') {
+        $my_settings['smsTemplate2FA'] = $config->get('ciam_sms_template_2fa');
+    }  
 
     if ($config->get('ciam_custom_options') != '') {
         $my_settings['customScript'] = "";
@@ -469,21 +485,21 @@ function lr_ciam_page_attachments(&$page) {
 /**
  * Generate sott.
  *
- * @param $apikey 
- * @param $secret 
+ * @param $apiKey 
+ * @param $apiSecret 
  * @return json|string
  */
 
-function lr_ciam_get_sott($apiKey, $secret) {
-    if ($apiKey != '' && $secret != '') {
-        $accountObj = new AccountAPI($apiKey, $secret, array('output_format' => 'json'));
-        try { 
-            $result = $accountObj->generateSOTT('10');
-            return $result = isset($result->Sott) ? $result->Sott : '';
+function lr_ciam_get_sott($apiKey, $apiSecret) {
+    if ($apiKey != '' && $apiSecret != '') {
+        $sottObj = new SOTT($apiKey, $apiSecret, array('output_format' => 'json'));
+        try {  
+            $result = $sottObj->encrypt('10');
+            return isset($result->Sott) ? $result->Sott : '';
         }
         catch (LoginRadiusException $e) {
              \Drupal::logger('ciam')->error($e);
-        }    
+        }
     }
 }
 
@@ -540,7 +556,7 @@ function lr_ciam_get_callback_url() {
     $destination = (\Drupal::destination()->getAsArray());
     $callback = $destination['destination'];
 
-    if (strpos($callback, 'ajax') !== FALSE) {
+    if (strpos($callback, 'ajax') !== FALSE)  {
         if (isset($_SESSION['redirect_url'])) {
             return $_SESSION['redirect_url'];
         }
@@ -548,7 +564,6 @@ function lr_ciam_get_callback_url() {
             $callback = Url::fromRoute('user');
         }
     }
-
 
     $url = Url::fromUserInput('/user/ciamlogin', array(
           'query' => array('destination' => $callback),
@@ -660,7 +675,6 @@ function lr_ciam_user_presave($account) {
                 if (isset($_POST['name']) && $_POST['name'] != '') {
 
                     if ($ciam_uname != $_POST['name']) {
-
                         $params = '{            
                           "UserName":"' . $_POST['name'] . '"          
                           }';
@@ -668,7 +682,7 @@ function lr_ciam_user_presave($account) {
                             $accountObject = new AccountAPI($apiKey, $apiSecret, array('output_format' => 'json'));
                             $accountObject->update($ciam_uid, $params);
                         }
-                        catch (LoginRadiusException $e) {                           
+                        catch (LoginRadiusException $e) {                          
                             $msg = isset($e->getErrorResponse()->description) ? $e->getErrorResponse()->description : 'error';
                             $response = new RedirectResponse(Url::fromRoute('<current>')->toString());
                             $response->send();
@@ -677,8 +691,8 @@ function lr_ciam_user_presave($account) {
                     }
                 }
             }
-        }    
-}
+        }
+    }
 
 /**
  * Implements hook_user_update().
@@ -696,6 +710,8 @@ function lr_ciam_user_update($account) {
     $field_defaults = $config->get('user_fields', array());
     if (isset($_POST['op']) && $_POST['op'] == 'Save') { 
     $output = array();
+  
+    if(!empty($field_defaults)){
       foreach($field_defaults as $key=>$value) {
           if($value=='BirthDate'){             
               $output[$value] = isset($_POST[$key][0]["value"]['date']) ? $_POST[$key][0]["value"]['date'] : '';
@@ -707,8 +723,8 @@ function lr_ciam_user_update($account) {
                 $output[$value] = $formatDate;               
              } else {
               $output[$value] = isset($_POST[$key][0]["value"]) ? $_POST[$key][0]["value"] : '';
-          } 
-      }
+        }
+    }}
 
         try {       
             $accountObject = new AccountAPI($apiKey, $apiSecret, array('output_format' => 'json'));
@@ -723,11 +739,11 @@ function lr_ciam_user_update($account) {
       if ($_POST['status'] == "0" && isset($ciam_uid) && !empty($ciam_uid)) {       
           $user_manager->lr_ciam_block_user($ciam_uid);
       }
-      else {         
+      else {        
           $user_manager->lr_ciam_unblock_user($ciam_uid);
       }
     }
-    if (isset($_POST['pass']['pass1']) && !empty($_POST['pass']['pass1'])) {       
+    if (isset($_POST['pass']['pass1']) && !empty($_POST['pass']['pass1'])) {      
     $user = \Drupal::currentUser()->getRoles();
       if (in_array("administrator", $user)) {       
           if (empty($ciam_uid)) {           
@@ -743,15 +759,15 @@ function lr_ciam_user_update($account) {
             }';  
             $user_manager->lr_ciam_create_user($params);
             return;
-          } 
+          }
         else {
           $user_manager->lr_ciam_set_password($ciam_uid, $_POST['pass']['pass1']);
         }
       }
     }
-  } elseif (isset($_POST['op']) && $_POST['op'] == 'Apply' && isset($ciam_uid) && !empty($ciam_uid)) {   
+  } elseif (isset($_POST['op']) && $_POST['op'] == 'Apply' && isset($ciam_uid) && !empty($ciam_uid)) {
        
-      if (isset($_POST['action']) && $_POST['action'] == 'user_block_user_action') {
+        if (isset($_POST['action']) && $_POST['action'] == 'user_block_user_action') {
             $user_manager->lr_ciam_block_user($ciam_uid);
         }
         elseif (isset($_POST['action']) && $_POST['action'] == 'user_unblock_user_action') {
@@ -770,46 +786,76 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
     $user_manager = \Drupal::service('lr_ciam.user_manager');
     $config = \Drupal::config('ciam.settings');
     $user = \Drupal::currentUser()->getRoles();
-
+    
     if (!in_array("administrator", $user) && !\Drupal::currentUser()
-            ->isAnonymous()) {
-
+            ->isAnonymous()) {        
         unset($form['#validate'][1]);
         unset($form['account']['pass']);
         unset($form['account']['current_pass']);
-       // $form['account']['mail']['#disabled'] = TRUE;
+        $form['account']['mail']['#disabled'] = TRUE;
         $apiKey = trim($config->get('api_key'));
         $apiSecret = trim($config->get('api_secret'));
-        $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));
+        $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));           
+        $socialObject = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));           
+        
         try {
-            $userprofile = $userObject->getProfile($_SESSION['access_token']);
+            $userprofile = $userObject->getProfile(trim($_SESSION['_sf2_attributes']['access_token']));
+            if(isset($userprofile->ErrorCode) && $userprofile->ErrorCode == '906'){
+                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
+                $redirectUrl = $domain.'user/logout';
+                $response = new TrustedRedirectResponse($redirectUrl);             
+                return $response->send();               
+            }
         }
-        catch (LoginRadiusException $e) {
-            \Drupal::logger('ciam')->error($e);
+        catch (LoginRadiusException $e) { 
+                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
+                $redirectUrl = $domain.'user/logout';
+                $response = new TrustedRedirectResponse($redirectUrl);             
+                return $response->send();   
+                \Drupal::logger('ciam')->error($e);
         }
 
         $defaultEmail = isset($userprofile->Email) ? $userprofile->Email[0]->Value : '';
         
         if(isset($defaultEmail) && $defaultEmail != ''){
-        if ($form['account']['mail']['#default_value'] != $defaultEmail) {
-               \Drupal::database()->update('users_field_data')
-                ->condition('mail', $form['account']['mail']['#default_value'])
-                ->fields(['mail' => $defaultEmail])
-                ->execute();
-        }}
-
-        if ($config->get('ciam_login_type') == 'phone') {
-            if ($config->get('ciam_enable_phone_login') == 'true') {
-                $form['lr_update_phone'] = array(
-                  '#type' => 'item',
-                  '#theme' => 'lr_update_phone',
-                  '#attributes' => array('class' => array('lr-phone-container')),
-                  '#weight' => -15,
-                  '#open' => TRUE,
-                );
+            if ($form['account']['mail']['#default_value'] != $defaultEmail) {
+                \Drupal::database()->update('users_field_data')
+                 ->condition('mail', $form['account']['mail']['#default_value'])
+                 ->fields(['mail' => $defaultEmail])
+                 ->execute();
             }
-        }
-        elseif ($config->get('ciam_login_type') == 'email') {
+        }     
+            
+        $form['lr_update_phone'] = array(
+          '#type' => 'item',
+          '#theme' => 'lr_update_phone',
+          '#attributes' => array('class' => array('lr-phone-container')),
+          '#weight' => -15,
+          '#open' => TRUE,
+        );
+
+        $form['lr_message'] = array(
+          '#type' => 'item',
+          '#theme' => 'lr_message',
+          '#attributes' => array('class' => array('lr-message-container')),
+          '#weight' => -30,
+          '#open' => TRUE,
+        );
+            
+        $form['account_phone'] = [
+            '#type'   => 'container',
+            '#weight' => -15,
+        ];
+        
+        $form['account_phone']['phoneid'] = [
+            '#type' => 'textfield',
+            '#title' => t('Phone ID'),
+            '#attributes' => array('readonly' => 'readonly'),
+            '#description' => t('A valid phone number.'),
+            '#default_value' => isset($userprofile->PhoneId) ? $userprofile->PhoneId : '',
+        ];
+       
+        if (isset($userprofile->Email) && count($userprofile->Email) > 0) {
             $form['account']['emailSetting'] = array(
               '#type' => 'fieldset',
               '#title' => t('Email Settings'),
@@ -826,9 +872,8 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
               '#type' => 'item',
               '#markup' => '<div class="addEmail" id="addEmail">Add Email</div>',
             );
-            $emailCount = isset($userprofile->Email) ? count($userprofile->Email) : '0';
-            if ($emailCount > 0) {
-                for ($i = 0; $i < $emailCount; $i++) {
+
+                for ($i = 0; $i < count($userprofile->Email); $i++) {
                     $email[$i] = array(
                       '#type' => 'email',
                       '#attributes' => array('readonly' => 'readonly'),
@@ -860,7 +905,7 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
                   'values' => $data_to_send,
                   '#rows' => &$rows,
                 );
-            }
+
             $form['add_email'] = array(
               '#type' => 'item',
               '#theme' => 'add_email',
@@ -877,11 +922,19 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
               '#open' => TRUE,
             );
         }
-
         $form['account']['current_pass_required_value']['#access'] = FALSE;
         $form['account']['current_pass']['#access'] = FALSE;
+        
+        try {
+            $socialProfileData = $socialObject->getUserProfiledata(trim($_SESSION['_sf2_attributes']['access_token']), false, 'Provider');            
+        }
+        catch (LoginRadiusException $e) {
+                \Drupal::logger('ciam')->error($e);
+        }
+        
+        
 
-        if ($config->get('ciam_enable_2fa') == 'true') {
+        if ($socialProfileData->Provider == 'RAAS') {
             $form['lr_2fa_container'] = array(
               '#type' => 'item',
               '#theme' => '2fa_container',
@@ -889,30 +942,31 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
               '#weight' => -25,
               '#open' => TRUE,
             );
-
-            try {
-                $isEnabled = $userObject->configureTwoFAByToken($_SESSION['access_token']);
-            }
-            catch (LoginRadiusException $e) {
+        }
+        
+        
+        try {
+            $isEnabled = $userObject->configureTwoFAByToken($_SESSION['_sf2_attributes']['access_token']);
+        }
+        catch (LoginRadiusException $e) {
                 \Drupal::logger('ciam')->error($e);
-            }
-
-            if ((isset($isEnabled->IsGoogleAuthenticatorVerified) && $isEnabled->IsGoogleAuthenticatorVerified) || (isset($isEnabled->IsOTPAuthenticatorVerified) && $isEnabled->IsOTPAuthenticatorVerified)) {
-                $form['lr_2fa_backup'] = array(
-                  '#type' => 'details',
-                  '#title' => 'Backup Codes List',
-                  '#theme' => 'lr_backup_codes',
-                  '#attributes' => array('class' => array('lr_2fa_backup')),
-                  '#weight' => -21,
-                  '#open' => TRUE,
-                );
-            }
         }
 
-       if ($config->get('enable_linking') == '1' && ((isset($_SESSION['emailVerified']) && $_SESSION['emailVerified']) || ($config->get('ciam_login_type') == 'phone' && $config->get('ciam_enable_phone_login') == 'true'))) {
+        if ((isset($isEnabled->IsGoogleAuthenticatorVerified) && $isEnabled->IsGoogleAuthenticatorVerified) || (isset($isEnabled->IsOTPAuthenticatorVerified) && $isEnabled->IsOTPAuthenticatorVerified)) {
+            $form['lr_2fa_backup'] = array(
+              '#type' => 'details',
+              '#title' => 'Backup Codes List',
+              '#theme' => 'lr_backup_codes',
+              '#attributes' => array('class' => array('lr_2fa_backup')),
+              '#weight' => -21,
+              '#open' => TRUE,
+            );
+        }
+
+        if (isset($_SESSION['emailVerified']) && $_SESSION['emailVerified']) {
             $form['lr_ciam_linked'] = array(
               '#type' => 'details',
-              '#title' => $config->get('linking_text') ? $config->get('linking_text') : 'Account Linking',
+              '#title' => 'Account Linking',
               '#theme' => 'lr_ciam_linked',
               '#attributes' => array('class' => array('lr-ciam-linked')),
               '#weight' => -20,
@@ -949,7 +1003,6 @@ function lr_ciam_entity_base_field_info_alter(&$fields, EntityTypeInterface $ent
  * @param $account
  */
 function lr_ciam_user_predelete($account) {
-
     $user_manager = \Drupal::service('lr_ciam.user_manager');
     $ciam_uid = $user_manager->lr_ciam_get_ciam_uid($account->id());
 
@@ -980,10 +1033,9 @@ function lr_ciam_form_advanced_settings_alter(&$form, FormStateInterface $form_s
   $hd_config = \Drupal::config('hostedpage.settings'); 
  
   if($hd_config->get('lr_hosted_page_enable') == '1'){
-    unset($form['lr_user_settings']);
-    unset($form['lr_login_settings']);
-    unset($form['lr_phone_settings']);
-    unset($form['lr_2fa_settings']);
+    unset($form['lr_user_settings']);    
+    unset($form['lr_template_settings']);    
+    unset($form['lr_field_mapping']);    
   }
   return $form;
 }
@@ -993,14 +1045,12 @@ function lr_ciam_form_advanced_settings_alter(&$form, FormStateInterface $form_s
  *
  */
 function lr_ciam_add_extra_config_settings() {
-    return array('ciam_inform_validation_messages', 'ciam_terms_and_condition_html',
-      'ciam_form_render_delay', 'ciam_min_password_length', 'ciam_max_password_length','ciam_welcome_email_template',
-      'ciam_forgot_password_template', 'ciam_email_verification_template', 'ciam_custom_options','ciam_auto_hide_messages',
-      'ciam_login_type', 'ciam_email_verification_condition', 'ciam_enable_login_on_email_verification',
-      'ciam_prompt_password_on_social_login', 'ciam_enable_user_name', 'ciam_ask_required_field_on_traditional_login',
-      'ciam_ask_email_always_for_unverified', 'ciam_enable_remember_me', 'ciam_display_password_strength', 'ciam_debug_mode', 'ciam_instant_link_login','ciam_instant_link_login_email_template',
-      'ciam_instant_link_login_button_label', 'ciam_enable_recaptcha', 'ciam_v2_recaptcha_type', 'ciam_v2_recaptcha_site_key', 'ciam_enable_phone_login', 'ciam_sms_template',
-      'ciam_exist_phone_number', 'ciam_instant_otp_login','ciam_sms_template_one_time_passcode','ciam_instant_otp_login_button_label', 'ciam_sms_template_phone_verification', 'ciam_enable_2fa', 'ciam_2fa_flow', 'ciam_google_authentication', 'ciam_sms_template_2fa');
+    return array('ciam_terms_and_condition_html','ciam_welcome_email_template','ciam_prompt_password_on_social_login','ciam_check_phone_no_availability',
+      'ciam_reset_password_email_template', 'ciam_email_verification_template', 'ciam_custom_options','ciam_auto_hide_messages',
+      'ciam_email_verification_condition','ciam_ask_email_for_unverified_user_login','ciam_instant_link_login','ciam_instant_otp_login',
+      'ciam_display_password_strength', 'ciam_debug_mode','ciam_instant_link_login_email_template',
+      'ciam_enable_phone_login', 'ciam_welcome_sms_template','ciam_ask_required_fields_on_traditional_login','ciam_user_name_login',
+      'ciam_sms_template_one_time_passcode', 'ciam_sms_template_phone_verification','ciam_sms_template_reset_password','ciam_sms_template_change_phone_no', 'ciam_sms_template_2fa');
 }
 
 /**
@@ -1034,25 +1084,36 @@ function lr_ciam_form_user_register_form_alter(&$form, FormStateInterface $form_
     }
 }
 
+function lr_ciam_get_config_option($apiKey, $apiSecret){
+        try {
+            $cloudObject = new CloudAPI($apiKey, $apiSecret, array('output_format' => 'json'));
+            return $cloudObject->getConfigurationList();               
+        }
+        catch (LoginRadiusException $e) {
+            \Drupal::logger('ciam')->error($e);
+        }            
+}
+
 /**
  * Validate LoginRadius API Credentials.
  *
- * @param $apikey
- * @param $apisecret
+ * @param $apiKey
+ * @param $apiSecret
  * @return array
  */
-function lr_ciam_get_authentication($apikey, $apisecret) {
+function lr_ciam_get_authentication($apiKey, $apiSecret) {
 
-    if (isset($apikey)) {
+    if (isset($apiKey)) {
         $data = array();
         try {
-            $socialLoginObject = new SocialLoginAPI($apikey, $apisecret, array('authentication' => false, 'output_format' => 'json'));
+            $socialLoginObject = new SocialLoginAPI ($apiKey, $apiSecret, array('output_format' => 'json'));
             $result = $socialLoginObject->validateKeyandSecret();
 
             if (empty($result)) {
                 $data['message'] = t('please check your php.ini settings to enable CURL or FSOCKOPEN');
                 $data['status'] = 'error';
             }
+            
             elseif (isset($result->Status) && !$result->Status) {
                 $error = array(
                   "API_KEY_NOT_VALID" => "LoginRadius API key is invalid. Get your LoginRadius API key from LoginRadius account",

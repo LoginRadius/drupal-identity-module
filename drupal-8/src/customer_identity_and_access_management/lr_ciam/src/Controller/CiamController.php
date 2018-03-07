@@ -15,8 +15,10 @@ use \LoginRadiusSDK\Utility\Functions;
 use \LoginRadiusSDK\LoginRadiusException;
 use \LoginRadiusSDK\Clients\IHttpClient;
 use \LoginRadiusSDK\Clients\DefaultHttpClient;
-use \LoginRadiusSDK\Utility\SOTT;
 use \LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
+use LoginRadiusSDK\CustomerRegistration\Management\AccountAPI;
+use LoginRadiusSDK\Advance\CloudAPI;
+
 
 /**
  * Returns responses for Social Login module routes.
@@ -38,7 +40,7 @@ class CiamController extends ControllerBase {
         return new static(
             $container->get('lr_ciam.user_manager')     
         );
-    }   
+    }  
 
     /**
      * Return change password form
@@ -47,11 +49,51 @@ class CiamController extends ControllerBase {
      *
      */
     public function userChangePassword($user) {
-        $output = array(
-          '#title' => t('Change Password'),
-          '#theme' => 'change_password',
-          '#attributes' => array('class' => array('change-password'))
-        );
+        $post_value = $_POST;
+        $config = \Drupal::config('ciam.settings');
+        $apiKey = $config->get('api_key');
+        $apiSecret = $config->get('api_secret');
+        if (isset($post_value['setpasswordsubmit']) && $post_value['setpasswordsubmit'] == 'submit') {
+            
+            if (isset($post_value['setnewpassword']) && !empty($post_value['setnewpassword']) && isset($post_value['setconfirmpassword']) && !empty($post_value['setconfirmpassword'])) {
+              
+                if ($post_value['setnewpassword'] == $post_value['setconfirmpassword']) {
+                    
+                    try {
+                        $accountObject = new AccountAPI($apiKey, $apiSecret, array('output_format' => 'json'));
+                        $result = $accountObject->setPassword($_SESSION['_sf2_attributes']['user_profile_data']->Uid, $post_value['setnewpassword']);
+                        if (isset($result) && $result) {
+                            drupal_set_message(t('Password set successfully.'));
+                        }
+                    }
+                    catch (LoginRadiusException $e) {
+                        \Drupal::logger('ciam')->error($e);
+                        drupal_set_message($e->getMessage(), 'error');                        
+                    }
+                }
+                else {                    
+                    drupal_set_message('The Confirm Password field does not match the Password field.', 'error');
+                }
+            }
+            else {                
+                drupal_set_message('The password and confirm password fields are required.', 'error');
+            }
+        }
+
+        if (isset($_SESSION['_sf2_attributes']['user_profile_data']->Password) && $_SESSION['_sf2_attributes']['user_profile_data']->Password != '') {
+            $output = array(
+              '#title' => t('Change Password'),
+              '#theme' => 'change_password',
+              '#attributes' => array('class' => array('change-password'))
+            );            
+        }
+        else {
+            $output = array(
+              '#title' => t('Set Password'),
+              '#theme' => 'set_password',
+              '#attributes' => array('class' => array('set-password'))
+            );          
+        }
         return $output;
     }
     
@@ -63,26 +105,37 @@ class CiamController extends ControllerBase {
         $config = \Drupal::config('ciam.settings');
         $user = \Drupal::currentUser()->getRoles();
         $access_granted = in_array("administrator", $user);
-        $optionVal = $config->get('ciam_email_verification_condition');    
+        $apiKey = $config->get('api_key');
+        $apiSecret = $config->get('api_secret');
+        try {
+            $cloudObject = new CloudAPI($apiKey, $apiSecret, array('output_format' => 'json'));
+            $configData = $cloudObject->getConfigurationList();               
+        }
+        catch (LoginRadiusException $e) {
+            \Drupal::logger('ciam')->error($e);
+        }
+        $optionVal = isset($configData->EmailVerificationFlow)? $configData->EmailVerificationFlow : '';  
+       
         if ($access_granted) {
             return AccessResult::forbidden();
         }
-        else if ($optionVal === '0' || $optionVal === '2') {
-            if (isset($_SESSION['provider']) && $_SESSION['provider'] == 'Email') {
-                return AccessResult::allowed();
-            }
-            else {        
-                return AccessResult::forbidden();
-            }
-        }
-        elseif ($optionVal === '1') {      
-            if ((isset($_SESSION['provider']) && $_SESSION['provider'] == 'Email') || (isset($_SESSION['emailVerified']) && $_SESSION['emailVerified'])) {
+        
+        else if ($optionVal === 'required' || $optionVal === 'disabled') {
+            if (isset($_SESSION['_sf2_attributes']['provider']) && $_SESSION['_sf2_attributes']['provider'] == 'Email') {
                 return AccessResult::allowed();
             }
             else {
                 return AccessResult::forbidden();
             }
-        }        
+        }
+        elseif ($optionVal === 'optional') {
+            if (isset($_SESSION['_sf2_attributes']['provider']) && $_SESSION['_sf2_attributes']['provider'] == 'Email' || isset($_SESSION['emailVerified']) && $_SESSION['emailVerified']) {
+                return AccessResult::allowed();
+            }
+            else {
+                return AccessResult::forbidden();
+            }
+        } 
         return AccessResult::forbidden();
     }
     
@@ -102,28 +155,22 @@ class CiamController extends ControllerBase {
         if (isset($_GET['action_completed']) && $_GET['action_completed'] == 'forgotpassword') {
             drupal_set_message('Password reset information sent to your provided email id, check email for further instructions');
             return $this->redirect("<front>");
-        }        
-  
+        }  
+
+        $request_token = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';        
         if (isset($_REQUEST['token'])) {     
             $apiKey = trim($config->get('api_key'));
             $apiSecret = trim($config->get('api_secret'));
-
-            try {
-                $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));
-            }
-            catch (LoginRadiusException $e) {
-                \Drupal::logger('ciam')->error($e);
-                drupal_set_message($e->getMessage(), 'error');
-                return $this->redirect('user.login');
-            }
-
-            $_SESSION['access_token'] = trim($_REQUEST['token']);     
+            $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json')); 
+            \Drupal::service('session')->set('access_token', $request_token);     
+            
               //Get Userprofile form Access Token.
             try {
-                $userprofile = $userObject->getProfile(trim($_REQUEST['token']));
-                $userprofile->widget_token = isset($_REQUEST['token']) ? $_REQUEST['token'] : '';
+                $userprofile = $userObject->getProfile($request_token);
+                $userprofile->widget_token = $request_token;
+                \Drupal::service('session')->set('user_profile_data', $userprofile);     
             }
-            catch (LoginRadiusException $e) {
+            catch (LoginRadiusException $e) {                
                 \Drupal::logger('ciam')->error($e); 
                 drupal_set_message($e->getMessage(), 'error');
                 return $this->redirect('user.login');
@@ -139,10 +186,9 @@ class CiamController extends ControllerBase {
                     $userprofile = $value;
                 }
             }
-
+             \Drupal::service('session')->set('phoneId', isset($userprofile->PhoneId) ? $userprofile->PhoneId : '');  
             // Advanced module LR Code Hook End.
-            if (\Drupal::currentUser()->isAnonymous()) {
-             
+            if (\Drupal::currentUser()->isAnonymous()) {           
                 if (isset($userprofile) && isset($userprofile->ID) && $userprofile->ID != '') {
                     $userprofile = $this->user_manager->getUserData($userprofile);
                     $_SESSION['user_verify'] = 0;
@@ -161,11 +207,11 @@ class CiamController extends ControllerBase {
                     }
                     return $this->user_manager->checkExistingUser($userprofile);
                 }
-            } else {          
+            } else {
                return $this->user_manager->handleUserCallback($userprofile);
             }
         }
-        else { 
+        else {  
             return $this->redirect('user.login');
         }
     }

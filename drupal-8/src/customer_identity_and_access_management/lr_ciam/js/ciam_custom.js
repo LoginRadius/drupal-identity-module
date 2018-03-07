@@ -1,4 +1,5 @@
-jQuery(document).ready(function () {    
+jQuery(document).ready(function () {   
+    if(!(window.location.href.indexOf("admin") > -1)) {          
     initializeChangePasswordCiamForms();
     initializeTwoFactorAuthenticator();
     initializeAddEmailCiamForms();
@@ -6,5 +7,6 @@ jQuery(document).ready(function () {
     getBackupCodes();
     initializePhoneUpdate();
     initializeForgotPasswordCiamForms(); 
+   }
 });
 

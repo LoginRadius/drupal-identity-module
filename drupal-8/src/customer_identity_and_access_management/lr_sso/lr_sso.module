@@ -7,7 +7,6 @@ use \LoginRadiusSDK\LoginRadiusException;
 use \LoginRadiusSDK\Clients\IHttpClient;
 use \LoginRadiusSDK\Clients\DefaultHttpClient;
 use \LoginRadiusSDK\Utility\SOTT;
-use \LoginRadiusSDK\CustomerRegistration\Social\SocialLoginAPI;
 use \LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
 use \LoginRadiusSDK\CustomerRegistration\Management\AccountAPI;
 
@@ -21,7 +20,6 @@ function lr_sso_page_attachments(&$page) {
   global $user;
   $config = \Drupal::config('sso.settings');
   $sl_config = \Drupal::config('ciam.settings');
-
   $site_name = $sl_config->get('sso_site_name');
 
   if ($config->get('sso_enable') == 1 && !empty($site_name)) {
@@ -44,8 +42,7 @@ function lr_sso_page_attachments(&$page) {
               
         $logout = Url::fromRoute('user.logout')->setAbsolute()->toString();       
         $my_settings['isNotLoginThenLogout'] = true;
-        $my_settings['logout_url'] = $logout;
-        
+        $my_settings['logout_url'] = $logout;        
       }    
 
     $page['#attached']['drupalSettings']['sso']  = $my_settings;

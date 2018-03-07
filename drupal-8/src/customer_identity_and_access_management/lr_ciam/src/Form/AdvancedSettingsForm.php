@@ -11,7 +11,8 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Cache\Cache;
-
+use LoginRadiusSDK\Advance\CloudAPI;
+use LoginRadiusSDK\Utility\Functions;
 /**
  * Displays the advanced settings form.
  */
@@ -35,9 +36,36 @@ class AdvancedSettingsForm extends ConfigFormBase {
      * {@inheritdoc}
      */
     public function buildForm(array $form, FormStateInterface $form_state) {
-        $config = $this->config('ciam.settings');
-        // Configuration of which forms to protect, with what challenge.    
+        $config = $this->config('ciam.settings');        
+        $apiKey = trim($config->get('api_key'));
+        $apiSecret = trim($config->get('api_secret'));
+        // Configuration of which forms to protect, with what challenge. 
+        if (isset($apiKey) && $apiKey != '' && isset($apiSecret) && $apiSecret != '') {
+            try {
+                $cloudObject = new CloudAPI($apiKey, $apiSecret, array('output_format' => 'json'));
+                $configOptions = $cloudObject->getConfigurationList();
+            }
+            catch (LoginRadiusException $e) {
+                \Drupal::logger('ciam')->error($e);
+            }
+            
+            $options = array(
+              'output_format' => 'json',
+            );
 
+            $query_array = array(
+              'apikey' => $apiKey,
+              'apisecret' => $apiSecret
+            );
+     
+            try {
+                $url = "https://config.lrcontent.com/ciam/appInfo/templates";
+                $email_templates = Functions::apiClient($url, $query_array, $options);
+            }
+            catch (LoginRadiusException $e) {
+                \Drupal::logger('ciam')->error($e);
+            }
+        }
         $form['lr_interface_settings'] = [
           '#type' => 'details',
           '#title' => $this->t('CIAM interface customization'),
@@ -52,15 +80,7 @@ class AdvancedSettingsForm extends ConfigFormBase {
           '#type' => 'details',
           '#title' => $this->t('CIAM additional settings'),
         ];
-        $form['lr_user_settings']['ciam_inform_validation_messages'] = [
-          '#type' => 'radios',
-          '#title' => t('Do you want to display form validation message on authentication pages<a title="Form validation includes checking for username and password lengths, password complexity, etc."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
-          '#default_value' => $config->get('ciam_inform_validation_messages') ? $config->get('ciam_inform_validation_messages') : 'false',
-          '#options' => array(
-            'true' => t('Yes'),
-            'false' => t('No'),
-          ),
-        ];
+
         $form['lr_user_settings']['ciam_terms_and_condition_html'] = [
           '#type' => 'textarea',
           '#title' => t('Enter text to be displayed under the Terms and Condition on the registration page'),
@@ -68,90 +88,19 @@ class AdvancedSettingsForm extends ConfigFormBase {
           '#default_value' => $config->get('ciam_terms_and_condition_html'),
           '#attributes' => array('placeholder' => t('terms and conditon text')),
         ];
-        $form['lr_user_settings']['ciam_form_render_delay'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter delay time to generate authentication pages<a title="Recommended for content heavy sites where page loading time is longer due to lots of images, videos, etc. on the page."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
-          '#default_value' => $config->get('ciam_form_render_delay'),
-          '#attributes' => array('placeholder' => t('100')),
-        ];
-        $form['lr_user_settings']['ciam_min_password_length'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter desired minimum length for password'),
-          '#default_value' => $config->get('ciam_min_password_length'),
-          '#attributes' => array('placeholder' => t('6')),
-        ];
-        $form['lr_user_settings']['ciam_max_password_length'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter desired maximum length for password'),
-          '#default_value' => $config->get('ciam_max_password_length'),
-          '#description' => t('If you want to set password length validation then set both minimum and maximum password length, otherwise it will not work.'),
-          '#attributes' => array('placeholder' => t('32')),
-        ];
-        $form['lr_user_settings']['ciam_welcome_email_template'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter template name for welcome email'),
-          '#default_value' => $config->get('ciam_welcome_email_template'),    
+                
+        $form['lr_user_settings']['ciam_auto_hide_messages'] = [
+          '#type' => 'number',
+          '#title' => t('Auto hide success and error message<a title="Please enter the duration (in seconds) after which the response messages will get hidden."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
+          '#default_value' => $config->get('ciam_auto_hide_messages'), 
+          '#min' => 0,
+          '#step' => 1,
         ];        
-        $form['lr_user_settings']['ciam_email_verification_template'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter template name for email verification email'),
-          '#default_value' => $config->get('ciam_email_verification_template'),    
-        ];        
-        $form['lr_user_settings']['ciam_forgot_password_template'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter template name for forgot password email'),
-          '#default_value' => $config->get('ciam_forgot_password_template'),         
-        ];        
-        $form['lr_user_settings']['ciam_custom_options'] = [
-          '#type' => 'textarea',
-          '#title' => t('Please enter custom user registration options for LoginRadius interface.<a title="Custom User Registration options that are added in the LoginRadius js."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
-          '#id' => 'add_custom_options',
-          '#rows' => 4,
-          '#default_value' => $config->get('ciam_custom_options'),
-          '#attributes' => array(
-            'placeholder' => t('ciam custom option'),
-            'onchange' => "lrCheckValidJson();",
-          ),
-        ];
-        $form['lr_user_settings']['ciam_enable_recaptcha'] = [
+        
+        $form['lr_user_settings']['ciam_ask_required_fields_on_traditional_login'] = [
           '#type' => 'radios',
-          '#title' => t('Do you want to enable google recaptcha at registration'),
-          '#default_value' => $config->get('ciam_enable_recaptcha') ? $config->get('ciam_enable_recaptcha') : 'false',
-          '#options' => array(
-            'true' => t('Yes'),
-            'false' => t('No'),
-          ),
-          '#attributes' => array(
-            'onchange' => "showAndHideRecaptchaOptions();",
-          ),
-        ];
-        $form['lr_user_settings']['ciam_v2_recaptcha_type'] = [
-          '#type' => 'select',
-          '#title' => 'Select recaptcha type',
-          '#options' => array(
-            'v2Recaptcha' => t('v2Recaptcha'),
-            'invisibleRecaptcha' => t('invisibleRecaptcha'),
-          ),
-          '#default_value' => $config->get('ciam_v2_recaptcha_type') ? $config->get('ciam_v2_recaptcha_type') : '',
-        ];
-        $form['lr_user_settings']['ciam_v2_recaptcha_site_key'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter your v2 recaptcha site key'),
-          '#default_value' => $config->get('ciam_v2_recaptcha_site_key'),
-        ];
-        $form['lr_user_settings']['ciam_enable_remember_me'] = [
-          '#type' => 'radios',
-          '#title' => t('Do you want to enable Remember me option<a title="Enabling this property would allow the users to check keep me sign in option, This options also has to be enabled by LoginRadius support from backend"  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
-          '#default_value' => $config->get('ciam_enable_remember_me') ? $config->get('ciam_enable_remember_me') : 'false',
-          '#options' => array(
-            'true' => t('Yes'),
-            'false' => t('No'),
-          ),
-        ];
-        $form['lr_user_settings']['ciam_ask_required_field_on_traditional_login'] = [
-          '#type' => 'radios',
-          '#title' => t('Do you want to enable ask required field on traditional login<a title="Enabling this property would prompt an interface of required fields for a traditional legacy or old user account, if the registration schema has changed"  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
-          '#default_value' => $config->get('ciam_ask_required_field_on_traditional_login') ? $config->get('ciam_ask_required_field_on_traditional_login') : 'false',
+          '#title' => t('Do you want to enable ask required fields on traditional login<a title="This feature when enabled, will ask for newly added required fields on traditional login."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
+          '#default_value' => $config->get('ciam_ask_required_fields_on_traditional_login') ? $config->get('ciam_ask_required_fields_on_traditional_login') : 'false',
           '#options' => array(
             'true' => t('Yes'),
             'false' => t('No'),
@@ -167,83 +116,45 @@ class AdvancedSettingsForm extends ConfigFormBase {
           ),
         ];     
        
-        $form['lr_user_settings']['ciam_auto_hide_messages'] = [
-          '#type' => 'textfield',
-          '#title' => t('Auto hide success and error message<a title="Please enter the duration (in seconds) after which the response messages will get hidden."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
-          '#default_value' => $config->get('ciam_auto_hide_messages'),              
-        ];   
-        
-        $form['lr_login_settings'] = [
-          '#type' => 'details',
-          '#title' => $this->t('CIAM Login Settings'),
-        ];    
-
-        $form['lr_login_settings']['ciam_login_type'] = [
+        $form['lr_user_settings']['ciam_ask_email_for_unverified_user_login'] = [
           '#type' => 'radios',
-          '#title' => t('Select login type<a title="At a time only one of the Login settings can be set i.e. either Email Login or Phone Login settings as per the functionality set on your LoginRadius app."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
-          '#default_value' => $config->get('ciam_login_type') ? $config->get('ciam_login_type') : 'email',
-          '#options' => array(
-            'email' => t('Email'),
-            'phone' => t('Phone'),
-          ),
-          '#attributes' => array(
-            'onchange' => "showLoginTypeOptions();",
-          ),
-        ];    
- 
-        $form['lr_login_settings']['ciam_email_verification_condition'] = [
-          '#type' => 'radios',
-          '#id' => 'email_verification_options',
-          '#title' => t('Select your desired email verification option during the registration process.'),
-          '#default_value' => $config->get('ciam_email_verification_condition') ? $config->get('ciam_email_verification_condition') : 0,
-          '#options' => array(
-            0 => t('Required Email Verification'),
-            1 => t('Optional Email Verification'),
-            2 => t('Disabled Email Verification')
-          ),
-          '#attributes' => array(
-            'onchange' => "showLoginTypeOptions();",
-          ),
-        ];
-
-        $form['lr_login_settings']['ciam_enable_login_on_email_verification'] = [
-          '#type' => 'radios',
-          '#title' => t('Do you want to enable login upon email verification<a title="Log user in after the verification link is clicked in the verification email."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
-          '#default_value' => $config->get('ciam_enable_login_on_email_verification') ? $config->get('ciam_enable_login_on_email_verification') : 'false',
+          '#title' => t('Do you want to ask for email every time an unverified user tries to log in<a title="This feature when enabled, will ask for email every time user tries to login if email is not verified."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
+          '#default_value' => $config->get('ciam_ask_email_for_unverified_user_login') ? $config->get('ciam_ask_email_for_unverified_user_login') : 'false',
           '#options' => array(
             'true' => t('Yes'),
             'false' => t('No'),
           ),
-        ];
-        $form['lr_login_settings']['ciam_prompt_password_on_social_login'] = [
+        ];     
+        $form['lr_user_settings']['ciam_user_name_login'] = [
           '#type' => 'radios',
-          '#id' => 'prompt_password',
-          '#title' => t('Do you want to prompt for password after registration with social provider?'),
+          '#title' => t('Do you want to enable login with username<a title="This feature when enabled, will let the user to login with username as well as password."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
+          '#default_value' => $config->get('ciam_user_name_login') ? $config->get('ciam_user_name_login') : 'false',
+          '#options' => array(
+            'true' => t('Yes'),
+            'false' => t('No'),
+          ),
+        ];    
+        $form['lr_user_settings']['ciam_prompt_password_on_social_login'] = [
+          '#type' => 'radios',
+          '#title' => t('Do you want to enable prompt password on social login<a title="This feature when enabled, will prompt the user to set the password at the time of login for the time from any social provider."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
           '#default_value' => $config->get('ciam_prompt_password_on_social_login') ? $config->get('ciam_prompt_password_on_social_login') : 'false',
           '#options' => array(
             'true' => t('Yes'),
             'false' => t('No'),
           ),
-        ];
-        $form['lr_login_settings']['ciam_enable_user_name'] = [
-          '#type' => 'radios',
-          '#title' => t('Do you want to enable login with username?'),
-          '#default_value' => $config->get('ciam_enable_user_name') ? $config->get('ciam_enable_user_name') : 'false',
-          '#options' => array(
-            'true' => t('Yes'),
-            'false' => t('No'),
-          ),
-        ];
-        $form['lr_login_settings']['ciam_ask_email_always_for_unverified'] = [
-          '#type' => 'radios',
-          '#title' => t('Do you want to ask for email every time an unverified user tries to log in?'),
-          '#default_value' => $config->get('ciam_ask_email_always_for_unverified') ? $config->get('ciam_ask_email_always_for_unverified') : 'false',
-          '#options' => array(
-            'true' => t('Yes, (ask for email address every time an unverified user logs in)'),
-            'false' => t('No'),
-          ),
-        ];        
-        $form['lr_login_settings']['ciam_instant_link_login'] = [
+        ];   
+        if (isset($configOptions) && $configOptions->IsPhoneLogin) {
+            $form['lr_user_settings']['ciam_check_phone_no_availability'] = [
+              '#type' => 'radios',
+              '#title' => t('Do you want to enable option to check phone number exist or not<a title="Turn on, if you want to enable Phone Exist functionality."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
+              '#default_value' => $config->get('ciam_check_phone_no_availability') ? $config->get('ciam_check_phone_no_availability') : 'false',
+              '#options' => array(
+                'true' => t('Yes'),
+                'false' => t('No'),
+              ),
+            ];
+        }
+        $form['lr_user_settings']['ciam_instant_link_login'] = [
           '#type' => 'radios',
           '#title' => t('Do you want to initiate instant login with email<a title="This option also has to be enabled by LoginRadius support from backend"  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
           '#default_value' => $config->get('ciam_instant_link_login') ? $config->get('ciam_instant_link_login') : 'false',
@@ -251,55 +162,8 @@ class AdvancedSettingsForm extends ConfigFormBase {
             'true' => t('Yes'),
             'false' => t('No'),
           ),
-        ];
-        $form['lr_login_settings']['ciam_instant_link_login_email_template'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter instant link login email template name'),
-          '#default_value' => $config->get('ciam_instant_link_login_email_template'),     
-        ];     
-        
-        $form['lr_login_settings']['ciam_instant_link_login_button_label'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter instant link login button name'),
-          '#default_value' => $config->get('ciam_instant_link_login_button_label'),    
-        ];  
-        
-        $form['lr_phone_settings'] = [
-          '#type' => 'details',
-          '#title' => $this->t('CIAM Phone Login Settings'),
         ];        
-        $form['lr_phone_settings']['ciam_enable_phone_login'] = [
-          '#type' => 'radios',
-          '#title' => t('Do you want to enable login with phone number?'),
-          '#default_value' => $config->get('ciam_enable_phone_login') ? $config->get('ciam_enable_phone_login') : 'false',
-          '#options' => array(
-            'true' => t('Yes'),
-            'false' => t('No'),
-          ),
-          '#attributes' => array(
-            'onchange' => "showLoginTypeOptions();",
-          ),
-        ];
-        $form['lr_phone_settings']['ciam_exist_phone_number'] = [
-          '#type' => 'radios',
-          '#title' => t('Do you want to enable option to check phone number exist or not?'),
-          '#default_value' => $config->get('ciam_exist_phone_number') ? $config->get('ciam_exist_phone_number') : 'false',
-          '#options' => array(
-            'true' => t('Yes'),
-            'false' => t('No'),
-          ),        
-        ];
-        $form['lr_phone_settings']['ciam_sms_template'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter Welcome SMS template name'),
-          '#default_value' => $config->get('ciam_sms_template'),
-        ];
-        $form['lr_phone_settings']['ciam_sms_template_phone_verification'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter sms template name for phone number verification'),
-          '#default_value' => $config->get('ciam_sms_template_phone_verification'),
-        ];        
-        $form['lr_phone_settings']['ciam_instant_otp_login'] = [
+        $form['lr_user_settings']['ciam_instant_otp_login'] = [
           '#type' => 'radios',
           '#title' => t('Do you want to initiate one click OTP login<a title="To initiate one click OTP login when phone number login enabled at your site"  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
           '#default_value' => $config->get('ciam_instant_otp_login') ? $config->get('ciam_instant_otp_login') : 'false',
@@ -309,59 +173,95 @@ class AdvancedSettingsForm extends ConfigFormBase {
           ),        
         ];
         
-        $form['lr_phone_settings']['ciam_sms_template_one_time_passcode'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter instant OTP Login SMS template name'),
-          '#default_value' => $config->get('ciam_sms_template_one_time_passcode'),     
-        ];   
-          
-        $form['lr_phone_settings']['ciam_instant_otp_login_button_label'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter instant OTP login button name'),
-          '#default_value' => $config->get('ciam_instant_otp_login_button_label'),     
-        ];
-        
-        $form['lr_2fa_settings'] = [
-          '#type' => 'details',
-          '#title' => $this->t('CIAM 2FA Settings'),
-        ];        
-        $form['lr_2fa_settings']['ciam_enable_2fa'] = [
-          '#type' => 'radios',
-          '#title' => t('Do you want to enable two factor authentication?'),
-          '#default_value' => $config->get('ciam_enable_2fa') ? $config->get('ciam_enable_2fa') : 'false',
-          '#options' => array(
-            'true' => t('Yes'),
-            'false' => t('No'),
-          ),
+        $form['lr_user_settings']['ciam_custom_options'] = [
+          '#type' => 'textarea',
+          '#title' => t('Please enter custom user registration options for LoginRadius interface.<a title="Custom User Registration options that are added in the LoginRadius js."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a> '),
+          '#id' => 'add_custom_options',
+          '#rows' => 4,
+          '#default_value' => $config->get('ciam_custom_options'),
           '#attributes' => array(
-            'onchange' => "showAndHide2faOptions();",
+            'placeholder' => t('ciam custom option'),
+            'onchange' => "lrCheckValidJson();",
           ),
+          '#description' => t('Insert custom option like commonOptions.usernameLogin = true;'),
         ];
-        $form['lr_2fa_settings']['ciam_2fa_flow'] = [
+              
+        if(isset($email_templates)){
+        $form['lr_template_settings'] = [
+          '#type' => 'details',
+          '#title' => $this->t('CIAM Email & SMS Template Setting'),
+        ];        
+        
+        $form['lr_template_settings']['ciam_welcome_email_template'] = [
+          '#title' => t('Enter template name for welcome email'),
           '#type' => 'select',
-          '#title' => 'Select flow for two factor authentication',
-          '#options' => array(
-            'required' => t('Required'),
-            'optional' => t('Optional'),
-          ),
-          '#default_value' => $config->get('ciam_2fa_flow') ? $config->get('ciam_2fa_flow') : 'required',
+          '#options' => $this->get_template_options($email_templates->EmailTemplates->Welcome),
+          '#default_value' => $config->get('ciam_welcome_email_template'),
+        ];      
+        $form['lr_template_settings']['ciam_email_verification_template'] = [
+          '#type' => 'select',
+          '#title' => t('Enter template name for email verification email'),
+          '#options' => $this->get_template_options($email_templates->EmailTemplates->Verification),
+          '#default_value' => $config->get('ciam_email_verification_template'),    
         ];
-        $form['lr_2fa_settings']['ciam_google_authentication'] = [
-          '#type' => 'radios',
-          '#title' => t('Do you want to enable google authentication?'),
-          '#default_value' => $config->get('ciam_google_authentication') ? $config->get('ciam_google_authentication') : 'false',
-          '#options' => array(
-            'true' => t('Yes'),
-            'false' => t('No'),
-          ),
+     
+        $form['lr_template_settings']['ciam_reset_password_email_template'] = [
+          '#type' => 'select',
+          '#title' => t('Enter template name for reset password email'),
+          '#options' => $this->get_template_options($email_templates->EmailTemplates->ResetPassword),
+          '#default_value' => $config->get('ciam_reset_password_email_template'),         
         ];
-        $form['lr_2fa_settings']['ciam_sms_template_2fa'] = [
-          '#type' => 'textfield',
-          '#title' => t('Enter sms template name for Two-factor Authentication'),
-          '#default_value' => $config->get('ciam_sms_template_2fa'),
-        ];
+        if (isset($configOptions) && $configOptions->IsInstantSignin->EmailLink) {
+            $form['lr_template_settings']['ciam_instant_link_login_email_template'] = [
+              '#type' => 'select',
+              '#title' => t('Enter instant link login email template name'),
+              '#options' => $this->get_template_options($email_templates->EmailTemplates->InstantSignIn),
+              '#default_value' => $config->get('ciam_instant_link_login_email_template'),
+            ];
+        }
+        if (isset($configOptions) && $configOptions->IsPhoneLogin) {
+            $form['lr_template_settings']['ciam_welcome_sms_template'] = [
+              '#type' => 'select',
+              '#title' => t('Enter Welcome SMS template name'),
+              '#options' => $this->get_template_options($email_templates->SMSTemplates->Welcome),
+              '#default_value' => $config->get('ciam_welcome_sms_template'),
+            ];        
 
-
+        $form['lr_template_settings']['ciam_sms_template_phone_verification'] = [
+          '#type' => 'select',
+          '#title' => t('Enter SMS template name for Phone Number verification'),
+          '#options' => $this->get_template_options($email_templates->SMSTemplates->Verification),
+          '#default_value' => $config->get('ciam_sms_template_phone_verification'),
+        ];
+        $form['lr_template_settings']['ciam_sms_template_reset_password'] = [
+          '#type' => 'select',
+          '#title' => t('Enter SMS template name for reset password'),
+          '#options' => $this->get_template_options($email_templates->SMSTemplates->ResetPassword),
+          '#default_value' => $config->get('ciam_sms_template_reset_password'),
+        ];
+        $form['lr_template_settings']['ciam_sms_template_change_phone_no'] = [
+          '#type' => 'select',
+          '#title' => t('Enter SMS template name for change Phone Number'),
+          '#options' => $this->get_template_options($email_templates->SMSTemplates->ChangePhoneNo),
+          '#default_value' => $config->get('ciam_sms_template_change_phone_no'),
+        ];
+        }
+        if (isset($configOptions) && $configOptions->IsInstantSignin->SmsOtp) {
+            $form['lr_template_settings']['ciam_sms_template_one_time_passcode'] = [
+              '#type' => 'select',
+              '#title' => t('Enter instant OTP Login SMS template name'),
+              '#options' => $this->get_template_options($email_templates->SMSTemplates->OneTimePassCode),
+              '#default_value' => $config->get('ciam_sms_template_one_time_passcode'),
+            ];
+        }
+        if (isset($configOptions) && $configOptions->TwoFactorAuthentication->IsEnabled) {
+            $form['lr_template_settings']['ciam_sms_template_2fa'] = [
+              '#type' => 'select',
+              '#title' => t('Enter SMS template name for Two-factor Authentication'),
+              '#options' => $this->get_template_options($email_templates->SMSTemplates->SecondFactorAuthentication),
+              '#default_value' => $config->get('ciam_sms_template_2fa'),
+            ];
+        }}
         $form['lr_field_mapping'] = [
           '#type' => 'details',
           '#title' => $this->t('CIAM Field Mapping'),
@@ -395,8 +295,7 @@ class AdvancedSettingsForm extends ConfigFormBase {
             }
         }
 
-
-        foreach ($instances as $field_name => $instance) {       
+        foreach ($instances as $field_name => $instance) {
             $field = FieldStorageConfig::loadByName($entity_type, $field_name);
             if (isset($property_options[$field->getType()])) {
                 $options = array_merge(array('' => t('- Do not import -')), $property_options[$field->getType()]);
@@ -438,6 +337,20 @@ class AdvancedSettingsForm extends ConfigFormBase {
         ];
 
         return parent::buildForm($form, $form_state);
+    }
+        
+    function get_template_options($template_array){  
+
+        $template = array();
+        if(is_array($template_array) || is_object($template_array)){
+            foreach ($template_array as $name) {
+                $template[$name] = $name;         
+            }
+        }
+        if(empty($template)) {
+             $template['default'] = 'default';
+        }
+        return array_merge(array('' => t('- Select -')), $template);  
     }
 
     function field_user_properties() {
@@ -563,8 +476,7 @@ class AdvancedSettingsForm extends ConfigFormBase {
         if (count(\Drupal::moduleHandler()->getImplementations('add_extra_config_settings')) > 0) {
             // Call all modules that implement the hook, and let them make changes to $variables.
             $data = \Drupal::moduleHandler()->invokeAll('add_extra_config_settings');
-        }
-        
+        }       
  
         if (isset($data) && is_array($data)) {
             foreach ($data as $key => $value) {

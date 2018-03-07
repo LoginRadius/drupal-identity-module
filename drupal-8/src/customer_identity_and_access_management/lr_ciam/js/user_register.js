@@ -1,4 +1,5 @@
 jQuery(document).ready(function () {    
+    if(!(window.location.href.indexOf("admin") > -1)) {  
     initializeRegisterCiamForm();
         initializeSocialRegisterCiamForm();
           var isClear = 1;
@@ -9,5 +10,6 @@ jQuery(document).ready(function () {
                  clearInterval(formIntval);
              }
          }, 1000); 
+    }
 });
 

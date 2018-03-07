@@ -1,12 +1,3 @@
-#lr-loading {
-  height: 100%;
-  position: fixed;
-  width: 100%;
-  top: 0;
-  z-index: 100002;
-  opacity: 1;
-}
-
 .overlay {
   text-align: center;
   position: fixed;
@@ -31,15 +22,40 @@
   margin-right: -0.25em; /* Adjusts for spacing */
 }
 
-.circle {
-  -webkit-animation: popIn .6s linear 0s 1;
-  -moz-animation: popIn .6s linear 0s 1;
-  -ms-animation: popIn .6s linear 0s 1;
-  animation: popIn .6s linear 0s 1;
-  border-radius: 50%;
-  width: 200px;
-  height: 200px;
-  display: inline-block;
-  vertical-align: middle;
-  position: relative;
+.lr_loading_screen {
+    background: rgba(0,0,0,.5);
+    height: 100vh;
+    position: relative;
+    z-index: 10000;
 }
+
+.lr_loading_screen_center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 500px;
+    margin-left: -250px;
+    margin-top: -26px;
+}
+.lr_loading_screen_spinner {
+    height: 52px;
+    width: 52px;
+    margin: 0 auto;
+    display: block;
+    animation: lr_loading_screen_animation_spinning .8s linear infinite;
+}
+.lr_loading_phrase, .lr_loading_screen_spinner {
+    backface-visibility: hidden;
+    perspective: 1000;
+}
+@-moz-keyframes lr_loading_screen_animation_spinning
+{0%{transform:rotate(0)}100%{transform:rotate(360deg)}
+}
+@-webkit-keyframes lr_loading_screen_animation_spinning
+{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+
+@-o-keyframes lr_loading_screen_animation_spinning
+{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+
+@keyframes lr_loading_screen_animation_spinning
+{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}

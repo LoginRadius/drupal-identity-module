@@ -1,15 +1,7 @@
-hide_interface: 1
-username_option: 0
 login_redirection: 0
-register_redirection: 0
-enable_linking: 1
-linking_text: 'Account Linking'
-enable_stats: false
-log_wrong_responses: false
 interface_label: 'Login with Social ID'
 user_login_block: 1
 popup_title: 'Please fill the following details to proceed'
-welcome_email: ''
 
 
 

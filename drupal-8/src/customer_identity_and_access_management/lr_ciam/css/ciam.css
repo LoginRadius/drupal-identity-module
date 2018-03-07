@@ -1,10 +1,28 @@
 .lr-linked-data div > img {
   vertical-align: middle;
 }
+input#loginradius-linksignin-email-me-a-link-to-sign-in:hover, 
+input#loginradius-linksignin-email-me-a-link-to-sign-in:active,
+input#loginradius-linksignin-email-me-a-link-to-sign-in:focus {
+border-bottom-style: outset;
+}
+input#loginradius-linksignin-email-me-a-link-to-sign-in{
+    height: 31px;
+    color: #3b3b3b;
+}
+#edit-phoneid{
+    background:#ededed;
+}
+.showmsg {
+    margin: -177px -36px 16px -330px !important;
+}
 .ui-datepicker{
     z-index: 9999999 !important;
 }
 #edit-thanks-block{
+    background-color: #dfebf5;
+}
+#edit-phone-warning-block{    
     background-color: rgb(255, 255, 224);
 }
 
@@ -17,6 +35,7 @@ div.loginradius-ciam-validation-message {
 }
 
 .ciam-lr-form.my-form-wrapper input[type=text],
+.ciam-lr-form.my-form-wrapper input[type=email],
 .ciam-lr-form.my-form-wrapper input[type=password] {
   width: 363px;
 }
@@ -172,6 +191,16 @@ div.loginradius-ciam-validation-message {
   width: 38px;
   height: 38px;
   background-position: 0 -912px;
+}
+.lr_singleglider_200 .lr_pinterest {
+  width: 38px;
+  height: 38px;
+  background-position: 0 74px;
+}
+.lr_singleglider_200 .lr_line {
+  width: 38px;
+  height: 38px;
+  background-position: 0 36px;
 }
 
 .lr_singleglider_200 .lr_foursquare {
@@ -619,4 +648,34 @@ div#backupcode-table-body {
 }
 .logintypeColor{
     color:#3CF;
+}
+div.form-item-ciam-welcome-email-template label,
+div.form-item-ciam-email-verification-template label,
+div.form-item-ciam-reset-password-email-template label,
+div.form-item-ciam-instant-link-login-email-template label,
+div.form-item-ciam-welcome-sms-template label,
+div.form-item-ciam-sms-template-phone-verification label,
+div.form-item-ciam-sms-template-one-time-passcode label,
+div.form-item-ciam-sms-template-reset-password label,
+div.form-item-ciam-sms-template-change-phone-no label,
+div.form-item-ciam-sms-template-2fa label
+{
+        margin-top: 18px;
+        margin-bottom: -18px;
+}
+
+#edit-ciam-welcome-email-template,
+#edit-ciam-email-verification-template,
+#edit-ciam-reset-password-email-template,
+#edit-ciam-instant-link-login-email-template,
+#edit-ciam-welcome-sms-template,
+#edit-ciam-sms-template-phone-verification,
+#edit-ciam-sms-template-reset-password,
+#edit-ciam-sms-template-change-phone-no,
+#edit-ciam-sms-template-one-time-passcode,
+#edit-ciam-sms-template-2fa
+{
+    margin: 0px 0px 0px 440px;
+    clear: both;
+    width:150px;
 }
