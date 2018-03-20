@@ -28,6 +28,10 @@ further information.
 
 -- CHANGE LOG --
 
+  -- 8.x-3.6 --
+  *  Fixed Config files naming bug.
+  *  Fixed User name collision bug.
+
   -- 8.x-3.5 --
   *  Removed some Advance options from backend and they are directly handled by Cloud API.
   *  Implemented custom login, registration & forgot password blocks.

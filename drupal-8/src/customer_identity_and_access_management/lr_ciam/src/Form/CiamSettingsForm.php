@@ -21,7 +21,7 @@ class CiamSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   protected function getEditableConfigNames() {
-    return ['ciam.settings'];
+    return ['lr_ciam.settings'];
   }
 
   /**
@@ -35,7 +35,7 @@ class CiamSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->config('ciam.settings');
+    $config = $this->config('lr_ciam.settings');
         $form['#attached']['library'][] = 'user/drupal.user.admin';
     // Configuration of which forms to protect, with what challenge.
       
@@ -141,7 +141,7 @@ class CiamSettingsForm extends ConfigFormBase {
     }
     
     parent::SubmitForm($form, $form_state);
-    $this->config('ciam.settings')
+    $this->config('lr_ciam.settings')
       ->set('sso_site_name', isset($configOptions->AppName)? $configOptions->AppName : '')
       ->set('api_key', $form_state->getValue('api_key'))
       ->set('api_secret', $form_state->getValue('api_secret'))

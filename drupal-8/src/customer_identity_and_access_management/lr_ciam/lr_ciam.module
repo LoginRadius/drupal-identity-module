@@ -165,7 +165,7 @@ function template_preprocess_lr_ciam_linked(&$vars) {
  * @param $variables
  */
 function template_preprocess_user_pass(&$variables) {
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
     $variables['api_key'] = trim($config->get('api_key'));
        
     $blocks = \Drupal\block\Entity\Block::loadMultiple();
@@ -188,7 +188,7 @@ function template_preprocess_user_pass(&$variables) {
  */
   
 function template_preprocess_user_pass_form(&$variables) {
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
     $variables['api_key'] = trim($config->get('api_key'));
     if (!\Drupal::currentUser()->isAnonymous()) {
         $variables['showpassonlogin'] = false;
@@ -237,7 +237,7 @@ function template_preprocess_user_register_form(&$variables) {
     if (in_array("administrator", $user)) {
         $variables['admin_access'] = false;
     }
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
     $variables['interface_label'] = $config->get('interface_label');
     $variables['api_key'] = trim($config->get('api_key'));
     $variables['rendered'] = drupal_render_children($variables['form']);
@@ -255,7 +255,7 @@ function template_preprocess_user_register(&$variables) {
     if (in_array("administrator", $user)) {
         $variables['admin_access'] = false;
     }
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
     $blocks = \Drupal\block\Entity\Block::loadMultiple();
         foreach ($blocks as $key => $block) {       
         $settings = $block->get('settings'); 
@@ -279,7 +279,7 @@ function template_preprocess_user_register(&$variables) {
  * 
  */
 function template_preprocess_lr_ciam_popup(&$variables) {
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
     $variables['popup_title'] = $config->get('popup_title');
 }
 
@@ -300,7 +300,7 @@ function lr_ciam_preprocess(&$variables) {
  * 
  */
 function template_preprocess_user_login_form(&$variables) {
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
     $variables['interface_label'] = $config->get('interface_label');
     $variables['api_key'] = trim($config->get('api_key'));
 }
@@ -311,7 +311,7 @@ function template_preprocess_user_login_form(&$variables) {
  * @param $variables
  */
 function template_preprocess_user_login(&$variables) {    
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
     
     $blocks = \Drupal\block\Entity\Block::loadMultiple();
         foreach ($blocks as $key => $block) {       
@@ -348,7 +348,7 @@ function lr_ciam_add_loginradius_userdata($userprofile, $token) {
  * @param $page
  */
 function lr_ciam_page_attachments(&$page) {
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
     if (isset($_COOKIE['lr_message']) && $_COOKIE['lr_message'] != '') {
         $sec = $config->get('ciam_auto_hide_messages');
         $message = isset($_COOKIE['lr_message']) ? $_COOKIE['lr_message'] : '';                       
@@ -666,7 +666,7 @@ function lr_ciam_user_presave($account) {
     $user_manager = \Drupal::service('lr_ciam.user_manager');
     $ciam_uid = $user_manager->lr_ciam_get_ciam_uid($account->id());
     $ciam_uname = $user_manager->lr_ciam_get_ciam_uname($account->id());
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
     $apiKey = trim($config->get('api_key'));
     $apiSecret = trim($config->get('api_secret'));    
 
@@ -702,7 +702,7 @@ function lr_ciam_user_presave($account) {
  */
 function lr_ciam_user_update($account) {
     
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
     $apiKey = trim($config->get('api_key'));
     $apiSecret = trim($config->get('api_secret'));
     $user_manager = \Drupal::service('lr_ciam.user_manager');
@@ -726,13 +726,13 @@ function lr_ciam_user_update($account) {
         }
     }}
 
-        try {       
+        try {
             $accountObject = new AccountAPI($apiKey, $apiSecret, array('output_format' => 'json'));
             $result =  $accountObject->update($ciam_uid, $output);
         }
         catch (LoginRadiusException $e) {                           
 
-        }     
+        }   
      
 
     if (isset($_POST['status'])) {
@@ -784,7 +784,7 @@ function lr_ciam_user_update($account) {
  */
 function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
     $user_manager = \Drupal::service('lr_ciam.user_manager');
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
     $user = \Drupal::currentUser()->getRoles();
     
     if (!in_array("administrator", $user) && !\Drupal::currentUser()
@@ -842,18 +842,19 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
           '#open' => TRUE,
         );
             
+        
+        if(isset($userprofile->PhoneId) && $userprofile->PhoneId!= ''){
         $form['account_phone'] = [
             '#type'   => 'container',
             '#weight' => -15,
-        ];
-        
+        ];        
         $form['account_phone']['phoneid'] = [
             '#type' => 'textfield',
             '#title' => t('Phone ID'),
             '#attributes' => array('readonly' => 'readonly'),
             '#description' => t('A valid phone number.'),
-            '#default_value' => isset($userprofile->PhoneId) ? $userprofile->PhoneId : '',
-        ];
+            '#default_value' => $userprofile->PhoneId,
+        ];}
        
         if (isset($userprofile->Email) && count($userprofile->Email) > 0) {
             $form['account']['emailSetting'] = array(
@@ -933,35 +934,35 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
         }
         
         
-
-        if ($socialProfileData->Provider == 'RAAS') {
-            $form['lr_2fa_container'] = array(
-              '#type' => 'item',
-              '#theme' => '2fa_container',
-              '#attributes' => array('class' => array('lr-2fa-container')),
-              '#weight' => -25,
-              '#open' => TRUE,
-            );
-        }
+        $configSettings = lr_ciam_get_config_option($apiKey, $apiSecret);
+        if(isset($configSettings->TwoFactorAuthentication) && $configSettings->TwoFactorAuthentication->IsEnabled){
+            if ($socialProfileData->Provider == 'RAAS') {
+                $form['lr_2fa_container'] = array(
+                  '#type' => 'item',
+                  '#theme' => '2fa_container',
+                  '#attributes' => array('class' => array('lr-2fa-container')),
+                  '#weight' => -25,
+                  '#open' => TRUE,
+                );
+            }        
         
-        
-        try {
-            $isEnabled = $userObject->configureTwoFAByToken($_SESSION['_sf2_attributes']['access_token']);
-        }
-        catch (LoginRadiusException $e) {
-                \Drupal::logger('ciam')->error($e);
-        }
+            try {
+                $isEnabled = $userObject->configureTwoFAByToken($_SESSION['_sf2_attributes']['access_token']);
+            }
+            catch (LoginRadiusException $e) {
+                    \Drupal::logger('ciam')->error($e);
+            }
 
-        if ((isset($isEnabled->IsGoogleAuthenticatorVerified) && $isEnabled->IsGoogleAuthenticatorVerified) || (isset($isEnabled->IsOTPAuthenticatorVerified) && $isEnabled->IsOTPAuthenticatorVerified)) {
-            $form['lr_2fa_backup'] = array(
-              '#type' => 'details',
-              '#title' => 'Backup Codes List',
-              '#theme' => 'lr_backup_codes',
-              '#attributes' => array('class' => array('lr_2fa_backup')),
-              '#weight' => -21,
-              '#open' => TRUE,
-            );
-        }
+            if ((isset($isEnabled->IsGoogleAuthenticatorVerified) && $isEnabled->IsGoogleAuthenticatorVerified) || (isset($isEnabled->IsOTPAuthenticatorVerified) && $isEnabled->IsOTPAuthenticatorVerified)) {
+                $form['lr_2fa_backup'] = array(
+                  '#type' => 'details',
+                  '#title' => 'Backup Codes List',
+                  '#theme' => 'lr_backup_codes',
+                  '#attributes' => array('class' => array('lr_2fa_backup')),
+                  '#weight' => -21,
+                  '#open' => TRUE,
+                );
+            }}
 
         if (isset($_SESSION['emailVerified']) && $_SESSION['emailVerified']) {
             $form['lr_ciam_linked'] = array(
@@ -1030,7 +1031,7 @@ function lr_ciam_mail_alter(&$message) {
  * @return $form
  */
 function lr_ciam_form_advanced_settings_alter(&$form, FormStateInterface $form_state){
-  $hd_config = \Drupal::config('hostedpage.settings'); 
+  $hd_config = \Drupal::config('lr_hostedpage.settings'); 
  
   if($hd_config->get('lr_hosted_page_enable') == '1'){
     unset($form['lr_user_settings']);    
@@ -1063,7 +1064,7 @@ function lr_ciam_add_extra_config_settings() {
  * @param FormStateInterface $form_state
  */
 function lr_ciam_form_user_register_form_alter(&$form, FormStateInterface $form_state) {
-    $config = \Drupal::config('ciam.settings');
+    $config = \Drupal::config('lr_ciam.settings');
 
     if (isset($_SESSION['social_lrdata'])) {
         $userprofile = $_SESSION['social_lrdata'];

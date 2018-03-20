@@ -33,7 +33,7 @@ if (drupalSettings.sso.redirect) {
 
             LRObject.util.ready(function () {
                 LRObject.init("ssoLogin", options);
-            });
+           });
         }
     });
     jQuery("#lr-loading").hide();

@@ -21,7 +21,7 @@ class HostedPageSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   protected function getEditableConfigNames() {
-    return ['hostedpage.settings'];
+    return ['lr_hostedpage.settings'];
   }
 
   /**
@@ -35,7 +35,7 @@ class HostedPageSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $hd_config = $this->config('hostedpage.settings');
+    $hd_config = $this->config('lr_hostedpage.settings');
     // Configuration of which forms to protect, with what challenge.
     $form['hosted'] = [
       '#type' => 'details',
@@ -65,7 +65,7 @@ class HostedPageSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-   $config = \Drupal::config('ciam.settings');
+   $config = \Drupal::config('lr_ciam.settings');
     $apiKey = $config->get('api_key'); 
     $apiSecret = $config->get('api_secret'); 
     if($apiKey == ''){
@@ -80,7 +80,7 @@ class HostedPageSettingsForm extends ConfigFormBase {
       return FALSE;
     }
     parent::SubmitForm($form, $form_state);
-    $this->config('hostedpage.settings')
+    $this->config('lr_hostedpage.settings')
       ->set('lr_hosted_page_enable', $form_state->getValue('lr_hosted_page_enable'))
       ->save();
 

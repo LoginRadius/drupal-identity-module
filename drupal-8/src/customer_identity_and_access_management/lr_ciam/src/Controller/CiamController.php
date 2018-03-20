@@ -50,9 +50,10 @@ class CiamController extends ControllerBase {
      */
     public function userChangePassword($user) {
         $post_value = $_POST;
-        $config = \Drupal::config('ciam.settings');
+        $config = \Drupal::config('lr_ciam.settings');
         $apiKey = $config->get('api_key');
         $apiSecret = $config->get('api_secret');
+     
         if (isset($post_value['setpasswordsubmit']) && $post_value['setpasswordsubmit'] == 'submit') {
             
             if (isset($post_value['setnewpassword']) && !empty($post_value['setnewpassword']) && isset($post_value['setconfirmpassword']) && !empty($post_value['setconfirmpassword'])) {
@@ -61,7 +62,7 @@ class CiamController extends ControllerBase {
                     
                     try {
                         $accountObject = new AccountAPI($apiKey, $apiSecret, array('output_format' => 'json'));
-                        $result = $accountObject->setPassword($_SESSION['_sf2_attributes']['user_profile_data']->Uid, $post_value['setnewpassword']);
+                        $result = $accountObject->setPassword($_SESSION['_sf2_attributes']['user_profile_uid'], $post_value['setnewpassword']);
                         if (isset($result) && $result) {
                             drupal_set_message(t('Password set successfully.'));
                         }
@@ -79,15 +80,23 @@ class CiamController extends ControllerBase {
                 drupal_set_message('The password and confirm password fields are required.', 'error');
             }
         }
-
-        if (isset($_SESSION['_sf2_attributes']['user_profile_data']->Password) && $_SESSION['_sf2_attributes']['user_profile_data']->Password != '') {
+        
+          try {
+              $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json')); 
+              $userprofile = $userObject->getProfile($_SESSION['_sf2_attributes']['access_token']);                 
+          }
+          catch (LoginRadiusException $e) {                
+              \Drupal::logger('ciam')->error($e);                 
+          }
+          
+          
+        if (isset($userprofile->Password) && $userprofile->Password != '') {
             $output = array(
               '#title' => t('Change Password'),
               '#theme' => 'change_password',
               '#attributes' => array('class' => array('change-password'))
             );            
-        }
-        else {
+        } else {
             $output = array(
               '#title' => t('Set Password'),
               '#theme' => 'set_password',
@@ -102,7 +111,7 @@ class CiamController extends ControllerBase {
      *        
      */
    public function changePasswordAccess() {
-        $config = \Drupal::config('ciam.settings');
+        $config = \Drupal::config('lr_ciam.settings');
         $user = \Drupal::currentUser()->getRoles();
         $access_granted = in_array("administrator", $user);
         $apiKey = $config->get('api_key');
@@ -146,7 +155,7 @@ class CiamController extends ControllerBase {
      *
      */
     public function userRegisterValidate() {
-        $config = \Drupal::config('ciam.settings');
+        $config = \Drupal::config('lr_ciam.settings');
         if (isset($_GET['action_completed']) && $_GET['action_completed'] == 'register') {
             drupal_set_message('Email for verification has been sent to your provided email id, check email for further instructions');
             return $this->redirect("<front>");
@@ -168,7 +177,7 @@ class CiamController extends ControllerBase {
             try {
                 $userprofile = $userObject->getProfile($request_token);
                 $userprofile->widget_token = $request_token;
-                \Drupal::service('session')->set('user_profile_data', $userprofile);     
+                \Drupal::service('session')->set('user_profile_uid', $userprofile->Uid);     
             }
             catch (LoginRadiusException $e) {                
                 \Drupal::logger('ciam')->error($e); 
@@ -200,7 +209,7 @@ class CiamController extends ControllerBase {
                         if ($uid) {
                             $drupal_user = User::load($uid);
                         }
-
+                        
                         if (isset($drupal_user) && $drupal_user->id()) {
                             return $this->user_manager->provideLogin($drupal_user, $userprofile);
                         }

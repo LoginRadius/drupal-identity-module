@@ -50,7 +50,7 @@ class CustomHttpClient  implements IHttpClient {
         
         $requestedData = array('GET' => $query_array,
           'POST' => (isset($options['post_data']) ? $options['post_data'] : array()));
-        $config = \Drupal::config('ciam.settings');
+        $config = \Drupal::config('lr_ciam.settings');
         $debug_mode = $config->get('ciam_debug_mode');
         if (isset($debug_mode) && $debug_mode == '1') {
             $response_type = 'error';

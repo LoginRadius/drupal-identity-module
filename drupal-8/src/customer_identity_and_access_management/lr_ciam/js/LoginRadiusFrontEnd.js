@@ -334,7 +334,7 @@ function initializeRegisterCiamForm() {
             disableemailverification = LRObject.options.disabledEmailVerification;
         }
                 
-        if (response.IsPosted && typeof response.Data === 'undefined') {
+        if (response.IsPosted && response.Data == null) {
             if ((typeof (optionalemailverification) == 'undefined' || optionalemailverification !== true) && (typeof (disableemailverification) == 'undefined' || disableemailverification !== true)) {
                 handleResponse(true, "An email has been sent to " + jQuery("#loginradius-registration-emailid").val() + ".Please verify your email address");
                 jQuery('html, body').animate({scrollTop: 0}, 1000);
@@ -519,9 +519,15 @@ function initializeTwoFactorAuthenticator() {
         } else if (response.IsDeleted) {
             handleResponse(true, "Disabled successfully.", "showmsg");  
             jQuery('html, body').animate({scrollTop: 0}, 1000);
+            window.setTimeout(function () {
+                window.location.reload();
+            }, 3000);
         } else if (response.Uid) {
             handleResponse(true, "Verified successfully.", "showmsg"); 
             jQuery('html, body').animate({scrollTop: 0}, 1000);
+             window.setTimeout(function () {
+                window.location.reload();
+            }, 3000);
         }
     };
     authentication_options.onError = function (errors) {

@@ -18,8 +18,8 @@ use \LoginRadiusSDK\CustomerRegistration\Management\AccountAPI;
  */
 function lr_sso_page_attachments(&$page) {
   global $user;
-  $config = \Drupal::config('sso.settings');
-  $sl_config = \Drupal::config('ciam.settings');
+  $config = \Drupal::config('lr_sso.settings');
+  $sl_config = \Drupal::config('lr_ciam.settings');
   $site_name = $sl_config->get('sso_site_name');
 
   if ($config->get('sso_enable') == 1 && !empty($site_name)) {

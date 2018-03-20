@@ -32,7 +32,7 @@ class CiamUserManager {
 
     public function __construct() {
         $this->connection = \Drupal\Core\Database\Database::getConnection();
-        $this->module_config = \Drupal::config('ciam.settings');
+        $this->module_config = \Drupal::config('lr_ciam.settings');
         $this->module_auth_config = \Drupal::config('auth.settings');
         $this->apiSecret = trim($this->module_config->get('api_secret'));
         $this->apiKey = trim($this->module_config->get('api_key'));
@@ -331,7 +331,7 @@ class CiamUserManager {
      * @return mixed
      */
     public function provideLogin($new_user, $userprofile, $status = FALSE) {
-        $config = \Drupal::config('ciam.settings');
+        $config = \Drupal::config('lr_ciam.settings');
         $apiSecret = trim($config->get('api_secret'));
         $apiKey = trim($config->get('api_key'));
         $accountObj = new AccountAPI($apiKey, $apiSecret, array('output_format' => 'json'));
@@ -342,6 +342,7 @@ class CiamUserManager {
                  \Drupal::logger('ciam')->error($e);                              
         }
 
+         
         if (isset($result) && !empty($result)) {
             if (is_array($result) || is_object($result)) {                
                 $query = \Drupal::database()->select('loginradius_mapusers', 'lu');
@@ -355,8 +356,8 @@ class CiamUserManager {
                 }
             }
         }   
-        
-        if ($new_user->isActive()) { 
+                
+        if ($new_user->isActive()) {
             $url = '';
             $isNew = FALSE;
            
@@ -375,9 +376,13 @@ class CiamUserManager {
             }
 
             if (\Drupal::moduleHandler()->moduleExists('lr_ciam')) {
-                $user_name = $this->usernameOption($userprofile);
+                if (isset($userprofile->Provider) && $userprofile->Provider == 'Email' && isset($userprofile->UserName) && $userprofile->UserName != '') {
+                    $user_name = $userprofile->UserName;
+                }
+
                 $user_manager = \Drupal::service('lr_ciam.user_manager');
                 $dbuname = $user_manager->lr_ciam_get_ciam_uname($new_user->id());
+                          
                 if (isset($dbuname) && $dbuname != '') {
                     if (isset($user_name) && $user_name != '' && $dbuname != $user_name) {
                         try {
@@ -552,7 +557,6 @@ class CiamUserManager {
                 }
 
                 $data = $this->checkExistUsername($userprofile);
-                
                 //set up the user fields
                 $password = user_password(32);
                 $fields = array(
@@ -567,6 +571,7 @@ class CiamUserManager {
                 $this->field_create_user_object($new_user, $userprofile);
                 $new_user->save();
                
+                
                 // Log notice and invoke Rules event if new user was succesfully created                
                 if ($new_user->id()) {
                     \Drupal::logger('ciam')
@@ -617,7 +622,7 @@ class CiamUserManager {
                     $status = end($result);
                 }
                 //Advanced module LR Code Hook End
-                if ($new_user->isActive() && $status && $_SESSION['user_verify'] != 1) {
+                if ($new_user->isActive() && $status && $_SESSION['user_verify'] != 1) {                    
                     return $this->provideLogin($new_user, $userprofile);
                 }
                 elseif ($user_register != 'visitors_admin_approval' && ($new_user->isActive() || ($_SESSION['user_verify'] == 1 && $status))) {
@@ -697,10 +702,10 @@ class CiamUserManager {
             }
         }
            
-        if ($drupal_user) {     
+        if ($drupal_user) {              
             return $this->provideLogin($drupal_user, $userprofile, TRUE);
         }
-        else {      
+        else {               
             return $this->createUser($userprofile);
         }
     }    

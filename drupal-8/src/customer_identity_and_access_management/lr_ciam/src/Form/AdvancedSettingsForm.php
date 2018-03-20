@@ -22,7 +22,7 @@ class AdvancedSettingsForm extends ConfigFormBase {
      * {@inheritdoc}
      */
     protected function getEditableConfigNames() {
-        return ['ciam.settings'];
+        return ['lr_ciam.settings'];
     }
 
     /**
@@ -36,7 +36,7 @@ class AdvancedSettingsForm extends ConfigFormBase {
      * {@inheritdoc}
      */
     public function buildForm(array $form, FormStateInterface $form_state) {
-        $config = $this->config('ciam.settings');        
+        $config = $this->config('lr_ciam.settings');        
         $apiKey = trim($config->get('api_key'));
         $apiSecret = trim($config->get('api_secret'));
         // Configuration of which forms to protect, with what challenge. 
@@ -447,7 +447,7 @@ class AdvancedSettingsForm extends ConfigFormBase {
      * {@inheritdoc}
      */
     public function submitForm(array &$form, FormStateInterface $form_state) {
-        $sl_config = \Drupal::config('ciam.settings');
+        $sl_config = \Drupal::config('lr_ciam.settings');
         $apiKey = $sl_config->get('api_key');
         $apiSecret = $sl_config->get('api_secret');
         if ($apiKey == '') {
@@ -463,9 +463,9 @@ class AdvancedSettingsForm extends ConfigFormBase {
         }
 
         \Drupal\Core\Database\Database::getConnection()->delete('config')
-            ->condition('name', 'ciam.settings')->execute();
+            ->condition('name', 'lr_ciam.settings')->execute();
 
-        $this->config('ciam.settings')
+        $this->config('lr_ciam.settings')
             ->set('interface_label', $form_state->getValue('interface_label'))
             ->set('popup_title', $form_state->getValue('popup_title'))
             ->set('popup_status', $form_state->getValue('popup_status'))
@@ -480,7 +480,7 @@ class AdvancedSettingsForm extends ConfigFormBase {
  
         if (isset($data) && is_array($data)) {
             foreach ($data as $key => $value) {
-                $this->config('ciam.settings')
+                $this->config('lr_ciam.settings')
                     ->set($value, $form_state->getValue($value))
                     ->save();
             }
