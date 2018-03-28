@@ -49,7 +49,7 @@ Please share your comments and feedback at feedback@loginradius.com
 
  -- Changelog --
 
- -- 3.0.0 --
+ -- 7.x-3.1 --
 1. Implemented Cloud API Functionality
 2. Removed Advanced options from Drupal admin as they can be configured from User Dashboard
 3. Added Fallback V2JS. 
