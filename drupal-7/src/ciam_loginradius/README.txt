@@ -51,8 +51,13 @@ Please share your comments and feedback at feedback@loginradius.com
 
  -- 3.0.0 --
 1. Implemented Cloud API Functionality
-2. Removed Advance options directly handled by Cloud API
-3. Added Fallback JS 
+2. Removed Advanced options from Drupal admin as they can be configured from User Dashboard
+3. Added Fallback V2JS. 
+4. Added LoginRadius Interface blocks, that can be rendered on any page
+5. Added Email template API
+6. Removed Google captcha option from module settings, need to change from LoginRadius User Dashboard
+7. Auto Email Id generation on only Phone registration.
+8. Implemented set password functionality for social users.
 
  -- 2.1.0 --
 1.  Added google v2 recaptcha option.
