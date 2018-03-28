@@ -47,7 +47,12 @@ Please share your comments and feedback at feedback@loginradius.com
 3. On configuration page, you will see config option for CIAM LoginRadius module .
 
 
- -- Changelog -- 
+ -- Changelog --
+
+ -- 3.0.0 --
+1. Implemented Cloud API Functionality
+2. Removed Advance options directly handled by Cloud API
+3. Added Fallback JS 
 
  -- 2.1.0 --
 1.  Added google v2 recaptcha option.

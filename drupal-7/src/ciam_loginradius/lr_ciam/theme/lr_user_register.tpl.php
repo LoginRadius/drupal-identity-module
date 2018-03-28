@@ -28,6 +28,22 @@
     ?>
     <div class="ciam-lr-form my-form-wrapper">
       <div id="registration-container"></div>
+      <div class="item-list">
+        <ul>
+            <?php
+             if(isset($login_link) && $login_link != '')
+            {
+                 ?>
+            <li class="first"><a href="<?php print $login_link;?>" title="Login with a user account.">Login</a></li> <?php
+            }
+            if(isset($forgot_link) && $forgot_link != '')
+            {
+                ?>
+<li class="last"><a href="<?php print $forgot_link;?>" title="Request new password via e-mail.">Request new password</a></li>
+<?php
+            }
+            ?>
+</ul></div>
       <?php
       print theme('lr_loading');
       print theme('lr_ciam_popup');

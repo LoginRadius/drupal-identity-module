@@ -4,7 +4,7 @@ dependencies[] = lr_ciam
 package = CIAM
 core = 7.x
 configure = admin/config/people/ciam/hosted
-version = "2.1.0"
+version = "3.0.0"
 project = "ciam_loginradius"
 
 

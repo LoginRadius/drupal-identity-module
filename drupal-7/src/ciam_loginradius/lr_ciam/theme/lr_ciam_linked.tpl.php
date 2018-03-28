@@ -55,6 +55,6 @@ drupal_add_js(array('lrsociallogin' => $my_settings), 'setting');
 <div style="clear:both"></div>
 <script>
     jQuery(document).ready(function () {
-       initializeAccountLinkingCiamForms();
+        initializeAccountLinkingCiamForms();
     });
 </script>

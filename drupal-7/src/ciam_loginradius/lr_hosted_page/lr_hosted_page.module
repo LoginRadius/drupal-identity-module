@@ -57,7 +57,7 @@ function lr_hosted_page_preprocess_page(&$variables) {
   if((isset($enablehosted) && $enablehosted == '1') && (isset($site_name) && $site_name != '')){  
   if (!user_is_logged_in()) { 
 
-    if (variable_get('lr_hosted_page_logout') == 1) {         
+    if (variable_get('lr_hosted_page_logout') == 1) {        
         variable_del('lr_hosted_page_logout');       
           drupal_goto('https://'.variable_get('lr_ciam_site_name').'.hub.loginradius.com/auth.aspx?action=logout&return_url='.$fulldomainname);
       } else if(($current_alias == 'user/login') && (isset($_GET['destination']) && $_GET['destination'] == $destination['destination']) || ($current_alias == 'user/login') || ($current_alias == 'user')){

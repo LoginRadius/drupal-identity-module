@@ -1,12 +1,10 @@
 <?php
 
-
 module_load_include('inc', 'lr_ciam', 'includes/lr_ciam.functions');
 module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Utility/Functions');
 module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/LoginRadiusException');
 module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Clients/IHttpClient');
 module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Clients/DefaultHttpClient');
-
 
 use \LoginRadiusSDK\Utility\Functions;
 use \LoginRadiusSDK\LoginRadiusException;
@@ -20,8 +18,8 @@ use \LoginRadiusSDK\Clients\DefaultHttpClient;
  *
  * @package LoginRadiusSDK\Clients
  */
-class CustomHttpClient  implements IHttpClient {
-    
+class CustomHttpClient implements IHttpClient {
+
     /**
      * @param $path
      * @param array $query_array
@@ -29,38 +27,45 @@ class CustomHttpClient  implements IHttpClient {
      * @return type
      * @throws \LoginRadiusSDK\LoginRadiusException
      */
-    public function request($path, $query_array = array(), $options = array())
-    {         
+    public function request($path, $query_array = array(), $options = array()) {
         $parse_url = parse_url($path);
         $request_url = '';
         if (!isset($parse_url['scheme']) || empty($parse_url['scheme'])) {
             $request_url .= API_DOMAIN;
         }
-        $request_url .= $path;  
-       
+        
         $method = isset($options['method']) ? strtolower($options['method']) : 'get';
         $post_data = isset($options['post_data']) ? $options['post_data'] : array();
         $content_type = isset($options['content_type']) ? trim($options['content_type']) : 'x-www-form-urlencoded';
-      
+         
 
-    if ($query_array !== false) {
-
-            $query_array = isset($options['authentication']) ? Functions::authentication($query_array, $options['authentication']) : $query_array;
+        $request_url .= $path;
+        if ($query_array !== false) {
+            if (isset($options['authentication']) && $options['authentication'] == 'headsecure') {
+                $options = array_merge($options, Functions::authentication(array(), $options['authentication']));
+                $query_array = isset($options['authentication']) ? $query_array : $query_array;
+            }
+            else {
+                $query_array = isset($options['authentication']) ? Functions::authentication($query_array, $options['authentication']) : $query_array;
+            }
             if (strpos($request_url, "?") === false) {
                 $request_url .= "?";
-            } else {
+            }
+            else {
                 $request_url .= "&";
             }
             $request_url .= Functions::queryBuild($query_array);
         }
         if (in_array('curl', get_loaded_extensions())) {
             $response = $this->curlApiMethod($request_url, $options);
-        } elseif (ini_get('allow_url_fopen')) {
+        }
+        elseif (ini_get('allow_url_fopen')) {
             $response = $this->fsockopenApiMethod($request_url, $options);
-        } else {
+        }
+        else {
             throw new LoginRadiusException('cURL or FSOCKOPEN is not enabled, enable cURL or FSOCKOPEN to get response from LoginRadius API.');
         }
-        
+
       $requestedData = array( 'GET' => $query_array,
                     'POST' => (isset($options['post_data']) ? $options['post_data'] : array()));
         
@@ -83,14 +88,13 @@ class CustomHttpClient  implements IHttpClient {
           $status = $response_type != 'success' ? WATCHDOG_ERROR : WATCHDOG_INFO;
           watchdog('loginradius_logging',  serialize($logData), array(), $status);
       }
-      
-        if (!empty($response)) {  
+
+        if (!empty($response)) {
             $result = json_decode($response);
-            if (isset($result->errorCode) && !empty($result->errorCode)) {
-                throw new LoginRadiusException($result->message, $result);
+            if (isset($result->ErrorCode) && !empty($result->ErrorCode)) {
+                throw new LoginRadiusException($result->Message, $result);
             }
-        }   
-       
+        }
         return $response;
     }
 
@@ -101,33 +105,42 @@ class CustomHttpClient  implements IHttpClient {
      * @param type $options
      * @return type
      */
-    private function curlApiMethod($request_url, $options = array())
-    {
+    private function curlApiMethod($request_url, $options = array()) {
         $ssl_verify = isset($options['ssl_verify']) ? $options['ssl_verify'] : false;
         $method = isset($options['method']) ? strtolower($options['method']) : 'get';
         $data = isset($options['post_data']) ? $options['post_data'] : array();
         $content_type = isset($options['content_type']) ? trim($options['content_type']) : 'x-www-form-urlencoded';
+        $sott_header_content = isset($options['X-LoginRadius-Sott']) ? trim($options['X-LoginRadius-Sott']) : '';
+        $apikey_header_content = isset($options['X-LoginRadius-ApiKey']) ? trim($options['X-LoginRadius-ApiKey']) : '';
+        $secret_header_content = isset($options['X-LoginRadius-ApiSecret']) ? trim($options['X-LoginRadius-ApiSecret']) : '';
+
         $curl_handle = curl_init();
         curl_setopt($curl_handle, CURLOPT_URL, $request_url);
         curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 15);
-        curl_setopt($curl_handle, CURLOPT_TIMEOUT, 50);        
-        curl_setopt($curl_handle, CURLOPT_SSL_VERIFYPEER, $ssl_verify);     
+        curl_setopt($curl_handle, CURLOPT_TIMEOUT, 50);
+        curl_setopt($curl_handle, CURLOPT_SSL_VERIFYPEER, $ssl_verify);
 
-       if (!empty($data) || $data === true) {
+        curl_setopt($curl_handle, CURLOPT_HTTPHEADER, array('Content-type: application/' . $content_type, 'X-LoginRadius-Sott:' . $sott_header_content, 'X-LoginRadius-ApiKey:' . $apikey_header_content, 'X-LoginRadius-ApiSecret:' . $secret_header_content));
+        if (isset($options['proxy']) && $options['proxy']['host'] != '' && $options['proxy']['port'] != '') {
+            curl_setopt($curl_handle, CURLOPT_PROXY, 'http://' . $options['proxy']['user'] . ':' . $options['proxy']['password'] . '@' . $options['proxy']['host'] . ':' . $options['proxy']['port']);
+        }
+
+        if (!empty($data) || $data === true) {
             if (($content_type == 'json') && (is_array($data) || is_object($data))) {
                 $data = json_encode($data);
             }
-            curl_setopt($curl_handle, CURLOPT_HTTPHEADER, array('Content-type: application/' . $content_type));
             curl_setopt($curl_handle, CURLOPT_POSTFIELDS, (($content_type == 'json') ? $data : Functions::queryBuild($data)));
+
             if ($method == 'post') {
                 curl_setopt($curl_handle, CURLOPT_POST, 1);
-            } elseif ($method == 'delete') {
+            }
+            elseif ($method == 'delete') {
                 curl_setopt($curl_handle, CURLOPT_CUSTOMREQUEST, "delete");
-            } elseif ($method == 'put') {
+            }
+            elseif ($method == 'put') {
                 curl_setopt($curl_handle, CURLOPT_CUSTOMREQUEST, "PUT");
             }
         }
-
         if (ini_get('open_basedir') == '' && (ini_get('safe_mode') == 'Off' or !ini_get('safe_mode'))) {
             curl_setopt($curl_handle, CURLOPT_FOLLOWLOCATION, 1);
             curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, true);
@@ -135,10 +148,16 @@ class CustomHttpClient  implements IHttpClient {
             $url = str_replace('?', '/?', $request_url);
             curl_setopt($curl_handle, CURLOPT_URL, $url);
             curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, true);
-        }     
-          
-        $json_response = curl_exec($curl_handle);         
-        curl_close($curl_handle);       
+        }
+//        curl_setopt($curl_handle, CURLOPT_FOLLOWLOCATION, 1);
+//        curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, true);
+
+        $json_response = curl_exec($curl_handle);
+        if (curl_error($curl_handle)) {
+            $json_response = curl_error($curl_handle);
+        }
+
+        curl_close($curl_handle);
         return $json_response;
     }
 
@@ -149,34 +168,38 @@ class CustomHttpClient  implements IHttpClient {
      * @param type $options
      * @return type
      */
-    private function fsockopenApiMethod($request_url, $options = array())
-    {
+    private function fsockopenApiMethod($request_url, $options = array()) {
         $ssl_verify = isset($options['ssl_verify']) ? $options['ssl_verify'] : false;
         $method = isset($options['method']) ? strtolower($options['method']) : 'get';
         $data = isset($options['post_data']) ? $options['post_data'] : array();
         $content_type = isset($options['content_type']) ? $options['content_type'] : 'form_params';
+        $sott_header_content = isset($options['X-LoginRadius-Sott']) ? trim($options['X-LoginRadius-Sott']) : '';
+        $apikey_header_content = isset($options['X-LoginRadius-ApiKey']) ? trim($options['X-LoginRadius-ApiKey']) : '';
+        $secret_header_content = isset($options['X-LoginRadius-ApiSecret']) ? trim($options['X-LoginRadius-ApiSecret']) : '';
 
-         if (!empty($data)) {
+
+        if (!empty($data)) {
             if (($content_type == 'json') && (is_array($data) || is_object($data))) {
                 $data = json_encode($data);
             }
             $options = array('http' =>
-                array(
-                    'method' => strtoupper($method),
-                    'timeout' => 50,
-                    'header' => 'Content-type :application/' . $content_type,
-                    'content' => (($content_type == 'json') ? $data : Functions::queryBuild($data))
-                ),
-                "ssl" => array(
-                    "verify_peer" => $ssl_verify
-                )
+              array(
+                'method' => strtoupper($method),
+                'timeout' => 50,
+                'header' => 'Content-type :application/' . $content_type . ',X-LoginRadius-Sott:' . $sott_header_content . ',X-LoginRadius-ApiKey:' . $apikey_header_content . ',X-LoginRadius-ApiSecret:' . $secret_header_content,
+                'content' => (($content_type == 'json') ? $data : Functions::queryBuild($data))
+              ),
+              "ssl" => array(
+                "verify_peer" => $ssl_verify
+              )
             );
             $context = stream_context_create($options);
-        } else {
+        }
+        else {
             $context = NULL;
             if ($method == 'delete') {
                 $options = array('http' =>
-                    array('method' => strtoupper($method)));
+                  array('method' => strtoupper($method)));
             }
         }
         $json_response = @file_get_contents($request_url, false, $context);
@@ -185,4 +208,5 @@ class CustomHttpClient  implements IHttpClient {
         }
         return $json_response;
     }
+
 }

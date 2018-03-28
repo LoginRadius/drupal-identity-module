@@ -10,12 +10,14 @@ module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/LoginRadiusException');
 module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Clients/IHttpClient');
 module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Clients/DefaultHttpClient');
 module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/CustomerRegistration/Social/SocialLoginAPI');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Advance/CloudAPI');
 
 use \LoginRadiusSDK\Utility\Functions;
 use \LoginRadiusSDK\LoginRadiusException;
 use \LoginRadiusSDK\Clients\IHttpClient;
 use \LoginRadiusSDK\Clients\DefaultHttpClient;
 use \LoginRadiusSDK\CustomerRegistration\Social\SocialLoginAPI;
+use \LoginRadiusSDK\Advance\CloudAPI;
 
 
 /**
@@ -26,11 +28,25 @@ use \LoginRadiusSDK\CustomerRegistration\Social\SocialLoginAPI;
  * @return array A renderable form array for the respective request.
  */
 function lr_ciam_admin_settings($form, &$form_state) {
-    if (!variable_get('lr_ciam_apikey', FALSE) || !variable_get('lr_ciam_apisecret', FALSE)) {
         $podata = isset($_POST['op']) ? $_POST['op'] : '';
+    if (!variable_get('lr_ciam_apikey', FALSE) || !variable_get('lr_ciam_apisecret', FALSE)) {
         if (isset($podata) && $podata != 'Save configuration') {
             drupal_set_message(t('To activate the social login, insert LoginRadius Site Name, API Key and Secret in the social login section below.'), 'warning');
         }
+    }
+    $api_key = variable_get('lr_ciam_apikey', '');
+    $api_secret = variable_get('lr_ciam_apisecret', '');
+    try {
+        if (isset($api_key) && $api_key != '' && isset($api_secret) && $api_secret != '' && isset($podata) && $podata != 'Save configuration') {
+            $cloudObject = new CloudAPI($api_key, $api_secret, array('output_format' => 'json'));
+            $cloudObject = $cloudObject->getConfigurationList();
+            if($cloudObject->IsPhoneLogin)
+            {
+                drupal_set_message(t('If user is registering using only PhoneID then a random Email Id will be generated in the format "PhoneID@yourdomain.com"'), 'warning');
+            }
+        }
+        }catch (Exception $e) {
+        watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
     }
 
     drupal_add_css(drupal_get_path('module', 'lr_ciam') . '/css/lr_ciam.admin.min.css');
@@ -48,9 +64,7 @@ function lr_ciam_admin_settings($form, &$form_state) {
   <a href="@drupal" target="_blank">Drupal</a>,
   <a href="@joomla" target="_blank">Joomla</a>,
   <a href="@magento" target="_blank">Magento</a>,
-  <a href="@prestashop" target="_blank">Prestashop</a>,
-  <a href="@vbulletin" target="_blank">vBulletin</a>,
-  <a href="@vanillaforum" target="_blank">VanillaForum</a> and
+  <a href="@prestashop" target="_blank">Prestashop</a> and
   <a href="@dotnetnuke" target="_blank">DotNetNuke</a>  <br/><a href="@loginradius" target="_blank"><br/><input class="form-submit" type="button" value="Set up my account!"></a> (<a href="@get_sociallogin" target="_blank">How to set up an account?</a>)', array(
       '@loginradius' => 'http://ish.re/4',
       '@wordpress' => 'http://ish.re/10E78',
@@ -58,8 +72,6 @@ function lr_ciam_admin_settings($form, &$form_state) {
       '@joomla' => 'http://ish.re/12B23',
       '@magento' => 'http://ish.re/UF5L',
       '@prestashop' => 'http://ish.re/TRXU',
-      '@vbulletin' => 'http://ish.re/TRXM',
-      '@vanillaforum' => 'http://ish.re/TRXR',
       '@dotnetnuke' => 'http://ish.re/TRY1',
       '@get_sociallogin' => 'http://ish.re/1EVFR',
     ));
@@ -75,14 +87,6 @@ function lr_ciam_admin_settings($form, &$form_state) {
       '#id' => 'setup',
       '#collapsible' => TRUE,
       '#description' => $get_lr_ciam,
-    );
-
-    $form[$setup_group]['lr_ciam_site_name'] = array(
-      '#type' => 'textfield',
-      '#title' => t('LoginRadius Site Name'),
-      '#required' => TRUE,
-      '#default_value' => variable_get('lr_ciam_site_name'),
-      '#description' => t('You can find the Site Name in your LoginRadius user account'),
     );
 
     $form[$setup_group]['lr_ciam_apikey'] = array(
@@ -103,21 +107,11 @@ function lr_ciam_admin_settings($form, &$form_state) {
     $basic_group = 'basic';
     $form[$basic_group] = array(
       '#type' => 'fieldset',
-      '#title' => t('CIAM BASIC SETTINGS'),
+      '#title' => t('CIAM REDIRECT SETTINGS'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     );
 
-    $form[$basic_group]['lr_ciam_display_username'] = array(
-      '#type' => 'radios',
-      '#title' => t('How would you like username to be created? Select the username syntax as per your preference.'),
-      '#default_value' => variable_get('lr_ciam_display_username', 0),
-      '#options' => array(
-        0 => t('Firstname Lastname [Ex: John Doe]'),
-        1 => t('Firstname-Lastname [Ex: John-Doe]'),
-        2 => t('Email Address [Ex: johndoe@abc.com ]'),
-      )
-    );
     $form[$basic_group]['lr_ciam_userlogin_redirect'] = array(
       '#type' => 'radios',
       '#title' => t('Redirection settings after login'),
@@ -133,28 +127,7 @@ function lr_ciam_admin_settings($form, &$form_state) {
       '#weight' => 50,
       '#default_value' => variable_get('lr_ciam_custom_redirection'),
     );
-    $linking_group = 'linking';
-    $form[$linking_group] = array(
-      '#type' => 'fieldset',
-      '#title' => t('SOCIAL ACCOUNT LINKING SETTINGS'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form[$linking_group]['lr_ciam_account_linking'] = array(
-      '#type' => 'radios',
-      '#title' => t('Do you want to enable social account linking at user profile page?'),
-      '#default_value' => variable_get('lr_ciam_account_linking', 1),
-      '#options' => array(
-        1 => t('YES'),
-        0 => t('NO'),
-      )
-    );
-    $form[$linking_group]['lr_ciam_identity_label_string'] = array(
-      '#type' => 'textfield',
-      '#title' => t('What heading do you want to display to the users to link multiple social networks to one account?'),
-      '#default_value' => variable_get('lr_ciam_identity_label_string', 'Link to an existing social account'),
-      '#description' => t('This text will be displayed just above social login add more identities interface.'),
-    );
+    
     // Submit handler.
     $form['#submit'][] = 'lr_ciam_admin_settings_submit';
     $form['actions'] = array('#type' => 'actions');
@@ -165,89 +138,61 @@ function lr_ciam_admin_settings($form, &$form_state) {
     return $form;
 }
 
+
+ 
+function lr_ciam_select_template($template_array)
+{
+    $templates = array();
+    if(!in_array('default', $template_array) || empty($template_array))
+            {
+                array_push($template_array, 'default');
+            }
+
+            foreach ($template_array as $template) {
+                $templates[$template] = $template;
+            }
+            array_unshift($templates, '-- Select Template --');
+            
+            return $templates;
+}
+
 function lr_ciam_lr_advance_settings($form, &$form_state) {
-    drupal_add_js('jQuery(document).ready(function() {
- var val="' . variable_get("lr_ciam_send_user_credentials") . '";
- if(val == 1){
-  jQuery(".form-item-lr-social-login-email-content").show();
- }
- else {
-  jQuery(".form-item-lr-social-login-email-content").hide();
- }
-  });', array('type' => 'inline', 'scope' => 'header', 'weight' => 4));
     drupal_add_css(drupal_get_path('module', 'lr_ciam') . '/css/lr_ciam.admin.min.css');
-    // Interface settings section.
-    $interface_group = 'interface_settings';
-    $form[$interface_group] = array(
-      '#type' => 'fieldset',
-      '#title' => t('CIAM Interface customization'),
-      '#id' => 'interface_settings',
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form[$interface_group]['interface']['lr_ciam_label_string'] = array(
-      '#type' => 'textfield',
-      '#title' => t('What text do you want to display above the Social Login interface?'),
-      '#default_value' => variable_get('lr_ciam_label_string'),
-      '#description' => t('Leave empty for no text'),
-    );
-     // Basic user settings section.
+    $api_key = variable_get('lr_ciam_apikey', '');
+    $api_secret = variable_get('lr_ciam_apisecret', '');
+    try {
+        if (isset($api_key) && $api_key != '' && isset($api_secret) && $api_secret != '') {
+            $cloudObject = new CloudAPI($api_key, $api_secret, array('output_format' => 'json'));
+            $cloudObject = $cloudObject->getConfigurationList();
+            $query_array = array(
+              'apiKey' => $api_key,
+              'apiSecret' => $api_secret
+            );
+            $options = array(
+              'output_format' => 'json',
+            );
+            $url = 'https://config.lrcontent.com/ciam/appInfo/templates';
+            $email_templates = Functions::apiClient($url, $query_array, $options);
+        }
+    }
+    catch (Exception $e) {
+        watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+    }
+
+    // Basic user settings section.
     $user_settings_group = 'user_settings';
     $form[$user_settings_group] = array(
       '#type' => 'fieldset',
       '#title' => t('CIAM additional settings'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-    );     
-    $form[$user_settings_group]['lr_ciam_inform_validation_messages'] = array(
-      '#type' => 'radios',
-      '#title' => t('Do you want to display form validation message on authentication pages<a class="lrTooltip" title="Form validation includes checking for username and password lengths, password complexity, etc"> (<span class="lrTooltipColor">?</span>)</a> '),
-      '#default_value' => variable_get('lr_ciam_inform_validation_messages', 'true'),
-      '#options' => array(
-        'true' => t('Yes'),
-        'false' => t('No'),
-      )
-    );
+    ); 
     $form[$user_settings_group]['lr_ciam_terms_and_condition_html'] = array(
       '#type' => 'textarea',
       '#title' => t('Enter text to be displayed under the Terms and Condition on the registration page.'),
       '#rows' => 2,
       '#default_value' => variable_get('lr_ciam_terms_and_condition_html'),
       '#attributes' => array('placeholder' => t('terms and conditon text'))
-    );
-    $form[$user_settings_group]['lr_ciam_form_render_delay'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter delay time to generate authentication pages<a title="Recommended for content heavy sites where page loading time is longer due to lots of images, videos, etc. on the page" class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a> '),
-      '#default_value' => variable_get('lr_ciam_form_render_delay'),
-      '#attributes' => array('placeholder' => t('100'))
-    );
-    $form[$user_settings_group]['lr_ciam_min_password_length'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter desired minimum length for password'),
-      '#default_value' => variable_get('lr_ciam_min_password_length'),
-      '#attributes' => array('placeholder' => t('6'))
-    );
-    $form[$user_settings_group]['lr_ciam_max_password_length'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter desired maximum length for password'),
-      '#default_value' => variable_get('lr_ciam_max_password_length'),
-      '#attributes' => array('placeholder' => t('32')),
-      '#description' => t('<p style="color:black;">If you want to set password length validation then set both minimum and maximum password length, otherwise it will not work</p>')
-    );    
-    $form[$user_settings_group]['lr_ciam_welcome_email_template'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter welcome email template name'),
-      '#default_value' => variable_get('lr_ciam_welcome_email_template')
-    );
-    $form[$user_settings_group]['lr_ciam_email_verification_template'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter email verification template name'),
-      '#default_value' => variable_get('lr_ciam_email_verification_template')
-    );
-    $form[$user_settings_group]['lr_ciam_forgot_password_template'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter forgot password email template name'),
-      '#default_value' => variable_get('lr_ciam_forgot_password_template')
     );
    
     $form[$user_settings_group]['lr_ciam_custom_options'] = array(
@@ -261,46 +206,41 @@ function lr_ciam_lr_advance_settings($form, &$form_state) {
         'onchange' => "lrCheckValidJson();",
       ),
       '#description' => t('Insert custom option like commonOptions.loginOnEmailVerification = true;'),
-    );    
-    $form[$user_settings_group]['lr_ciam_enable_recaptcha'] = array(
+    );
+    
+     $form[$user_settings_group]['lr_ciam_prompt_password_on_social_login'] = array(
       '#type' => 'radios',
-      '#title' => t('Do you want to enable google recaptcha?'),
-      '#default_value' => variable_get('lr_ciam_enable_recaptcha', 'false'),
+      '#id' => 'prompt_password',
+      '#title' => t('Do you want to prompt for password after registration with social provider<a title="This feature when enabled, will prompt the user to set the password at the time of login for the time from any social provider."  class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a>'),
+      '#default_value' => variable_get('lr_ciam_prompt_password_on_social_login', 'false'),
       '#options' => array(
         'true' => t('Yes'),
         'false' => t('No'),
-      ),
-        '#attributes' => array(
-        'onchange' => "showAndHideRecaptchaOptions();",
       )
     );
-     $form[$user_settings_group]['lr_ciam_v2_recaptcha_type'] = array(
-      '#type' => 'select',
-      '#title' => t('Select recaptcha type'),
-      '#default_value' => variable_get('lr_ciam_v2_recaptcha_type'),
-      '#options' => array(     
-        'v2Recaptcha' => t('v2Recaptcha'),
-        'invisibleRecaptcha' => t('invisibleRecaptcha'),
+     $form[$user_settings_group]['lr_ciam_enable_user_name'] = array(
+      '#type' => 'radios',
+      '#title' => t('Do you want to enable login with username<a title="This feature when enabled, will let the user to login with username as well as password."  class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a>'),
+      '#default_value' => variable_get('lr_ciam_enable_user_name', 'false'),
+      '#options' => array(
+        'true' => t('Yes'),
+        'false' => t('No'),
       )
     );
-   $form[$user_settings_group]['lr_ciam_v2_recaptcha_site_key'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter your v2 recaptcha site key'),
-      '#default_value' => variable_get('lr_ciam_v2_recaptcha_site_key')
+    $form[$user_settings_group]['lr_ciam_ask_email_always_for_unverified'] = array(
+      '#type' => 'radios',
+      '#title' => t('Do you want to ask for email every time an unverified user tries to log in<a title="This feature when enabled, will ask for email every time user tries to login if email is not verified."  class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a>'),
+      '#default_value' => variable_get('lr_ciam_ask_email_always_for_unverified', 'false'),
+      '#options' => array(
+        'true' => t('Yes, (ask for email address every time an unverified user logs in)'),
+        'false' => t('No'),
+      )
     );
+     
     $form[$user_settings_group]['lr_ciam_display_password_strength'] = array(
       '#type' => 'radios',
-      '#title' => t('Do you want to enable to check password strength<a title="To enable password strength" class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a> '),
+      '#title' => t('Do you want to enable to check password strength<a title="To enable check password strength feature" class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a> '),
       '#default_value' => variable_get('lr_ciam_display_password_strength', 'false'),
-      '#options' => array(
-        'true' => t('Yes'),
-        'false' => t('No'),
-      )
-    );
-    $form[$user_settings_group]['lr_ciam_enable_remember_me'] = array(
-      '#type' => 'radios',
-      '#title' => t('Do you want to enable Remember me option<a title="Enabling this property would allow the users to check keep me sign in option, This options also has to be enabled by LoginRadius support from backend" class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a> '),
-      '#default_value' => variable_get('lr_ciam_enable_remember_me', 'false'),
       '#options' => array(
         'true' => t('Yes'),
         'false' => t('No'),
@@ -315,209 +255,146 @@ function lr_ciam_lr_advance_settings($form, &$form_state) {
         'false' => t('No'),
       )
     ); 
-    
-    $form[$user_settings_group]['lr_auto_hide_messages'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Auto hide success message<a title="This will hide success and error message in given seconds"  class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a> '),
-      '#default_value' => variable_get('lr_auto_hide_messages'),
-      '#attributes' => array('placeholder' => t('5'))
-    );
-
-    $login_settings_group = 'login_settings';
-    $form[$login_settings_group] = array(
-      '#type' => 'fieldset',
-      '#title' => t('CIAM Login Settings'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );     
-    
-    $form[$login_settings_group]['lr_ciam_login_type'] = array(
-      '#type' => 'radios',    
-      '#title' => t('Select login type<a title="At a time only one of the Login settings can be set i.e. either Email Login or Phone Login settings as per the functionality set on your LoginRadius app" class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a>'),
-      '#default_value' => variable_get('lr_ciam_login_type', 'email'),
-      '#options' => array(
-        'email' => t('Login with email'),
-        'phone' => t('Login with phone'),
-      ),
-      '#attributes' => array(
-        'onchange' => "showLoginTypeOptions();",
-      ),
-    );   
-           
-    $form[$login_settings_group]['lr_ciam_email_verification_condition'] = array(
-      '#type' => 'radios',
-      '#id' => 'email_verification_options',
-      '#title' => t('Select your desired email verification option during the registration process.'),
-      '#default_value' => variable_get('lr_ciam_email_verification_condition', 0),
-      '#options' => array(
-        0 => t('Required Email Verification'),
-        1 => t('Optional Email Verification'),
-        2 => t('Disabled Email Verification')
-      ),
-      '#attributes' => array(
-        'onchange' => "showLoginTypeOptions();",
-      )
-    );
-    $form[$login_settings_group]['lr_ciam_enable_login_on_email_verification'] = array(
-      '#type' => 'radios',
-      '#title' => t('Do you want to enable login upon email verification?'),
-      '#default_value' => variable_get('lr_ciam_enable_login_on_email_verification', 'false'),
-      '#options' => array(
-        'true' => t('Yes'),
-        'false' => t('No'),
-      )
-    );
-    $form[$login_settings_group]['lr_ciam_prompt_password_on_social_login'] = array(
-      '#type' => 'radios',
-      '#id' => 'prompt_password',
-      '#title' => t('Do you want to prompt for password after registration with social provider?'),
-      '#default_value' => variable_get('lr_ciam_prompt_password_on_social_login', 'false'),
-      '#options' => array(
-        'true' => t('Yes'),
-        'false' => t('No'),
-      )
-    );
-    $form[$login_settings_group]['lr_ciam_enable_user_name'] = array(
-      '#type' => 'radios',
-      '#title' => t('Do you want to enable login with username?'),
-      '#default_value' => variable_get('lr_ciam_enable_user_name', 'false'),
-      '#options' => array(
-        'true' => t('Yes'),
-        'false' => t('No'),
-      )
-    );
-    $form[$login_settings_group]['lr_ciam_ask_email_always_for_unverified'] = array(
-      '#type' => 'radios',
-      '#title' => t('Do you want to ask for email every time an unverified user tries to log in?'),
-      '#default_value' => variable_get('lr_ciam_ask_email_always_for_unverified', 'false'),
-      '#options' => array(
-        'true' => t('Yes, (ask for email address every time an unverified user logs in)'),
-        'false' => t('No'),
-      )
-    );
-     $form[$login_settings_group]['lr_ciam_instant_link_login'] = array(
+      $form[$user_settings_group]['lr_ciam_instant_link_login'] = array(
       '#type' => 'radios',            
       '#title' => t('Do you want to initiate instant login with email<a class="lrTooltip" title="Using this you can also log into​ the account if you forgot your password without using the password reset interface"> (<span class="lrTooltipColor">?</span>)</a>'),
       '#default_value' => variable_get('lr_ciam_instant_link_login', 'false'),
       '#options' => array(
         'true' => t('Yes'),
         'false' => t('No'),
+      ),
+           '#attributes' => array(
+        'onchange' => "showAndHideinstantemailOptions();",
       )
     ); 
-    $form[$login_settings_group]['lr_ciam_instant_link_login_email_template'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter instant link login email template name'),
-      '#default_value' => variable_get('lr_ciam_instant_link_login_email_template')
-    );
-    $form[$login_settings_group]['lr_ciam_instant_link_login_button_label'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Instant link login button name'),
-      '#default_value' => variable_get('lr_ciam_instant_link_login_button_label')
-    );
-    
-    $phone_settings_group = 'phone_settings';
-    $form[$phone_settings_group] = array(
-      '#type' => 'fieldset',
-      '#title' => t('CIAM Phone Login Settings'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );  
-    
-    $form[$phone_settings_group]['lr_ciam_phone_login'] = array(
-      '#type' => 'radios',
-      '#title' => t('Do you want to enable login with phone number<a title="After enable this option you can login with phone number" class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a>'),
-      '#default_value' => variable_get('lr_ciam_phone_login', 'false'),
-      '#options' => array(
-        'true' => t('Yes'),
-        'false' => t('No'),
-       ),'#attributes' => array(
-        'onchange' => "showLoginTypeOptions();",
-      )
-    );    
-    $form[$phone_settings_group]['lr_ciam_exist_phone_number'] = array(
+   
+    if(isset($cloudObject) && $cloudObject->IsPhoneLogin)
+    {
+      $form[$user_settings_group]['lr_ciam_exist_phone_number'] = array(
       '#type' => 'radios',    
-      '#title' => t('Do you want to enable option to check phone number exist or not?'),
+      '#title' => t('Do you want to enable option to check phone number exist or not<a class="lrTooltip" title="Turn on, if you want to enable Phone Exist functionality"> (<span class="lrTooltipColor">?</span>)</a>'),
       '#default_value' => variable_get('lr_ciam_exist_phone_number', 'false'),
       '#options' => array(
         'true' => t('Yes'),
         'false' => t('No'),
       )
-    );          
-    $form[$phone_settings_group]['lr_ciam_sms_template'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter welcome SMS template name'),
-      '#default_value' => variable_get('lr_ciam_sms_template')
-    );
-     $form[$phone_settings_group]['lr_ciam_sms_template_phone_verification'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter SMS template name for phone number verification'),
-      '#default_value' => variable_get('lr_ciam_sms_template_phone_verification')
-    );
-    $form[$phone_settings_group]['lr_ciam_instant_otp_login'] = array(
+    ); 
+      $form[$user_settings_group]['lr_ciam_instant_otp_login'] = array(
       '#type' => 'radios',    
       '#title' => t('Do you want to initiate one click OTP login<a title="To initiate one click OTP login when phone number login enabled at your site" class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a>'),
       '#default_value' => variable_get('lr_ciam_instant_otp_login', 'false'),
       '#options' => array(
         'true' => t('Yes'),
         'false' => t('No'),
+      ),
+          '#attributes' => array(
+        'onchange' => "showAndHideinstantPhoneOptions();",
       )
     );
-    $form[$phone_settings_group]['lr_ciam_sms_template_one_time_passcode'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter instant OTP Login SMS template name'),
-      '#default_value' => variable_get('lr_ciam_sms_template_one_time_passcode')
+    }
+    
+    $form[$user_settings_group]['lr_ciam_minify_js_css'] = array(
+      '#type' => 'radios',
+      '#title' => t('Enable minified version of JS/CSS file?<a title="This feature enables minified version of js/css file." class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a> '),
+      '#default_value' => variable_get('lr_ciam_minify_js_css', 'false'),
+      '#options' => array(
+        'true' => t('Yes'),
+        'false' => t('No'),
+      )
     );
-      $form[$phone_settings_group]['lr_ciam_instant_otp_login_button_label'] = array(
+    
+    $form[$user_settings_group]['lr_auto_hide_messages'] = array(
       '#type' => 'textfield',
-      '#title' => t('Instant otp login button name'),
-      '#default_value' => variable_get('lr_ciam_instant_otp_login_button_label')
+        '#element_validate' => array('lr_auto_hide_messages_validate'),
+        '#attributes' => array(
+        ' type' => 'number',
+    ),
+      '#title' => t('Auto hide success message<a title="This will hide success and error message in given seconds"  class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a> '),
+      '#default_value' => variable_get('lr_auto_hide_messages')
     );
     
     
-    $twofa_settings_group = '2fa_settings';
-    $form[$twofa_settings_group] = array(
+    
+    $login_settings_group = 'login_settings';
+    if(isset($email_templates->EmailTemplates))
+    {
+    $form[$login_settings_group] = array(
       '#type' => 'fieldset',
-      '#title' => t('CIAM 2FA settings'),
+      '#title' => t('CIAM Template Settings'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-    );   
-    
-    $form[$twofa_settings_group]['lr_ciam_enable_2fa'] = array(
-      '#type' => 'radios',
-      '#title' => t('Do you want to enable two factor authentication?'),
-      '#default_value' => variable_get('lr_ciam_enable_2fa', 'false'),
-      '#options' => array(
-        'true' => t('Yes'),
-        'false' => t('No'),
-      ),
-        '#attributes' => array(
-        'onchange' => "showAndHide2faOptions();",
-      )
     );
-    $form[$twofa_settings_group]['lr_ciam_2fa_flow'] = array(
+    
+    $form[$login_settings_group]['lr_ciam_welcome_email_template'] = array(
       '#type' => 'select',
-      '#title' => t('Select flow for two factor authentication'),
-      '#default_value' => variable_get('lr_ciam_2fa_flow'),
-      '#options' => array(     
-        'required' => t('Required'),
-        'optional' => t('Optional'),
-      )
+      '#title' => t('Choose welcome email template name'),
+      '#options' => lr_ciam_select_template($email_templates->EmailTemplates->Welcome),
+      '#default_value' => variable_get('lr_ciam_welcome_email_template')
     );
-    $form[$twofa_settings_group]['lr_ciam_google_authentication'] = array(
-      '#type' => 'radios',
-      '#title' => t('Do you want to enable google authentication for two factor authentication'),
-      '#default_value' => variable_get('lr_ciam_google_authentication', 'false'),
-      '#options' => array(
-        'true' => t('Yes'),
-        'false' => t('No'),
-      )
+    $form[$login_settings_group]['lr_ciam_email_verification_template'] = array(
+      '#type' => 'select',
+      '#title' => t('Choose email verification template name'),
+      '#options' => lr_ciam_select_template($email_templates->EmailTemplates->Verification),
+      '#default_value' => variable_get('lr_ciam_email_verification_template')
     );
-    
-    $form[$twofa_settings_group]['lr_ciam_sms_template_2fa'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter SMS template name for Two-factor Authentication'),
+    $form[$login_settings_group]['lr_ciam_forgot_password_template'] = array(
+      '#type' => 'select',
+      '#title' => t('Choose forgot password email template name'),
+      '#options' => lr_ciam_select_template($email_templates->EmailTemplates->ResetPassword),
+      '#default_value' => variable_get('lr_ciam_forgot_password_template')
+    );
+    $form[$login_settings_group]['lr_ciam_instant_link_login_email_template'] = array(
+      '#type' => 'select',
+      '#title' => t('Choose instant link login email template name'),
+      '#options' => lr_ciam_select_template($email_templates->EmailTemplates->InstantSignIn),
+      '#default_value' => variable_get('lr_ciam_instant_link_login_email_template')
+    );
+    }
+    if(isset($email_templates->SMSTemplates))
+    {
+    if(isset($cloudObject) && $cloudObject->IsPhoneLogin)
+    {
+     $form[$login_settings_group]['lr_ciam_sms_template'] = array(
+      '#type' => 'select',
+      '#title' => t('Choose welcome SMS template name'),
+      '#options' => lr_ciam_select_template($email_templates->SMSTemplates->Welcome),
+      '#default_value' => variable_get('lr_ciam_sms_template')
+    );
+     $form[$login_settings_group]['lr_ciam_sms_template_phone_verification'] = array(
+      '#type' => 'select',
+      '#title' => t('Choose SMS template name for phone number verification'),
+      '#options' => lr_ciam_select_template($email_templates->SMSTemplates->Verification),
+      '#default_value' => variable_get('lr_ciam_sms_template_phone_verification')
+    );
+     $form[$login_settings_group]['lr_ciam_sms_template_password_reset'] = array(
+      '#type' => 'select',
+      '#title' => t('Choose SMS template name for Password Reset'),
+      '#options' => lr_ciam_select_template($email_templates->SMSTemplates->ResetPassword),
+      '#default_value' => variable_get('lr_ciam_sms_template_password_reset')
+    );
+     $form[$login_settings_group]['lr_ciam_sms_template_change_number'] = array(
+      '#type' => 'select',
+      '#title' => t('Choose SMS template name for Changing Phone Number'),
+      '#options' => lr_ciam_select_template($email_templates->SMSTemplates->ChangePhoneNo),
+      '#default_value' => variable_get('lr_ciam_sms_template_change_number')
+    );
+    }
+     $form[$login_settings_group]['lr_ciam_sms_template_one_time_passcode'] = array(
+      '#type' => 'select',
+      '#title' => t('Choose instant OTP Login SMS template name'),
+      '#options' => lr_ciam_select_template($email_templates->SMSTemplates->OneTimePassCode),
+      '#default_value' => variable_get('lr_ciam_sms_template_one_time_passcode')
+    );
+    if(isset($cloudObject) && $cloudObject->TwoFactorAuthentication->IsEnabled)
+    {
+    $form[$login_settings_group]['lr_ciam_sms_template_2fa'] = array(
+      '#type' => 'select',
+      '#title' => t('Choose SMS template name for Two-factor Authentication'),
+      '#options' => lr_ciam_select_template($email_templates->SMSTemplates->SecondFactorAuthentication),
       '#default_value' => variable_get('lr_ciam_sms_template_2fa')
-    );
+    ); 
+    }
+    }
     
     module_load_include('inc', 'lr_ciam', 'includes/lr_field_mapping');
     //field mapping section
@@ -656,6 +533,14 @@ function lr_ciam_lr_advance_settings($form, &$form_state) {
     return $form;
 }
 
+function lr_auto_hide_messages_validate($form,$form_state)
+{
+    if($form['#value'] < 0)
+    {
+        form_error($form, t('Auto hide success message time should be positive'));
+    }
+}
+
 /**
  * Submit Social Login tab settings.
  *
@@ -687,18 +572,82 @@ function lr_ciam_admin_settings_submit($form, &$form_state) {
  *
  * @param array $form_state A keyed array containing the current state of the form
  */
-function lr_ciam_save_settings(&$form_state) {  
+function lr_ciam_save_settings(&$form_state) {
+    
+    
    
     $api_key = isset($form_state['values']['lr_ciam_apikey']) ? trim($form_state['values']['lr_ciam_apikey']) : trim(variable_get('lr_ciam_apikey', ''));
     $api_secret = isset($form_state['values']['lr_ciam_apisecret']) ? trim($form_state['values']['lr_ciam_apisecret']) : trim(variable_get('lr_ciam_apisecret', ''));
     $data = lr_ciam_get_authentication($api_key, $api_secret);
-
-    
     if (isset($data['status']) && $data['status'] != 'status') {
         drupal_set_message($data['message'], $data['status']);
         return FALSE;
     }
     form_state_values_clean($form_state);
+    if(!variable_get('lr_ciam_apikey', FALSE) || !variable_get('lr_ciam_apisecret', FALSE) || variable_get('lr_ciam_apikey' , '') != $api_key || variable_get('lr_ciam_apisecret' , '') != $api_secret)
+    {
+        $cloudObject = new CloudAPI($api_key, $api_secret, array('output_format' => 'json'));
+        $config = (array)$cloudObject->getConfigurationList();
+                    if(isset($config['AppName']))
+                    {
+                    variable_set('lr_ciam_site_name', $config['AppName']);
+                    }
+                    if(isset($config['AskPasswordOnSocialLogin']) && !variable_get('lr_ciam_prompt_password_on_social_login',FALSE))
+                    {
+                         if($config['AskPasswordOnSocialLogin'] == 1)
+                        {
+                         variable_set('lr_ciam_prompt_password_on_social_login', 'true');
+                        }
+                        else
+                        {
+                            variable_set('lr_ciam_prompt_password_on_social_login', 'false');
+                        }
+                    }
+                    if(isset($config['IsUserNameLogin']) && !variable_get('lr_ciam_enable_user_name',FALSE))
+                    {
+                         if($config['IsUserNameLogin'] == 1)
+                        {
+                         variable_set('lr_ciam_enable_user_name', 'true');
+                        }
+                        else
+                        {
+                            variable_set('lr_ciam_enable_user_name', 'false');
+                        }
+                    }
+                    if(isset($config['AskEmailIdForUnverifiedUserLogin']) && !variable_get('lr_ciam_ask_email_always_for_unverified',FALSE))
+                    {
+                         if($config['AskEmailIdForUnverifiedUserLogin'] == 1)
+                        {
+                         variable_set('lr_ciam_ask_email_always_for_unverified', 'true');
+                        }
+                        else
+                        {
+                            variable_set('lr_ciam_ask_email_always_for_unverified', 'false');
+                        }
+                    }
+                    if(isset($config['AskRequiredFieldsOnTraditionalLogin']) && !variable_get('lr_ciam_ask_required_field_on_traditional_login',FALSE))
+                    {
+                         if($config['AskRequiredFieldsOnTraditionalLogin'] == 1)
+                        {
+                         variable_set('lr_ciam_ask_required_field_on_traditional_login', 'true');
+                        }
+                        else
+                        {
+                            variable_set('lr_ciam_ask_required_field_on_traditional_login', 'false');
+                        }
+                    }
+                    if(isset($config['CheckPhoneNoAvailabilityOnRegistration']) && !variable_get('lr_ciam_ask_required_field_on_traditional_login',FALSE))
+                    {
+                         if($config['CheckPhoneNoAvailabilityOnRegistration'] == 1)
+                        {
+                         variable_set('lr_ciam_exist_phone_number', 'true');
+                        }
+                        else
+                        {
+                            variable_set('lr_ciam_exist_phone_number', 'false');
+                        }
+                    }
+    }
 
     foreach ($form_state['values'] as $key => $value) {
         if (is_array($value) && isset($form_state['values']['array_filter'])) {
@@ -706,6 +655,8 @@ function lr_ciam_save_settings(&$form_state) {
         }
         variable_set($key, $value);
     }
+    
+    
 
     drupal_set_message(t('The configuration options have been saved.'));
     // Clear the cached pages and blocks.
@@ -736,7 +687,7 @@ function lr_ciam_get_authentication($apikey, $apisecret) {
     if (isset($apikey)) {
         $data = array();
         try {
-            $socialLoginObject = new SocialLoginAPI($apikey, $apisecret, array('authentication' => false, 'output_format' => 'json'));
+            $socialLoginObject = new SocialLoginAPI($apikey, $apisecret, array('output_format' => 'json'));
             $result = $socialLoginObject->validateKeyandSecret();
 
             if (empty($result)) {

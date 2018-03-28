@@ -27,8 +27,7 @@ class UserAPI {
      * @param type $customize_options
      */
     public function __construct($apikey = '', $apisecret = '', $customize_options = array()) {
-        $options = array_merge(array('authentication' => 'key'), $customize_options);
-        new Functions($apikey, $apisecret, $options);
+        new Functions($apikey, $apisecret, $customize_options);
     }
 
     /**
@@ -61,7 +60,7 @@ class UserAPI {
      * @param string $g_recaptcha_response It is only required for locked accounts when logging in
      * @return type userprofile object
      */
-    public function authLoginByEmail($verification_url = '', $login_url = '', $email_template = '', $g_recaptcha_response = '', $data, $fields = '*') {
+    public function authLoginByEmail($data, $verification_url = '', $login_url = '', $email_template = '', $g_recaptcha_response = '', $fields = '*') {
         return $this->apiClientHandler("login", array('verificationUrl' => $verification_url, 'loginUrl' => $login_url, 'emailTemplate' => $email_template, 'g-recaptcha-response' => $g_recaptcha_response, 'fields' => $fields), array('method' => 'post', 'post_data' => $data, 'content_type' => 'json'));
     }
 
@@ -94,7 +93,7 @@ class UserAPI {
      * @param string $email_template email template name
      * @return type userprofile object
      */
-    public function authLoginByUsername($verification_url = '', $login_url = '', $email_template = '', $g_recaptcha_response = '', $data, $fields = '*') {
+    public function authLoginByUsername($data, $verification_url = '', $login_url = '', $email_template = '', $g_recaptcha_response = '', $fields = '*') {
         return $this->apiClientHandler("login", array('verificationUrl' => $verification_url, 'loginUrl' => $login_url, 'emailTemplate' => $email_template, 'g-recaptcha-response' => $g_recaptcha_response, 'fields' => $fields), array('method' => 'post', 'post_data' => $data, 'content_type' => 'json'));
     }
 
@@ -127,7 +126,7 @@ class UserAPI {
      * @param string $email_template email template name
      * @return type userprofile object
      */
-    public function authLoginByPhone($login_url = '', $sms_template = '', $g_recaptcha_response = '', $data, $fields = '*') {
+    public function authLoginByPhone($data, $login_url = '', $sms_template = '', $g_recaptcha_response = '', $fields = '*') {
         return $this->apiClientHandler("login", array('loginUrl' => $login_url, 'smstemplate' => $sms_template, 'g-recaptcha-response' => $g_recaptcha_response, 'fields' => $fields), array('method' => 'post', 'post_data' => $data, 'content_type' => 'json'));
     }
 
@@ -838,6 +837,63 @@ class UserAPI {
     public function authResetPasswordBySecurityQuestion($data, $fields = '*') {
         return $this->apiClientHandler("password/securityanswer", array('fields' => $fields), array('method' => 'put', 'post_data' => $data, 'content_type' => 'json'));
     }
+    
+    /**
+     * This API is used to reset password for the specified account By email.
+     *
+     * @param $data  
+     * {
+     * "securityanswer": {
+     * "cb7*******3e40ef8a****01fb****20": "Answer"
+     * },
+     * "email": "",
+     * "password": "xxxxxxxxxx",
+     * "resetpasswordemailtemplate": ""
+     * }
+     * @return {"IsPosted" : "true"}
+     */    
+    
+    public function authResetPasswordBySecurityAnswerAndEmail($data, $fields = '*') {
+        return $this->apiClientHandler("password/securityanswer", array('fields' => $fields), array('method' => 'put', 'post_data' => $data, 'content_type' => 'json'));
+    }
+    
+    /**
+     * This API is used to reset password for the specified account By phone.
+     *
+     * @param $data  
+     * {
+     * "securityanswer": {
+     * "cb7*******3e40ef8a****01fb****20": "Answer"
+     * },
+     * "phone": "",
+     * "password": "xxxxxxxxxx",
+     * "resetpasswordemailtemplate": ""
+     * }
+     * @return {"IsPosted" : "true"}
+     */    
+    
+    public function authResetPasswordBySecurityAnswerAndPhone($data, $fields = '*') {
+        return $this->apiClientHandler("password/securityanswer", array('fields' => $fields), array('method' => 'put', 'post_data' => $data, 'content_type' => 'json'));
+    }
+    
+    /**
+     * This API is used to reset password for the specified account By UserName.
+     *
+     * @param $data  
+     * {
+     * "securityanswer": {
+     * "cb7*******3e40ef8a****01fb****20": "Answer"
+     * },
+     * "userName": "",
+     * "password": "xxxxxxxxxx",
+     * "resetpasswordemailtemplate": ""
+     * }
+     * @return {"IsPosted" : "true"}
+     */    
+    
+    public function authResetPasswordBySecurityAnswerAndUserName($data, $fields = '*') {
+        return $this->apiClientHandler("password/securityanswer", array('fields' => $fields), array('method' => 'put', 'post_data' => $data, 'content_type' => 'json'));
+    }
 
     /**
      * This API is used to update security questions by the access token.
@@ -858,11 +914,12 @@ class UserAPI {
      * handle User APIs
      *
      * @param type $path
-     * @param type $query_array
+     * @param type $query_array1
      * @param type $options
      * @return type
      */
-    private function apiClientHandler($path, $query_array = array(), $options = array()) {
+    private function apiClientHandler($path, $query_array = array(), $customize_options = array()) {
+        $options = array_merge(array('authentication' => 'key'), $customize_options);
         return Functions::apiClient("/identity/v2/auth/" . $path, $query_array, $options);
     }
 

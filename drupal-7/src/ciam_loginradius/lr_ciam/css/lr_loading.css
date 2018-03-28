@@ -43,3 +43,23 @@
   vertical-align: middle;
   position: relative;
 }
+.lr_loading_screen_spinner {
+    height: 52px;
+    width: 52px;
+    animation-name: lr_loading_screen_animation_spinning;
+    animation-duration: 0.8s;
+    animation-timing-function: linear;
+    animation-delay: initial;
+    animation-iteration-count: infinite;
+    animation-direction: initial;
+    animation-fill-mode: initial;
+    animation-play-state: initial;
+}
+@keyframes lr_loading_screen_animation_spinning{
+  0%{
+    transform: rotate(0);
+}
+100% {
+    transform: rotate(360deg);
+}  
+}

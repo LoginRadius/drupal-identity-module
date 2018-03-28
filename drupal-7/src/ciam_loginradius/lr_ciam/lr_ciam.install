@@ -20,63 +20,44 @@ function lr_ciam_requirements($phase) {
  * Implements hook_uninstall().
  */
 function lr_ciam_uninstall() {        
-  $deleted_keys = array( 
-    'lr_ciam_inform_validation_messages',
+  $deleted_keys = array(
     'lr_ciam_terms_and_condition_html',
-    'lr_ciam_form_render_delay',
-    'lr_ciam_min_password_length',
-    'lr_ciam_max_password_length',  
     'lr_ciam_forgot_password_template',
     'lr_ciam_email_verification_template',
     'lr_ciam_custom_options',
-    'lr_ciam_email_verification_condition',
     'lr_ciam_enable_login_on_email_verification',
     'lr_ciam_prompt_password_on_social_login',
-    'lr_ciam_enable_user_name',
-    'lr_ciam_ask_email_always_for_unverified',    
-    'lr_ciam_enable_remember_me',
+    'lr_ciam_ask_required_field_on_traditional_login',
+    'lr_ciam_ask_email_always_for_unverified',
+    'lr_ciam_enable_user_name',  
+    'lr_ciam_minify_js_css',
     'lr_ciam_display_password_strength',
-    'lr_ciam_ask_required_field_on_traditional_login',       
     'lr_ciam_site_name',
     'lr_ciam_apikey',
-    'lr_ciam_apisecret',
-    'lr_ciam_label_string', 
+    'lr_ciam_apisecret', 
     'lr_ciam_disable_traditional_login',
-    'lr_ciam_identity_label_string',   
-    'lr_ciam_display_username',
+    'lr_ciam_exist_phone_number',
     'lr_ciam_force_registration',
     'lr_ciam_link_account',
     'lr_ciam_update_profile',
-    'lr_ciam_debug_mode',  
-    'lr_ciam_account_linking',
+    'lr_ciam_debug_mode', 
     'lr_ciam_userlogin_redirect',
     'lr_ciam_custom_redirection',
     'lr_ciam_user_fields',
     'lr_ciam_profile_fields',     
-    'lr_auto_hide_messages',     
-    'lr_ciam_enable_recaptcha',     
-    'lr_ciam_v2_recaptcha_type',     
-    'lr_ciam_v2_recaptcha_site_key',     
-    'lr_ciam_login_type',     
-    'lr_ciam_instant_link_login',     
-    'lr_ciam_instant_link_login_button_label',     
-    'lr_ciam_instant_link_login_email_template',     
-    'lr_ciam_phone_login',     
-    'lr_ciam_exist_phone_number',     
+    'lr_auto_hide_messages',
+    'lr_ciam_instant_link_login_email_template',
     'lr_ciam_sms_template',     
-    'lr_ciam_sms_template_phone_verification',     
-    'lr_ciam_instant_otp_login',     
-    'lr_ciam_instant_otp_login_button_label',     
-    'lr_ciam_sms_template_one_time_passcode',     
-    'lr_ciam_enable_2fa',     
-    'lr_ciam_2fa_flow',     
-    'lr_ciam_google_authentication',     
+    'lr_ciam_sms_template_phone_verification',  
+    'lr_ciam_sms_template_one_time_passcode',
     'lr_ciam_sms_template_2fa',    
     'lr_hosted_page_enable',    
-    'lr_sso_enable'    
+    'lr_sso_enable',
+    'lr_ciam_instant_otp_login',
+    'lr_ciam_instant_link_login'
   );
   foreach($deleted_keys as $key){
-    variable_del($key);
+  //  variable_del($key);
   }
 }
 
@@ -122,13 +103,21 @@ function lr_ciam_schema() {
         'not null' => TRUE,
         'description' => 'The provider\'s unique id.',
       ),
+      'user_id' => array(
+        'type' => 'int',
+        'length' => 11,
+        'not null' => FALSE,
+        'default' => 0,
+
+      ),
     ),
     'primary key' => array('aid'),
   );
-  
+    return $schema;
   }
   db_update('system')
     ->fields(array('weight' => 4))
     ->condition('name', 'lr_ciam', '=')
     ->execute();
+
 }

@@ -4,5 +4,5 @@
     });
   </script>
   <div class="ciam-lr-form my-form-wrapper">
-    <div id="authentication-container"></div>
+    <div id="authentication-container" style="display: none;"></div>
   </div>

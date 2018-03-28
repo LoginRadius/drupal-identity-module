@@ -9,15 +9,7 @@ if (!empty($ciam_api_key)):
   <script>
     jQuery(document).ready(function () {
       initializeLoginCiamForm();
-     // initializeSocialRegisterCiamForm();
-      <?php
-      if(!(isset($_GET['vtype']) && isset($_GET['vtoken']) && $_GET['vtype'] == 'emailverification')){
-          ?>
-        initializeSocialRegisterCiamForm(); 
-      <?php 
-      }
-      ?>
-     
+      initializeSocialRegisterCiamForm();      
          var isClear = 1;
           var formIntval;
         setTimeout(show_birthdate_date_block, 1000);
@@ -44,7 +36,23 @@ if (!empty($ciam_api_key)):
     print theme('lr_loading');
     print theme('lr_ciam_popup');
     ?>
-    <?php print $links; ?>
+    <div class="item-list">
+        <ul>
+             <?php
+            if(isset($register_link) && $register_link != '')
+            {
+                ?>
+            <li class="first"><a href="<?php print $register_link;?>" title="Create a new user account.">Create new account</a></li>
+            <?php
+            }
+            if(isset($forgot_link) && $forgot_link != '')
+            {
+            ?>
+<li class="last"><a href="<?php print $forgot_link;?>" title="Request new password via e-mail.">Request new password</a></li>
+<?php
+            }
+            ?>
+</ul></div>
   </div>
 <?php
 endif;

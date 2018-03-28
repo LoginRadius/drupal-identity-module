@@ -9,7 +9,14 @@ if (!empty($ciam_api_key)):
   <script>
     jQuery(document).ready(function () {
       initializeLoginCiamForm();
-      initializeSocialRegisterCiamForm();     
+      <?php
+      if(!(isset($_GET['vtype']) && isset($_GET['vtoken']) && $_GET['vtype'] == 'emailverification')){
+          ?>
+        initializeSocialRegisterCiamForm(); 
+      <?php 
+      }
+      ?>
+       
         var isClear = 1;
           var formIntval;
         setTimeout(show_birthdate_date_block, 1000);
@@ -22,7 +29,7 @@ if (!empty($ciam_api_key)):
   </script>
 
   <p><?php print $intro_text; ?></p>
-  <label><?php print $sociallogin_widget_title; ?></label>
+  
 
   <div>
     <?php
