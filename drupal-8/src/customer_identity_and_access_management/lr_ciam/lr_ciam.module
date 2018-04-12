@@ -420,7 +420,13 @@ function lr_ciam_page_attachments(&$page) {
     if ($config->get('ciam_instant_otp_login') != '' && $config->get('ciam_instant_otp_login') != 'false') {
         $my_settings['instantOTPLogin'] = (boolean) $config->get('ciam_instant_otp_login');
     }
-    $my_settings['sott'] = lr_ciam_get_sott($config->get('api_key'), $config->get('api_secret'));    
+    
+    $request_uri = \Drupal::request()->getRequestUri();
+    $sott = '';
+    if (strpos($request_uri, 'register') !== FALSE) {
+        $sott = lr_ciam_get_sott($config->get('api_key'), $config->get('api_secret'));       
+    }
+    $my_settings['sott'] = $sott;
     if ($config->get('ciam_debug_mode') != '' && $config->get('ciam_debug_mode') != 'false') {
         $my_settings['debugMode'] = (boolean) $config->get('ciam_debug_mode');
     }
@@ -796,11 +802,10 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
         $apiKey = trim($config->get('api_key'));
         $apiSecret = trim($config->get('api_secret'));
         $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));           
-        $socialObject = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));           
-        
+        $socialObject = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));  
         try {
-            $userprofile = $userObject->getProfile(trim($_SESSION['_sf2_attributes']['access_token']));
-            if(isset($userprofile->ErrorCode) && $userprofile->ErrorCode == '906'){
+            $result = $socialObject->tokenValidate(trim($_SESSION['_sf2_attributes']['access_token']));
+            if(isset($result->ErrorCode) && $result->ErrorCode == '906'){
                 $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
                 $redirectUrl = $domain.'user/logout';
                 $response = new TrustedRedirectResponse($redirectUrl);             
@@ -815,7 +820,8 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
                 \Drupal::logger('ciam')->error($e);
         }
 
-        $defaultEmail = isset($userprofile->Email) ? $userprofile->Email[0]->Value : '';
+        $userprofile = $_SESSION['_sf2_attributes']['user_profile_data'];
+        $defaultEmail = isset($userprofile->Email) ? $userprofile->Email[0]->Value : '';       
         
         if(isset($defaultEmail) && $defaultEmail != ''){
             if ($form['account']['mail']['#default_value'] != $defaultEmail) {
@@ -841,8 +847,7 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
           '#weight' => -30,
           '#open' => TRUE,
         );
-            
-        
+       
         if(isset($userprofile->PhoneId) && $userprofile->PhoneId!= ''){
         $form['account_phone'] = [
             '#type'   => 'container',
@@ -926,16 +931,17 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
         $form['account']['current_pass_required_value']['#access'] = FALSE;
         $form['account']['current_pass']['#access'] = FALSE;
         
-        try {
-            $socialProfileData = $socialObject->getUserProfiledata(trim($_SESSION['_sf2_attributes']['access_token']), false, 'Provider');            
-        }
-        catch (LoginRadiusException $e) {
-                \Drupal::logger('ciam')->error($e);
-        }
-        
-        
+          
         $configSettings = lr_ciam_get_config_option($apiKey, $apiSecret);
         if(isset($configSettings->TwoFactorAuthentication) && $configSettings->TwoFactorAuthentication->IsEnabled){
+           
+            try {
+                $socialProfileData = $socialObject->getUserProfiledata(trim($_SESSION['_sf2_attributes']['access_token']), false, 'Provider');            
+            }
+            catch (LoginRadiusException $e) {
+                    \Drupal::logger('ciam')->error($e);
+            }
+            
             if ($socialProfileData->Provider == 'RAAS') {
                 $form['lr_2fa_container'] = array(
                   '#type' => 'item',
@@ -944,13 +950,13 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
                   '#weight' => -25,
                   '#open' => TRUE,
                 );
-            }        
+            }   
         
             try {
                 $isEnabled = $userObject->configureTwoFAByToken($_SESSION['_sf2_attributes']['access_token']);
             }
             catch (LoginRadiusException $e) {
-                    \Drupal::logger('ciam')->error($e);
+                \Drupal::logger('ciam')->error($e);
             }
 
             if ((isset($isEnabled->IsGoogleAuthenticatorVerified) && $isEnabled->IsGoogleAuthenticatorVerified) || (isset($isEnabled->IsOTPAuthenticatorVerified) && $isEnabled->IsOTPAuthenticatorVerified)) {
@@ -962,7 +968,9 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
                   '#weight' => -21,
                   '#open' => TRUE,
                 );
-            }}
+            }            
+            
+        }
 
         if (isset($_SESSION['emailVerified']) && $_SESSION['emailVerified']) {
             $form['lr_ciam_linked'] = array(

@@ -83,7 +83,7 @@ class CiamController extends ControllerBase {
         
           try {
               $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json')); 
-              $userprofile = $userObject->getProfile($_SESSION['_sf2_attributes']['access_token']);                 
+              $userprofile = $userObject->getProfile($_SESSION['_sf2_attributes']['access_token'], 'Password');                 
           }
           catch (LoginRadiusException $e) {                
               \Drupal::logger('ciam')->error($e);                 
@@ -178,6 +178,7 @@ class CiamController extends ControllerBase {
                 $userprofile = $userObject->getProfile($request_token);
                 $userprofile->widget_token = $request_token;
                 \Drupal::service('session')->set('user_profile_uid', $userprofile->Uid);     
+                \Drupal::service('session')->set('user_profile_data', $userprofile);     
             }
             catch (LoginRadiusException $e) {                
                 \Drupal::logger('ciam')->error($e); 

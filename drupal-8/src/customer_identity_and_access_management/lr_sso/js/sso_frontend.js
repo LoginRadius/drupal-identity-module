@@ -1,6 +1,6 @@
 jQuery(document).ready(function () {
     jQuery('a[href*="user/logout"]').click(function (e) {
-        e.preventDefault();
+        //e.preventDefault();
         var options = {};
         options.onSuccess = function () {
             window.location = drupalSettings.sso.logout;
@@ -9,7 +9,6 @@ jQuery(document).ready(function () {
             LRObject.init("logout", options);
         });
     });
-
 });
 
 if (drupalSettings.sso.redirect) {
@@ -33,7 +32,7 @@ if (drupalSettings.sso.redirect) {
 
             LRObject.util.ready(function () {
                 LRObject.init("ssoLogin", options);
-           });
+            });
         }
     });
     jQuery("#lr-loading").hide();

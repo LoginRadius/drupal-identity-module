@@ -2,13 +2,6 @@
 
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
-use \LoginRadiusSDK\Utility\Functions;
-use \LoginRadiusSDK\LoginRadiusException;
-use \LoginRadiusSDK\Clients\IHttpClient;
-use \LoginRadiusSDK\Clients\DefaultHttpClient;
-use \LoginRadiusSDK\Utility\SOTT;
-use \LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
-use \LoginRadiusSDK\CustomerRegistration\Management\AccountAPI;
 
 /**
  * Add required sso js files to page.

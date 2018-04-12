@@ -28,6 +28,9 @@ further information.
 
 -- CHANGE LOG --
 
+  -- 8.x-3.7 --
+  *  Workaround for performance improvement.
+
   -- 8.x-3.6 --
   *  Fixed Config files naming bug.
   *  Fixed User name collision bug.

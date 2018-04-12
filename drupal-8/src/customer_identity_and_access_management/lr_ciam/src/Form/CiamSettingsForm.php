@@ -66,8 +66,7 @@ class CiamSettingsForm extends ConfigFormBase {
         ];
         
         if ($config->get('api_key') != '' && $config->get('api_secret')) {
-            $isPhoneLogin = lr_ciam_get_config_option($config->get('api_key'), $config->get('api_secret'));
-            if ($isPhoneLogin->IsPhoneLogin) {
+            if (isset($_SESSION['_sf2_attributes']['is_phone_login']) &&  $_SESSION['_sf2_attributes']['is_phone_login']) {
                 $form['phone_warning_block'] = [
                   '#type' => 'fieldset',
                   '#title' => $this->t('Important Note:'),
@@ -135,6 +134,7 @@ class CiamSettingsForm extends ConfigFormBase {
     module_load_include('inc', 'lr_ciam');
     $data = lr_ciam_get_authentication($form_state->getValue('api_key'), $form_state->getValue('api_secret'));
     $configOptions = lr_ciam_get_config_option($form_state->getValue('api_key'), $form_state->getValue('api_secret'));
+    \Drupal::service('session')->set('is_phone_login', $configOptions->IsPhoneLogin); 
     if (isset($data['status']) && $data['status'] != 'status') {
       drupal_set_message($data['message'], $data['status']);
       return FALSE;

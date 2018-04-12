@@ -331,29 +331,16 @@ class CiamUserManager {
      * @return mixed
      */
     public function provideLogin($new_user, $userprofile, $status = FALSE) {
-        $config = \Drupal::config('lr_ciam.settings');
-        $apiSecret = trim($config->get('api_secret'));
-        $apiKey = trim($config->get('api_key'));
-        $accountObj = new AccountAPI($apiKey, $apiSecret, array('output_format' => 'json'));
-        try {
-            $result = $accountObj->getProfileByUid($userprofile->Uid);
-        }
-        catch (LoginRadiusException $e) {
-                 \Drupal::logger('ciam')->error($e);                              
-        }
-
-         
-        if (isset($result) && !empty($result)) {
-            if (is_array($result) || is_object($result)) {                
+        if (isset($userprofile) && !empty($userprofile)) {
+            if (is_array($userprofile) || is_object($userprofile)) {               
                 $query = \Drupal::database()->select('loginradius_mapusers', 'lu');
                 $query->addField('lu', 'user_id');
                 $query->condition('lu.user_id', $new_user->id());
-                $query->condition('lu.provider_id', $result->ID);
-                $check_aid = $query->execute()->fetchField();
-
-                if (isset($check_aid) && !$check_aid) {
-                    $this->insertSocialData($new_user->id(), $result->ID, $result->Provider);
-                }
+                $query->condition('lu.provider_id', $userprofile->ID);
+                $check_aid = $query->execute()->fetchField();                
+                if (isset($check_aid) && !$check_aid) {  
+                    $this->insertSocialData($new_user->id(), $userprofile->ID, $userprofile->Provider);
+                } 
             }
         }   
                 
@@ -705,7 +692,7 @@ class CiamUserManager {
         if ($drupal_user) {              
             return $this->provideLogin($drupal_user, $userprofile, TRUE);
         }
-        else {               
+        else {            
             return $this->createUser($userprofile);
         }
     }    
