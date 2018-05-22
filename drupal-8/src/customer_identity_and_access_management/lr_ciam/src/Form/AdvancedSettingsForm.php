@@ -467,9 +467,9 @@ class AdvancedSettingsForm extends ConfigFormBase {
 
         $this->config('lr_ciam.settings')
             ->set('interface_label', $form_state->getValue('interface_label'))
-            ->set('popup_title', $form_state->getValue('popup_title'))
-            ->set('popup_status', $form_state->getValue('popup_status'))
-            ->set('popup_error', $form_state->getValue('popup_error'))
+//            ->set('popup_title', $form_state->getValue('popup_title'))
+//            ->set('popup_status', $form_state->getValue('popup_status'))
+//            ->set('popup_error', $form_state->getValue('popup_error'))
             ->set('user_fields', $form_state->getValue('user_fields'))
             ->set('ciam_debug_mode', $form_state->getValue('ciam_debug_mode'))
             ->save();

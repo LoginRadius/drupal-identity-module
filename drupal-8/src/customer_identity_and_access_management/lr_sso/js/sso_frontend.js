@@ -3,7 +3,7 @@ jQuery(document).ready(function () {
         //e.preventDefault();
         var options = {};
         options.onSuccess = function () {
-            window.location = drupalSettings.sso.logout;
+            window.location = drupalSettings.sso.frontUrl;
         };
         LRObject.util.ready(function () {
             LRObject.init("logout", options);
@@ -11,13 +11,13 @@ jQuery(document).ready(function () {
     });
 });
 
-if (drupalSettings.sso.redirect) {
+if (drupalSettings.sso.isNotLogin) {
     jQuery(document).ready(function () {
         if (jQuery(".interfacecontainerdiv").length) {
             var options = {};
             options.onSuccess = function (response) {
-                var form = document.createElement("form");
-                form.action = drupalSettings.sso.login_url
+                var form = document.createElement("form");                
+                form.action = drupalSettings.sso.loginUrl;
                 form.method = "POST";
 
                 var hidden = document.createElement("input");
@@ -37,16 +37,16 @@ if (drupalSettings.sso.redirect) {
     });
     jQuery("#lr-loading").hide();
 }
+
 if (drupalSettings.sso.isNotLoginThenLogout) {
     jQuery(document).ready(function () {
         var check_options = {};
         check_options.onError = function () {
-            window.location = drupalSettings.sso.logout_url;
+            window.location = drupalSettings.sso.logoutUrl;
         };
 
         LRObject.util.ready(function () {
-                LRObject.init("ssoNotLoginThenLogout", check_options);       
+            LRObject.init("ssoNotLoginThenLogout", check_options);       
         });
     });
-
 }

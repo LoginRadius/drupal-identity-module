@@ -176,9 +176,15 @@ function template_preprocess_user_pass(&$variables) {
             $block_settings = $settings;
         } 
     }    
-     
+    $variables['lr_loading_image'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.png';
     $variables['link_login'] = isset($block_settings['forgot_block_link_login']) ? $block_settings['forgot_block_link_login'] : ''; 
     $variables['link_register'] = isset($block_settings['forgot_block_link_register']) ? $block_settings['forgot_block_link_register'] : ''; 
+    if (!\Drupal::currentUser()->isAnonymous()) {
+        $variables['showpassonlogin'] = false;
+    }
+    else {        
+        $variables['showpassonlogin'] = true;
+    }    
 }
 
 /**
@@ -190,11 +196,12 @@ function template_preprocess_user_pass(&$variables) {
 function template_preprocess_user_pass_form(&$variables) {
     $config = \Drupal::config('lr_ciam.settings');
     $variables['api_key'] = trim($config->get('api_key'));
+    $variables['lr_loading_image'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.png';
     if (!\Drupal::currentUser()->isAnonymous()) {
         $variables['showpassonlogin'] = false;
         $variables['rendered'] = drupal_render_children($variables['form']);
     }
-    else {
+    else {        
         $variables['showpassonlogin'] = true;
     }
 }
@@ -241,6 +248,7 @@ function template_preprocess_user_register_form(&$variables) {
     $variables['interface_label'] = $config->get('interface_label');
     $variables['api_key'] = trim($config->get('api_key'));
     $variables['rendered'] = drupal_render_children($variables['form']);
+    $variables['lr_loading_image'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.png';
 }
 
 /**
@@ -269,28 +277,27 @@ function template_preprocess_user_register(&$variables) {
     $variables['link_forgot'] = isset($block_settings['register_block_link_forgot']) ? $block_settings['register_block_link_forgot'] : ''; 
     $variables['interface_label'] = $config->get('interface_label');
     $variables['api_key'] = trim($config->get('api_key'));
+    $variables['lr_loading_image'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.png';
     $variables['rendered'] = drupal_render_children($variables['form']);
 }
-
 /**
- * Get pop up title.
+ * Add variable to set password.
  *
  * @param $variables
  * 
  */
-function template_preprocess_lr_ciam_popup(&$variables) {
-    $config = \Drupal::config('lr_ciam.settings');
-    $variables['popup_title'] = $config->get('popup_title');
+
+function template_preprocess_set_password(&$variables) {
+    $variables['lr_loading_image'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.png';
 }
-
 /**
- * Implements hook_preprocess().
+ * Add variable to change password.
  *
  * @param $variables
  * 
  */
-function lr_ciam_preprocess(&$variables) {
-    $variables['image_path'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.png';
+function template_preprocess_change_password(&$variables) {
+    $variables['lr_loading_image'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.png';
 }
 
 /**
@@ -303,6 +310,7 @@ function template_preprocess_user_login_form(&$variables) {
     $config = \Drupal::config('lr_ciam.settings');
     $variables['interface_label'] = $config->get('interface_label');
     $variables['api_key'] = trim($config->get('api_key'));
+    $variables['lr_loading_image'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.png';
 }
 
 /**
@@ -323,6 +331,7 @@ function template_preprocess_user_login(&$variables) {
      }
  
     $variables['interface_label'] = $config->get('interface_label');
+    $variables['lr_loading_image'] = $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'lr_ciam') . '/images/loading.png';
     $variables['api_key'] = trim($config->get('api_key'));  
     $variables['link_register'] = isset($block_settings['login_block_link_register']) ? $block_settings['login_block_link_register'] : ''; 
     $variables['link_forgot'] = isset($block_settings['login_block_link_forgot']) ? $block_settings['login_block_link_forgot'] : ''; 
@@ -783,6 +792,41 @@ function lr_ciam_user_update($account) {
 }
 
 /**
+ * Implements hook_preprocess().
+ *
+ * @param $variables
+ * 
+ */
+function lr_ciam_preprocess(&$variables) {
+    $config = \Drupal::config('lr_ciam.settings');
+    $user = \Drupal::currentUser()->getRoles();
+    if (!in_array("administrator", $user) && !\Drupal::currentUser()
+            ->isAnonymous()) {        
+        $apiKey = trim($config->get('api_key'));
+        $apiSecret = trim($config->get('api_secret'));
+        $socialObject = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));  
+        try {
+            $result = $socialObject->tokenValidate(trim($_SESSION['_sf2_attributes']['access_token']));
+            if(isset($result->errorCode) && $result->errorCode == '906'){                
+                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
+                $redirectUrl = $domain.'user/logout';
+                $response = new TrustedRedirectResponse($redirectUrl);   
+                \Drupal::logger('ciam')->error($e);
+                return $response->send();                  
+            }
+        }
+        
+        catch (LoginRadiusException $e) {             
+                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
+                $redirectUrl = $domain.'user/logout';
+                $response = new TrustedRedirectResponse($redirectUrl);  
+                \Drupal::logger('ciam')->error($e);
+                return $response->send();   
+        }
+    }
+}
+
+/**
  * User form alter.
  * 
  * @param $form
@@ -801,25 +845,9 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
         $form['account']['mail']['#disabled'] = TRUE;
         $apiKey = trim($config->get('api_key'));
         $apiSecret = trim($config->get('api_secret'));
-        $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));           
+        $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));     
         $socialObject = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));  
-        try {
-            $result = $socialObject->tokenValidate(trim($_SESSION['_sf2_attributes']['access_token']));
-            if(isset($result->ErrorCode) && $result->ErrorCode == '906'){
-                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
-                $redirectUrl = $domain.'user/logout';
-                $response = new TrustedRedirectResponse($redirectUrl);             
-                return $response->send();               
-            }
-        }
-        catch (LoginRadiusException $e) { 
-                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
-                $redirectUrl = $domain.'user/logout';
-                $response = new TrustedRedirectResponse($redirectUrl);             
-                return $response->send();   
-                \Drupal::logger('ciam')->error($e);
-        }
-
+        
         $userprofile = $_SESSION['_sf2_attributes']['user_profile_data'];
         $defaultEmail = isset($userprofile->Email) ? $userprofile->Email[0]->Value : '';       
         
@@ -830,7 +858,7 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
                  ->fields(['mail' => $defaultEmail])
                  ->execute();
             }
-        }     
+        }
             
         $form['lr_update_phone'] = array(
           '#type' => 'item',
