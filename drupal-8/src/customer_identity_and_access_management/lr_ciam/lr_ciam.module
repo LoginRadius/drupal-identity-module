@@ -792,41 +792,6 @@ function lr_ciam_user_update($account) {
 }
 
 /**
- * Implements hook_preprocess().
- *
- * @param $variables
- * 
- */
-function lr_ciam_preprocess(&$variables) {
-    $config = \Drupal::config('lr_ciam.settings');
-    $user = \Drupal::currentUser()->getRoles();
-    if (!in_array("administrator", $user) && !\Drupal::currentUser()
-            ->isAnonymous()) {        
-        $apiKey = trim($config->get('api_key'));
-        $apiSecret = trim($config->get('api_secret'));
-        $socialObject = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));  
-        try {
-            $result = $socialObject->tokenValidate(trim($_SESSION['_sf2_attributes']['access_token']));
-            if(isset($result->errorCode) && $result->errorCode == '906'){                
-                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
-                $redirectUrl = $domain.'user/logout';
-                $response = new TrustedRedirectResponse($redirectUrl);   
-                \Drupal::logger('ciam')->error($e);
-                return $response->send();                  
-            }
-        }
-        
-        catch (LoginRadiusException $e) {             
-                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
-                $redirectUrl = $domain.'user/logout';
-                $response = new TrustedRedirectResponse($redirectUrl);  
-                \Drupal::logger('ciam')->error($e);
-                return $response->send();   
-        }
-    }
-}
-
-/**
  * User form alter.
  * 
  * @param $form
@@ -837,8 +802,7 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
     $config = \Drupal::config('lr_ciam.settings');
     $user = \Drupal::currentUser()->getRoles();
     
-    if (!in_array("administrator", $user) && !\Drupal::currentUser()
-            ->isAnonymous()) {        
+    if (!in_array("administrator", $user) && !\Drupal::currentUser()->isAnonymous()) {        
         unset($form['#validate'][1]);
         unset($form['account']['pass']);
         unset($form['account']['current_pass']);
@@ -847,6 +811,24 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
         $apiSecret = trim($config->get('api_secret'));
         $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));     
         $socialObject = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));  
+        
+        try {
+            $result = $socialObject->tokenValidate(trim($_SESSION['_sf2_attributes']['access_token']));
+            if(isset($result->errorCode) && $result->errorCode == '906'){
+                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
+                $redirectUrl = $domain.'user/logout';
+                $response = new TrustedRedirectResponse($redirectUrl); 
+                \Drupal::logger('ciam')->error($result->description);
+                return $response->send();               
+            }
+        }
+        catch (LoginRadiusException $e) { 
+                $domain = Url::fromRoute('<front>')->setAbsolute()->toString();  
+                $redirectUrl = $domain.'user/logout';
+                $response = new TrustedRedirectResponse($redirectUrl);  
+                \Drupal::logger('ciam')->error($e);
+                return $response->send();                   
+        }
         
         $userprofile = $_SESSION['_sf2_attributes']['user_profile_data'];
         $defaultEmail = isset($userprofile->Email) ? $userprofile->Email[0]->Value : '';       

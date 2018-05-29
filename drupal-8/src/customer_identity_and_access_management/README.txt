@@ -28,9 +28,11 @@ further information.
 
 -- CHANGE LOG --
 
-  -- 8.x-3.8 --
-  *  Added cache contexts of user roles in SSO module to improve performance.
+  -- 8.x-3.9 --
   *  Removed "lr_ciam_preprocess" hook from lr_ciam module.
+
+  -- 8.x-3.8 --
+  *  Added cache contexts of user roles in SSO module to improve performance.  
   *  Added loading image variable to the required pages.
   *  Added functionality to logout user from drupal after lr access token expired.
 
