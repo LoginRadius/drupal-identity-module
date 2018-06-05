@@ -28,6 +28,10 @@ further information.
 
 -- CHANGE LOG --
 
+  -- 8.x-3.10 --
+  * Autologout if SSO is enabled
+  * Standardise usage of global variables
+ 
   -- 8.x-3.9 --
   *  Removed "lr_ciam_preprocess" hook from lr_ciam module.
 

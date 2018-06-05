@@ -66,7 +66,8 @@ class CiamSettingsForm extends ConfigFormBase {
         ];
         
         if ($config->get('api_key') != '' && $config->get('api_secret')) {
-            if (isset($_SESSION['_sf2_attributes']['is_phone_login']) &&  $_SESSION['_sf2_attributes']['is_phone_login']) {
+            $is_phone_login = \Drupal::service('session')->get('is_phone_login', []);
+            if (isset($is_phone_login) &&  $is_phone_login) {
                 $form['phone_warning_block'] = [
                   '#type' => 'fieldset',
                   '#title' => $this->t('Important Note:'),

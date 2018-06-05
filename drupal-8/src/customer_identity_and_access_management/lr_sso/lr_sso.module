@@ -21,12 +21,14 @@ function lr_sso_page_attachments(&$page) {
     $my_settings['frontUrl'] = Url::fromRoute('<front>')->setAbsolute()->toString();   
      
       if ( \Drupal::currentUser()->isAnonymous()) {   
-                $my_settings['isNotLogin'] = false;
-                $my_settings['loginUrl'] = Url::fromRoute('user.login')->setAbsolute()->toString(); 
+          
+            $my_settings['isNotLogin'] = true;
+            $my_settings['loginUrl'] = Url::fromRoute('user.login')->setAbsolute()->toString(); 
       }     
       if (  !\Drupal::currentUser()->isAnonymous() && !in_array("administrator", $user)) {  
-                $my_settings['isNotLoginThenLogout'] = true;
-                $my_settings['logoutUrl'] = Url::fromRoute('user.logout')->setAbsolute()->toString(); 
+          
+            $my_settings['isNotLoginThenLogout'] = true;
+            $my_settings['logoutUrl'] = Url::fromRoute('user.logout')->setAbsolute()->toString(); 
       }  
       
     $page['#cache']['contexts'][] = 'user.roles';

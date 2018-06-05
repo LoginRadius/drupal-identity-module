@@ -356,10 +356,9 @@ class CiamUserManager {
             }
 
             \Drupal::service('session')->migrate();
-            \Drupal::service('session')->set('lrID', $userprofile->ID);
-            $_SESSION['emailVerified'] = false;
+            \Drupal::service('session')->set('emailVerified', false); 
             if (isset($userprofile->EmailVerified)) {
-                $_SESSION['emailVerified'] = $userprofile->EmailVerified;
+                \Drupal::service('session')->set('emailVerified', $userprofile->EmailVerified); 
             }
 
             if (\Drupal::moduleHandler()->moduleExists('lr_ciam')) {
@@ -462,10 +461,10 @@ class CiamUserManager {
                 return new RedirectResponse(Url::fromRoute('<front>')->toString());
             }
         } else {
-            // Redirect to same page.   
-             if(!empty($_SESSION['referer_url'])){                     
-                    $refererUrl = $_SESSION['referer_url'];              
-                    $response = new RedirectResponse($refererUrl);             
+            // Redirect to same page. 
+             $referer_url = \Drupal::service('session')->get('referer_url', []);
+             if(!empty($referer_url)){   
+                    $response = new RedirectResponse($referer_url);             
                     return $response->send();
              } else {               
                 $destination = (\Drupal::destination()->getAsArray());         
@@ -587,7 +586,7 @@ class CiamUserManager {
                         $status = TRUE;
                     }
 
-                    if ($new_user->isActive() && $status && $_SESSION['user_verify'] != 1) {
+                    if ($new_user->isActive() && $status && \Drupal::service('session')->get('user_verify', []) != 1) {
                         $new_user->setLastLoginTime(REQUEST_TIME);
                     }
                 }
@@ -609,13 +608,13 @@ class CiamUserManager {
                     $status = end($result);
                 }
                 //Advanced module LR Code Hook End
-                if ($new_user->isActive() && $status && $_SESSION['user_verify'] != 1) {                    
+                if ($new_user->isActive() && $status && \Drupal::service('session')->get('user_verify', []) != 1) {                    
                     return $this->provideLogin($new_user, $userprofile);
                 }
-                elseif ($user_register != 'visitors_admin_approval' && ($new_user->isActive() || ($_SESSION['user_verify'] == 1 && $status))) {
+                elseif ($user_register != 'visitors_admin_approval' && ($new_user->isActive() || (\Drupal::service('session')->get('user_verify', []) == 1 && $status))) {
                     // Require email confirmation
                     _user_mail_notify('status_activated', $new_user);
-                    $_SESSION['user_verify'] = 0;
+                    \Drupal::service('session')->set('user_verify', 0);
                     drupal_set_message(t('Once you have verified your e-mail address, you may log in via Social Login.'));
                     return new RedirectResponse(Url::fromRoute('user.login')->toString());
                 }

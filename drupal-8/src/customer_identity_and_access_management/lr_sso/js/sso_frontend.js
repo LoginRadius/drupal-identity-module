@@ -5,9 +5,13 @@ jQuery(document).ready(function () {
         options.onSuccess = function () {
             window.location = drupalSettings.sso.frontUrl;
         };
-        LRObject.util.ready(function () {
-            LRObject.init("logout", options);
-        });
+        var lrSsoLogoutInterval = setInterval(function () {
+            if (typeof LRObject !== 'undefined')
+            {
+                clearInterval(lrSsoLogoutInterval);
+                LRObject.init("logout", options);
+            }
+        }, 1);
     });
 });
 
@@ -16,7 +20,7 @@ if (drupalSettings.sso.isNotLogin) {
         if (jQuery(".interfacecontainerdiv").length) {
             var options = {};
             options.onSuccess = function (response) {
-                var form = document.createElement("form");                
+                var form = document.createElement("form");
                 form.action = drupalSettings.sso.loginUrl;
                 form.method = "POST";
 
@@ -30,9 +34,13 @@ if (drupalSettings.sso.isNotLogin) {
                 form.submit();
             };
 
-            LRObject.util.ready(function () {
-                LRObject.init("ssoLogin", options);
-            });
+            var lrSsoLoginInterval = setInterval(function () {
+                if (typeof LRObject !== 'undefined')
+                {
+                    clearInterval(lrSsoLoginInterval);
+                    LRObject.init("ssoLogin", options);
+                }
+            }, 1);
         }
     });
     jQuery("#lr-loading").hide();
@@ -45,8 +53,12 @@ if (drupalSettings.sso.isNotLoginThenLogout) {
             window.location = drupalSettings.sso.logoutUrl;
         };
 
-        LRObject.util.ready(function () {
-            LRObject.init("ssoNotLoginThenLogout", check_options);       
-        });
+        var lrSsoNotLoginInterval = setInterval(function () {
+            if (typeof LRObject !== 'undefined')
+            {
+                clearInterval(lrSsoNotLoginInterval);
+                LRObject.init("ssoNotLoginThenLogout", check_options);
+            }
+        }, 1);
     });
 }

@@ -42,7 +42,10 @@
     width: 52px;
     margin: 0 auto;
     display: block;
+    background-image: url(../images/loading.png);
     animation: lr_loading_screen_animation_spinning .8s linear infinite;
+    background-size: 52px 52px;
+    background-repeat: no-repeat;
 }
 .lr_loading_phrase, .lr_loading_screen_spinner {
     backface-visibility: hidden;

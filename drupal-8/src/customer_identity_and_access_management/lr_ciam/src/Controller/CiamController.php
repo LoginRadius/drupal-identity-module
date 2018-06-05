@@ -62,7 +62,8 @@ class CiamController extends ControllerBase {
                     
                     try {
                         $accountObject = new AccountAPI($apiKey, $apiSecret, array('output_format' => 'json'));
-                        $result = $accountObject->setPassword($_SESSION['_sf2_attributes']['user_profile_uid'], $post_value['setnewpassword']);
+                        $userProfile = \Drupal::service('session')->get('user_profile_data', []);
+                        $result = $accountObject->setPassword($userProfile->Uid, $post_value['setnewpassword']);
                         if (isset($result) && $result) {
                             drupal_set_message(t('Password set successfully.'));
                         }
@@ -83,13 +84,12 @@ class CiamController extends ControllerBase {
         
           try {
               $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json')); 
-              $userprofile = $userObject->getProfile($_SESSION['_sf2_attributes']['access_token'], 'Password');                 
+              $userprofile = $userObject->getProfile(\Drupal::service('session')->get('access_token', []), 'Password');                 
           }
           catch (LoginRadiusException $e) {                
               \Drupal::logger('ciam')->error($e);                 
           }
-          
-          
+                    
         if (isset($userprofile->Password) && $userprofile->Password != '') {
             $output = array(
               '#title' => t('Change Password'),
@@ -124,13 +124,14 @@ class CiamController extends ControllerBase {
             \Drupal::logger('ciam')->error($e);
         }
         $optionVal = isset($configData->EmailVerificationFlow)? $configData->EmailVerificationFlow : '';  
-       
+        $lrProvider = \Drupal::service('session')->get('provider', []);
+        $isEmailVerified = \Drupal::service('session')->get('emailVerified', []); 
         if ($access_granted) {
             return AccessResult::forbidden();
         }
-        
+         
         else if ($optionVal === 'required' || $optionVal === 'disabled') {
-            if (isset($_SESSION['_sf2_attributes']['provider']) && $_SESSION['_sf2_attributes']['provider'] == 'Email') {
+            if (isset($lrProvider) && $lrProvider == 'Email') {
                 return AccessResult::allowed();
             }
             else {
@@ -138,7 +139,7 @@ class CiamController extends ControllerBase {
             }
         }
         elseif ($optionVal === 'optional') {
-            if (isset($_SESSION['_sf2_attributes']['provider']) && $_SESSION['_sf2_attributes']['provider'] == 'Email' || isset($_SESSION['emailVerified']) && $_SESSION['emailVerified']) {
+            if (isset($lrProvider) && $lrProvider == 'Email' || isset($isEmailVerified) && $isEmailVerified) {
                 return AccessResult::allowed();
             }
             else {
@@ -177,7 +178,6 @@ class CiamController extends ControllerBase {
             try {
                 $userprofile = $userObject->getProfile($request_token);
                 $userprofile->widget_token = $request_token;
-                \Drupal::service('session')->set('user_profile_uid', $userprofile->Uid);     
                 \Drupal::service('session')->set('user_profile_data', $userprofile);     
             }
             catch (LoginRadiusException $e) {                
@@ -196,12 +196,13 @@ class CiamController extends ControllerBase {
                     $userprofile = $value;
                 }
             }
-             \Drupal::service('session')->set('phoneId', isset($userprofile->PhoneId) ? $userprofile->PhoneId : '');  
+          
             // Advanced module LR Code Hook End.
             if (\Drupal::currentUser()->isAnonymous()) {           
                 if (isset($userprofile) && isset($userprofile->ID) && $userprofile->ID != '') {
                     $userprofile = $this->user_manager->getUserData($userprofile);
-                    $_SESSION['user_verify'] = 0;
+                    
+                    \Drupal::service('session')->set('user_verify', 0);
 
                     if (empty($userprofile->Email_value)) {
 
