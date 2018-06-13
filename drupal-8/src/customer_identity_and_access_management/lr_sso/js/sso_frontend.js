@@ -1,17 +1,11 @@
 jQuery(document).ready(function () {
     jQuery('a[href*="user/logout"]').click(function (e) {
-        //e.preventDefault();
+        e.preventDefault();
         var options = {};
         options.onSuccess = function () {
             window.location = drupalSettings.sso.frontUrl;
-        };
-        var lrSsoLogoutInterval = setInterval(function () {
-            if (typeof LRObject !== 'undefined')
-            {
-                clearInterval(lrSsoLogoutInterval);
-                LRObject.init("logout", options);
-            }
-        }, 1);
+        };   
+        LRObject.init("logout", options);        
     });
 });
 
