@@ -28,6 +28,9 @@ further information.
 
 -- CHANGE LOG --
 
+  -- 8.x-3.12 --
+  *  Bug Fixed: Admin logout when SSO is enabled.
+
   -- 8.x-3.11 --
   *  Fixed SSO logout related bug on iOS.
 

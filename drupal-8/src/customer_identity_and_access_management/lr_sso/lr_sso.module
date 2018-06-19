@@ -11,21 +11,19 @@ use Drupal\Core\Form\FormStateInterface;
  * @param $hook
  */
 function lr_sso_page_attachments(&$page) {
-  global $user;
   $sso_config = \Drupal::config('lr_sso.settings');
   $sl_config = \Drupal::config('lr_ciam.settings');
   $site_name = $sl_config->get('sso_site_name');
 
   if ($sso_config->get('sso_enable') == 1 && !empty($site_name)) {
-    $user = \Drupal::currentUser()->getRoles();
     $my_settings['frontUrl'] = Url::fromRoute('<front>')->setAbsolute()->toString();   
      
-      if ( \Drupal::currentUser()->isAnonymous()) {   
+      if ( \Drupal::currentUser()->isAnonymous()) {
           
             $my_settings['isNotLogin'] = true;
             $my_settings['loginUrl'] = Url::fromRoute('user.login')->setAbsolute()->toString(); 
       }     
-      if (  !\Drupal::currentUser()->isAnonymous() && !in_array("administrator", $user)) {  
+      if (  !\Drupal::currentUser()->isAnonymous()) {
           
             $my_settings['isNotLoginThenLogout'] = true;
             $my_settings['logoutUrl'] = Url::fromRoute('user.logout')->setAbsolute()->toString(); 
