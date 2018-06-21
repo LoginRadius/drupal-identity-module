@@ -3,7 +3,7 @@ jQuery(document).ready(function () {
         e.preventDefault();
         var options = {};
         options.onSuccess = function () {
-            window.location = drupalSettings.sso.frontUrl;
+            window.location = drupalSettings.sso.logoutUrl;
         };   
         LRObject.init("logout", options);        
     });

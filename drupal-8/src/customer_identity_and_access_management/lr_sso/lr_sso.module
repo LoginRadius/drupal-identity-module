@@ -11,22 +11,23 @@ use Drupal\Core\Form\FormStateInterface;
  * @param $hook
  */
 function lr_sso_page_attachments(&$page) {
+  global $user;
   $sso_config = \Drupal::config('lr_sso.settings');
   $sl_config = \Drupal::config('lr_ciam.settings');
   $site_name = $sl_config->get('sso_site_name');
 
   if ($sso_config->get('sso_enable') == 1 && !empty($site_name)) {
-    $my_settings['frontUrl'] = Url::fromRoute('<front>')->setAbsolute()->toString();   
+    $user = \Drupal::currentUser()->getRoles();
+    $my_settings['logoutUrl'] = Url::fromRoute('user.logout')->setAbsolute()->toString();  
      
-      if ( \Drupal::currentUser()->isAnonymous()) {
+      if ( \Drupal::currentUser()->isAnonymous()) {   
           
             $my_settings['isNotLogin'] = true;
             $my_settings['loginUrl'] = Url::fromRoute('user.login')->setAbsolute()->toString(); 
-      }     
-      if (  !\Drupal::currentUser()->isAnonymous()) {
+      }  
+      if (  !\Drupal::currentUser()->isAnonymous() && !in_array("administrator", $user)) {  
           
-            $my_settings['isNotLoginThenLogout'] = true;
-            $my_settings['logoutUrl'] = Url::fromRoute('user.logout')->setAbsolute()->toString(); 
+            $my_settings['isNotLoginThenLogout'] = true;            
       }  
       
     $page['#cache']['contexts'][] = 'user.roles';
