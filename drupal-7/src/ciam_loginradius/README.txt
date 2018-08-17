@@ -49,6 +49,9 @@ Please share your comments and feedback at feedback@loginradius.com
 
  -- Changelog --
 
+ -- 7.x-3.2 --
+ 1. Capitalised HTTP method names
+
  -- 7.x-3.1 --
 1. Implemented Cloud API Functionality
 2. Removed Advanced options from Drupal admin as they can be configured from User Dashboard
