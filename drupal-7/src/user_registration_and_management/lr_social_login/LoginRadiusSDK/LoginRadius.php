@@ -5,7 +5,7 @@
  * @category : LoginRadiusSDK
  * @package : LoginRadius
  * @author : LoginRadius Team
- * @version : 3.0.0
+ * @version : 3.0.1
  * @license : https://opensource.org/licenses/MIT
  */
 
@@ -25,7 +25,7 @@ define('LR_CDN_ENDPOINT', 'https://cdn.loginradius.com');
 class LoginRadius
 {
 
-    const version = '3.0.0';
+    const version = '3.0.1';
 
     private static $apikey;
     private static $apisecret;
@@ -40,6 +40,7 @@ class LoginRadius
      */
     public function __construct($apikey = '', $apisecret = '', $customize_options = array())
     {
+
         if (!empty($apikey) && !empty($apisecret)) {
             self::setDefaultApplication($apikey, $apisecret);
         } elseif (empty($apikey) || empty($apisecret)) {
@@ -77,6 +78,7 @@ class LoginRadius
      */
     private static function checkAPIValidation($apikey, $apisecret)
     {
+
         if (empty($apikey) || !self::isValidGuid($apikey)) {
             throw new LoginRadiusException('Required "LoginRadius" API key in valid guid format.');
         }
@@ -160,7 +162,7 @@ class LoginRadius
 
         if (isset($apiClient_class) && class_exists($apiClient_class)) {
             $client = new $apiClient_class();
-        } else {       
+        } else {
             $client = new Clients\DefaultHttpClient();
         }
 

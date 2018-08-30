@@ -14,19 +14,21 @@ see https://www.drupal.org/documentation/install/modules-themes/modules-8 for
 further information.
 2. After successfully installing, you will see LoginRadius Unified Social API module in modules list in your site's admin account but do NOT enable the module yet because the required LoginRadius PHP SDK library is not installed.
 3. Module comes with a file loginradius/sociallogin/composer.json. This file contains the dependency to LoginRadius PHP SDK so that Composer will know to download the SDK library in the next step.
-3. Download and initialize Composer Manager to the /modules directory.
-4. Let Composer download LoginRadius PHP SDK library for you. On command line of your server:
-  1. Go to the root directory of your Drupal installation.
-  2. Execute the following command to install php sdk only 
-     composer require loginradius/php-sdk-2.0:dev-master
-5. After Successfully install LoginRadius PHP SDK, Enable Social Login and Social Share Module.
-3. Click on configuration link shown in Social Login and Social Share module or click on 
+4. Download and initialize Composer Manager to the /modules directory.
+5. Let Composer download LoginRadius PHP SDK library for you. On command line of your server:
+  a) Go to the root directory of your Drupal installation.
+  b) Execute the following command to install php sdk only 
+     composer require loginradius/php-sdk:3.0.1
+6. After Successfully install LoginRadius PHP SDK, Enable Social Login and Social Share Module.
+7. Click on configuration link shown in Social Login and Social Share module or click on 
 configuration tab, Then go to people block and click on Social Login and Social Share 
-4. On configuration page, you will see config option for Social Login and Social Share module .
-
+8. On configuration page, you will see config option for Social Login and Social Share module .
 
 
 -- CHANGE LOG --
+  -- 2.3 --
+  *  Capitalised HTTP Method names. 
+
   -- 2.2.1 --
   *  Added readme and license files in module directory. 
 

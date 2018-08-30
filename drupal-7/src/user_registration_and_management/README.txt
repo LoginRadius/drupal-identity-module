@@ -53,6 +53,30 @@ list in your site's admin account.
 
  -- Changelog -- 
 
+-- 1.5 --
+ 1. Capitalized HTTP method names
+
+-- 1.4 ---
+ 1. Added one click login option.
+ 2. Added Remember me option.
+ 3. Added option to check password strength.
+ 4. Added option to change label that you want to have the one click button to have.
+ 5. Added option to ask required field on traditional login.
+ 6. Added Label customization hook.
+ 7. Added custom placeholder hook.
+ 8. Added custom attribute hook.
+ 9. Added custom validation hook.
+ 10. Added custom edit validation message hook
+
+ -- 1.3 --
+ 1. Fixed all known bugs.
+ 2. Added a sub-module for hosted page feature.
+ 3. Implemented advanced API loggin and display in admin panel.
+ 4. Display NoOfLogin field on extended profile data page.
+ 5. Improved verification for optional email verification, users can verify when they are loggedin.
+ 6. Admin can change email of email profile from admin panel.
+ 7. Added advance sharing options to social share.
+
  -- 1.2 -- 
  1. Added LoginRadius Api key and Secret Key Validation.
 

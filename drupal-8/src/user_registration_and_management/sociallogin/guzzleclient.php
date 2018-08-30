@@ -15,7 +15,7 @@ class LRGuzzleClient implements IHttpClient {
     else {
       $validate_url = API_DOMAIN . $path;
     }
-    $method = isset($options['method']) ? strtolower($options['method']) : 'get';
+    $method = isset($options['method']) ? strtoupper($options['method']) : 'GET';
     $post_data = isset($options['post_data']) ? $options['post_data'] : array();
     $content_type = isset($options['content_type']) ? $options['content_type'] : 'form_params';
     $ssl_verify = isset($options['ssl_verify']) ? $options['ssl_verify'] : FALSE;

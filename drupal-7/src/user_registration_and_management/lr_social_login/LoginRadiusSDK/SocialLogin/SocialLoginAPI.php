@@ -69,26 +69,6 @@ class SocialLoginAPI {
     public function getUserProfiledata($access_token, $raw = false) {
         return $this->apiClientHandler('userprofile', $raw, array("access_token" => $access_token));
     }
-    /**
-     * LoginRadius function - To fetch custom fileds of raas. The social profile will be retrieved via oAuth and OpenID protocols. The data is normalized into LoginRadius' standard data format.
-     *
-     * @param string $apiKey LoginRadius api key
-     * @param string $secret LoginRadius secret key
-     * @param boolean $raw If true, raw data is fetched
-     *
-     * @return object custom fields of raas.
-     *
-     * try{
-     *   $customFields = $loginradiusObject->getUserCustomFields($apiKey, $secret, $raw = false);
-     * }
-     * catch (LoginRadiusException $e){
-     *   $e->getMessage();
-     *   $e->getErrorResponse();
-     * }
-     */
-    public function getUserCustomFields($apiKey, $secret, $raw = false) {
-        return $this->apiClientHandler('userprofile/fields', $raw, array('apikey' => $apiKey, 'apisecret' => $secret));
-    }
 
     /**
      * LoginRadius function - To get the Albums data from the user's social account. The data will be normalized into LoginRadius' data format.
@@ -425,7 +405,7 @@ class SocialLoginAPI {
             'caption' => $caption,
             'description' => $description
         );
-        return $this->apiClientHandler("status", false, $data, array('method' => 'post','post_data'=>true));
+        return $this->apiClientHandler("status", false, $data, array('method' => 'POST','post_data'=>true));
     }
 
     /**
@@ -453,7 +433,7 @@ class SocialLoginAPI {
             'subject' => $subject,
             'message' => $message
         );
-        return $this->apiClientHandler("message", false, $data, array('method' => 'post','post_data'=>true));
+        return $this->apiClientHandler("message", false, $data, array('method' => 'POST','post_data'=>true));
     }
 
     /**

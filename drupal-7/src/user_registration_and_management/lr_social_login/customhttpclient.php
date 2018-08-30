@@ -27,7 +27,7 @@ class CustomHttpClient  implements IHttpClient {
             $request_url .= API_DOMAIN;
         }
         $request_url .= $path;    
-        $method = isset($options['method']) ? strtolower($options['method']) : 'get';
+        $method = isset($options['method']) ? strtoupper($options['method']) : 'GET';
         $post_data = isset($options['post_data']) ? $options['post_data'] : array();
         $content_type = isset($options['content_type']) ? trim($options['content_type']) : 'x-www-form-urlencoded';
       
@@ -92,7 +92,7 @@ class CustomHttpClient  implements IHttpClient {
     private function curlApiMethod($request_url, $options = array())
     {
         $ssl_verify = isset($options['ssl_verify']) ? $options['ssl_verify'] : false;
-        $method = isset($options['method']) ? strtolower($options['method']) : 'get';
+        $method = isset($options['method']) ? strtoupper($options['method']) : 'GET';
         $data = isset($options['post_data']) ? $options['post_data'] : array();
         $content_type = isset($options['content_type']) ? trim($options['content_type']) : 'x-www-form-urlencoded';
         $curl_handle = curl_init();
@@ -103,7 +103,7 @@ class CustomHttpClient  implements IHttpClient {
 
         if (!empty($data) || $data === true) {
             curl_setopt($curl_handle, CURLOPT_HTTPHEADER, array('Content-type: application/' . $content_type));
-            if ($method == 'post') {
+            if ($method == 'POST') {
                 curl_setopt($curl_handle, CURLOPT_POST, 1);
                 curl_setopt($curl_handle, CURLOPT_POSTFIELDS, (($content_type == 'json') ? json_encode($data) : LoginRadius::queryBuild($data)));
             }
@@ -137,7 +137,7 @@ class CustomHttpClient  implements IHttpClient {
     private function fsockopenApiMethod($request_url, $options = array())
     {
         $ssl_verify = isset($options['ssl_verify']) ? $options['ssl_verify'] : false;
-        $method = isset($options['method']) ? strtolower($options['method']) : 'get';
+        $method = isset($options['method']) ? strtoupper($options['method']) : 'GET';
         $data = isset($options['post_data']) ? $options['post_data'] : array();
         $content_type = isset($options['content_type']) ? $options['content_type'] : 'form_params';
 
