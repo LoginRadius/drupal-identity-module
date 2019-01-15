@@ -34,6 +34,4 @@ advanced.settings_form:
     _title: 'CIAM Loginradius'
     _form: '\Drupal\lr_ciam\Form\AdvancedSettingsForm'
   requirements:
-    _permission: 'administer user registration settings'
-
-   
+    _permission: 'administer user registration settings'   

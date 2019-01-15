@@ -16,8 +16,9 @@ class LrSimpleOauthServiceProvider extends ServiceProviderBase {
    */
   public function alter(ContainerBuilder $container) {
     // Overrides argument of the UserRepository class from the simple_oauth
-    // module to provide a different authentication service. 
+    // module to provide a different authentication service.
     $definition = $container->getDefinition('simple_oauth.repositories.user');
     $definition->replaceArgument(0, new Reference('lr_simple_oauth.auth'));
   }
+
 }

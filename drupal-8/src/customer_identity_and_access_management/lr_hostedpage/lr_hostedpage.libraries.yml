@@ -5,3 +5,4 @@ drupal.coresso:
   dependencies:
     - core/jquery
     - core/drupalSettings
+    

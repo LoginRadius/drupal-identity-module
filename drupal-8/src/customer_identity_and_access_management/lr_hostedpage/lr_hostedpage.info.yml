@@ -3,8 +3,8 @@ type: module
 description: 'Allow users to sign up/login/forgot password etc on hosted pages.'
 package: CIAM LoginRadius
 dependencies:
-  - lr_ciam
+  - drupal:lr_ciam
 configure: lr_hostedpage.settings_form
-version: '8.x-3.14'
+version: '8.x-3.15'
 core: '8.x'
 project: 'customer_identity_and_access_management'

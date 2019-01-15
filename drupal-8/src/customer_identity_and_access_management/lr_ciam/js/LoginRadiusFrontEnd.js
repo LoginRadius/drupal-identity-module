@@ -267,7 +267,7 @@ function initializeSocialRegisterCiamForm() {
             ciamRedirect(response.access_token);
             jQuery('#lr-loading').hide();
         } else if (response.IsPosted) {
-            handleResponse(true, "An email has been sent to " + jQuery("#loginradius-socialRegistration-emailid").val() + ".Please verify your email address.");
+            handleResponse(true, "An email has been sent to " + jQuery("#loginradius-socialRegistration-emailid").val() + ". Please verify your email address.");
             jQuery('#social-registration-form').hide();
             jQuery('#lr-loading').hide();
         }
@@ -301,9 +301,9 @@ function initializeLoginCiamForm() {
             handleResponse(true, "An OTP has been sent to your number.");
         } else {
             if (jQuery('#loginradius-login-username').length !== 0) {
-                handleResponse(true, "An email has been sent to " + jQuery("#loginradius-login-username").val() + ".Please verify your email address");
+                handleResponse(true, "An email has been sent to " + jQuery("#loginradius-login-username").val() + ". Please verify your email address");
             } else if (jQuery('#loginradius-login-emailid').length !== 0) {
-                handleResponse(true, "An email has been sent to " + jQuery("#loginradius-login-emailid").val() + ".Please verify your email address");
+                handleResponse(true, "An email has been sent to " + jQuery("#loginradius-login-emailid").val() + ". Please verify your email address");
             }
         }
     };
@@ -336,7 +336,7 @@ function initializeRegisterCiamForm() {
                 
         if (response.IsPosted && response.Data == null) {
             if ((typeof (optionalemailverification) == 'undefined' || optionalemailverification !== true) && (typeof (disableemailverification) == 'undefined' || disableemailverification !== true)) {
-                handleResponse(true, "An email has been sent to " + jQuery("#loginradius-registration-emailid").val() + ".Please verify your email address");
+                handleResponse(true, "A verification email has been sent to " + jQuery("#loginradius-registration-emailid").val() + ", please check your email for further instructions");
                 jQuery('html, body').animate({scrollTop: 0}, 1000);
             }            
         }else if (response.access_token != null && response.access_token != "") {
@@ -442,7 +442,7 @@ function initializeForgotPasswordCiamForms() {
                 if(jQuery('form[name="loginradius-resetpassword"]').length > 0) {
                 handleResponse(true, "Password reset successfully.");  
                 } else {
-                handleResponse(true, "An email has been sent to " + jQuery("#loginradius-forgotpassword-emailid").val() + " with reset Password link.");   
+                handleResponse(true, "An Email has been sent to " + jQuery("#loginradius-forgotpassword-emailid").val() + ", please check your email for further instructions.");   
                 }
             } else {
                 handleResponse(true, "OTP has been sent to your phone number.");             
@@ -505,7 +505,6 @@ function initializeAccountLinkingCiamForms() {
             LRObject.init("unLinkAccount", unlink_options);
         }
     }, 1);
-
     jQuery('#lr-loading').hide();
 }
 
@@ -549,12 +548,12 @@ function initializePhoneUpdate() {
     var updatephone_options = {};
     updatephone_options.container = "updatephone-container";
     updatephone_options.onSuccess = function (response) {
-        if(response.access_token){
+        if(response.access_token) {
             handleResponse(true, "Updated successfully.", 'showmsg');  
             window.setTimeout(function () {
                 window.location.reload();
             }, 3000);
-        } else {        
+        } else {
             handleResponse(true, "Resend OTP.", 'showmsg');
         }
     };
@@ -580,13 +579,11 @@ function initializeAddEmailCiamForms() {
         jQuery('#addemail-form').hide();
         handleResponse(true, "Email added successfully. Please verify your email address.", 'showmsg');
         jQuery('html, body').animate({scrollTop: 0}, 1000);
-
     };
     addemail_options.onError = function (errors) {
         jQuery('#addemail-form').hide();
         handleResponse(false, errors[0].Description, "showmsg", "error");
         jQuery('html, body').animate({scrollTop: 0}, 1000);
-
     };
 
     var lrAddInterval = setInterval(function () {
@@ -648,8 +645,7 @@ function ciamRedirect(token, name) {
     if (window.redirect) {
         redirect(token, name);
     } else {
-        var token_name = name ? name : 'token';
-        var source = typeof lr_source != 'undefined' && lr_source ? lr_source : '';
+        var token_name = name ? name : 'token';   
 
         var form = document.createElement('form');
         form.action = LocalDomain;

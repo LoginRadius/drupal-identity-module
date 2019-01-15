@@ -1,9 +1,7 @@
 <?php
-/**
- * @file
- * Contains \Drupal\lr_ciam\Plugin\Block\UserSocialLoginBlock.
- */
+
 namespace Drupal\lr_ciam\Plugin\Block;
+
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Block\BlockPluginInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -17,19 +15,19 @@ use Drupal\Core\Form\FormStateInterface;
  *   category = @Translation("Custom User Login block")
  * )
  */
-
 class UserSocialLoginBlock extends BlockBase implements BlockPluginInterface {
+
   /**
    * {@inheritdoc}
    */
   public function build() {
-    return array(
+    return [
       '#theme' => 'user_login',
-      '#items' => array(),
-    );
+      '#items' => [],
+    ];
   }
-  
-    /**
+
+  /**
    * {@inheritdoc}
    */
   public function blockForm($form, FormStateInterface $form_state) {
@@ -37,21 +35,21 @@ class UserSocialLoginBlock extends BlockBase implements BlockPluginInterface {
 
     $config = $this->getConfiguration();
 
-    $form['login_block_link_register'] = array(
+    $form['login_block_link_register'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Enter the link to custom register interface'),      
+      '#title' => $this->t('Enter the link to custom register interface'),
       '#default_value' => isset($config['login_block_link_register']) ? $config['login_block_link_register'] : '',
-    );
-    
-    $form['login_block_link_forgot'] = array(
+    ];
+
+    $form['login_block_link_forgot'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Enter the link to custom forgot interface'),      
+      '#title' => $this->t('Enter the link to custom forgot interface'),
       '#default_value' => isset($config['login_block_link_forgot']) ? $config['login_block_link_forgot'] : '',
-    );
+    ];
 
     return $form;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -60,5 +58,6 @@ class UserSocialLoginBlock extends BlockBase implements BlockPluginInterface {
     $values = $form_state->getValues();
     $this->configuration['login_block_link_register'] = $values['login_block_link_register'];
     $this->configuration['login_block_link_forgot'] = $values['login_block_link_forgot'];
-  }  
+  }
+
 }

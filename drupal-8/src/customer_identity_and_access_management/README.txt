@@ -17,8 +17,8 @@ further information.
 4. Download and initialize Composer Manager to the /modules directory.
 5. Let Composer download LoginRadius PHP SDK library for you. On command line of your server:
   1. Go to the root directory of your Drupal installation.
-  2. Execute the following command to install php sdk only 
-     composer require loginradius/php-sdk:4.5.3
+  2. Execute the following command to install PHP SDK 
+     composer require loginradius/php-sdk:5.0.2
 6. After Successfully install LoginRadius PHP SDK, Enable CIAM Module.
 7. Click on configuration link shown in CIAM or click on 
    configuration tab, Then go to people block and click on CIAM LoginRadius 
@@ -27,6 +27,9 @@ further information.
 
 
 -- CHANGE LOG --
+  -- 8.x-3.15 --
+  *  Handled API Request Signing feature.
+  *  Standardize the code as per Drupal coding standard reported.
     
   -- 8.x-3.14 --
   *  Capitalised HTTP Method Names.
@@ -161,5 +164,4 @@ http://demo.loginradius.com
 
  Current maintainers:
  * LoginRadius - http://www.loginradius.com
- * Email: hello [at] loginradius [dot] com 
- 
+ * Email: hello [at] loginradius [dot] com

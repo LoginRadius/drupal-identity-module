@@ -1,14 +1,14 @@
 <?php
 
-use Drupal\Core\Url;
-use Drupal\Core\Form\FormStateInterface;
+/**
+ * @file
+ * The SSO Module File.
+ */
 
+use Drupal\Core\Url;
 
 /**
- * Add required sso js files to page.
- *
- * @param $vars
- * @param $hook
+ * Implements hook_page_attachments().
  */
 function lr_sso_page_attachments(&$page) {
   global $user;
@@ -18,20 +18,20 @@ function lr_sso_page_attachments(&$page) {
 
   if ($sso_config->get('sso_enable') == 1 && !empty($site_name)) {
     $user = \Drupal::currentUser()->getRoles();
-    $my_settings['logoutUrl'] = Url::fromRoute('user.logout')->setAbsolute()->toString();  
-     
-      if ( \Drupal::currentUser()->isAnonymous()) {   
-          
-            $my_settings['isNotLogin'] = true;
-            $my_settings['loginUrl'] = Url::fromRoute('user.login')->setAbsolute()->toString(); 
-      }  
-      if (  !\Drupal::currentUser()->isAnonymous() && !in_array("administrator", $user)) {  
-          
-            $my_settings['isNotLoginThenLogout'] = true;            
-      }  
-      
+    $my_settings['logoutUrl'] = Url::fromRoute('user.logout')->setAbsolute()->toString();
+
+    if (\Drupal::currentUser()->isAnonymous()) {
+
+      $my_settings['isNotLogin'] = TRUE;
+      $my_settings['loginUrl'] = Url::fromRoute('user.login')->setAbsolute()->toString();
+    }
+    if (!\Drupal::currentUser()->isAnonymous() && !in_array("administrator", $user)) {
+
+      $my_settings['isNotLoginThenLogout'] = TRUE;
+    }
+
     $page['#cache']['contexts'][] = 'user.roles';
-    $page['#attached']['drupalSettings']['sso']  = $my_settings;
-    $page['#attached']['library'][] = 'lr_sso/drupal.coresso';   
+    $page['#attached']['drupalSettings']['sso'] = $my_settings;
+    $page['#attached']['library'][] = 'lr_sso/drupal.coresso';
   }
 }

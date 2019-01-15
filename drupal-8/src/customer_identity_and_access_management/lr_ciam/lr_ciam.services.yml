@@ -4,5 +4,4 @@ services:
   lr_ciam.route_subscriber:
     class: Drupal\lr_ciam\Routing\RouteSubscriber
     tags:
-      - { name: event_subscriber }
- 
+      - { name: event_subscriber } 

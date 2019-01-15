@@ -1,21 +1,14 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\captcha\Form\CaptchaSettingsForm.
- */
-
 namespace Drupal\lr_hostedpage\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Cache\Cache;
 
 /**
- * Displays the socialprofiledata settings form.
+ * Displays the HostedPage settings form.
  */
 class HostedPageSettingsForm extends ConfigFormBase {
-
 
   /**
    * {@inheritdoc}
@@ -40,41 +33,41 @@ class HostedPageSettingsForm extends ConfigFormBase {
     $form['hosted'] = [
       '#type' => 'details',
       '#title' => $this->t('Hosted Page Settings'),
-       '#open' => TRUE,
+      '#open' => TRUE,
     ];
-    
+
     $form['hosted']['lr_hosted_page_enable'] = [
-    '#type' => 'radios',
-    '#title' => t('Do you want to enable hosted page<a title="Choosing yes will redirect users to signup on hosted page"  style="text-decoration:none"> (<span style="color:#3CF;">?</span>)</a>'),
-    '#default_value' => $hd_config->get('lr_hosted_page_enable') ?   $hd_config->get('lr_hosted_page_enable')  : 0,
-    '#options' => array(
-      1 => t('Yes'),
-      0 => t('No'),
-    ),
-  ];
+      '#type' => 'radios',
+      '#title' => $this->t('Do you want to enable hosted page<a title="Choosing yes will redirect users to signup on hosted page"  style="text-decoration:none"> (<span style="color:#3CF;">?</span>)</a>'),
+      '#default_value' => $hd_config->get('lr_hosted_page_enable') ? $hd_config->get('lr_hosted_page_enable') : 0,
+      '#options' => [
+        1 => $this->t('Yes'),
+        0 => $this->t('No'),
+      ],
+    ];
     // Submit button.
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = [
       '#type' => 'submit',
-      '#value' => t('Save configuration'),
+      '#value' => $this->t('Save configuration'),
     ];
 
     return parent::buildForm($form, $form_state);
   }
+
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-   $config = \Drupal::config('lr_ciam.settings');
-    $apiKey = $config->get('api_key'); 
-    $apiSecret = $config->get('api_secret'); 
-    if($apiKey == ''){
+    $config = $this->config('lr_ciam.settings');
+    $apiKey = $config->get('api_key');
+    $apiSecret = $config->get('api_secret');
+    if ($apiKey == '') {
       $apiKey = '';
       $apiSecret = '';
     }
-    
-    module_load_include('inc', 'lr_ciam');
-    $data = lr_ciam_get_authentication($apiKey, $apiSecret);   
+
+    $data = lr_ciam_get_authentication($apiKey, $apiSecret);
     if (isset($data['status']) && $data['status'] != 'status') {
       drupal_set_message($data['message'], $data['status']);
       return FALSE;
@@ -83,6 +76,6 @@ class HostedPageSettingsForm extends ConfigFormBase {
     $this->config('lr_hostedpage.settings')
       ->set('lr_hosted_page_enable', $form_state->getValue('lr_hosted_page_enable'))
       ->save();
-
   }
+
 }
