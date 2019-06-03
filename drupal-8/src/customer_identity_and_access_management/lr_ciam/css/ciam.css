@@ -17,10 +17,6 @@ input#loginradius-linksignin-email-me-a-link-to-sign-in {
   background: #ededed;
 }
 
-.showmsg {
-  margin: -177px -36px 16px -330px !important;
-}
-
 .ui-datepicker {
   z-index: 9999999 !important;
 }

@@ -5,6 +5,6 @@ package: CIAM LoginRadius
 dependencies:
   - drupal:lr_ciam
 configure: lr_sso.settings_form
-version: '8.x-3.15'
+version: '8.x-3.16'
 core: '8.x'
 project: 'customer_identity_and_access_management'

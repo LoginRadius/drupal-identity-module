@@ -17,6 +17,7 @@ use LoginRadiusSDK\Advance\ConfigAPI;
 use LoginRadiusSDK\CustomerRegistration\Social\SocialLoginAPI;
 use LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
 use LoginRadiusSDK\CustomerRegistration\Account\AccountAPI;
+use Drupal\Core\Session\AccountInterface;
 
 module_load_include('php', 'lr_ciam', 'customhttpclient');
 global $apiClient_class;
@@ -201,7 +202,7 @@ function template_preprocess_user_pass_form(&$variables) {
  * Implements hook_form_FORM_ID_alter().
  */
 function lr_ciam_form_user_pass_form_alter(&$form, FormStateInterface $form_state) {
-  if (!\Drupal::currentUser()->isAnonymous()) {
+   if (!\Drupal::currentUser()->isAnonymous()) {
     $user = \Drupal::currentUser();
     $form['name']['#type'] = 'value';
     $form['name']['#value'] = $user->getEmail();
@@ -224,11 +225,13 @@ function lr_ciam_form_user_pass_form_alter(&$form, FormStateInterface $form_stat
  * @param array $variables
  */
 function template_preprocess_user_register_form(&$variables) {
-  $variables['admin_access'] = TRUE;
-  $user = \Drupal::currentUser()->getRoles();
-  if (in_array("administrator", $user)) {
-    $variables['admin_access'] = FALSE;
-  }
+    $variables['admin_access'] = TRUE;
+    $user = \Drupal::currentUser()->getRoles();
+
+    if (in_array("administrator", $user)) {
+        $variables['admin_access'] = FALSE;
+    }
+      
   $config = \Drupal::config('lr_ciam.settings');
   $variables['interface_label'] = $config->get('interface_label');
   $variables['api_key'] = trim($config->get('api_key'));
@@ -243,7 +246,7 @@ function template_preprocess_user_register_form(&$variables) {
 function template_preprocess_user_register(&$variables) {
   $variables['admin_access'] = TRUE;
   $user = \Drupal::currentUser()->getRoles();
-  if (in_array("administrator", $user)) {
+  if (in_array("administrator", $user)) {     
     $variables['admin_access'] = FALSE;
   }
   $config = \Drupal::config('lr_ciam.settings');
@@ -312,46 +315,73 @@ function lr_ciam_add_loginradius_userdata($userprofile, $token) {
  */
 function lr_ciam_page_attachments(&$page) {
   $config = \Drupal::config('lr_ciam.settings');
+    $emailVerificationUrl  = Url::fromRoute('<front>')->setAbsolute()->toString();
+    $resetPasswordUrl = Url::fromRoute('user.login')->setAbsolute()->toString(); 
+
   if (isset($_COOKIE['lr_message']) && $_COOKIE['lr_message'] != '') {
     $sec = $config->get('ciam_auto_hide_messages');
+    $refresh_sec = (isset($sec) && $sec != '' && $sec != '0') ? $sec : '5';
     $message = isset($_COOKIE['lr_message']) ? $_COOKIE['lr_message'] : '';
     $response = (isset($_GET['lrresponse']) && $_GET['lrresponse'] != 'true') ? "error" : "success";
     setcookie("lr_message", "", time() - 3600, "/");
     if ($message != "") {
       if ($response == 'error') {
         drupal_set_message($message, $response);
-        if ($sec != '' && $sec != '0') {
-          header("Refresh:$sec");
-        }
+        if ($refresh_sec != '' && $refresh_sec != '0') {
+          header("refresh:5;url=".$resetPasswordUrl);    
+        }        
       }
       else {
         drupal_set_message($message);
-        if ($sec != '' && $sec != '0') {
-          header("Refresh:$sec");
+        if ($refresh_sec != '' && $refresh_sec != '0') {
+          header("refresh:5;url=".$resetPasswordUrl);   
         }
       }
     }
   }
+  
+  $route_name = \Drupal::routeMatch()->getRouteName();
+  $anonymous = \Drupal::currentUser()->isAnonymous();
+  $admin_route = \Drupal::service('router.admin_context')->isAdminRoute();
 
-  $emailVerificationUrl = Url::fromRoute('<front>')->setAbsolute()->toString();
-  $forgotVerificationUrl = Url::fromRoute('user.login')->setAbsolute()->toString();
-
+  $email_verify_route = ($route_name == 'view.frontpage.page_1');
+  $login_route = ($route_name == 'user.login');
+  $register_route = ($route_name == 'user.register');
+  $forgot_password = ($route_name == 'user.pass');
+  
   $path = parse_url(Url::fromRoute('<front>')->toString());
   $sso_path = $path['path'];
-  $loggedIn = TRUE;
-  if (\Drupal::currentUser()->isAnonymous()) {
-    $loggedIn = FALSE;
+  $loggedIn = FALSE;
+  if (\Drupal::currentUser()->isAuthenticated()) {
+    $loggedIn = TRUE;            
   }
-
-  $access_token = \Drupal::service('session')->get('access_token', []);
-  $lrPhoneId = \Drupal::service('session')->get('user_profile_data', []);
+  
+   // Don't load page attachments on admin pages.
+    if(!$loggedIn) {
+        if ($admin_route || ($anonymous && !($email_verify_route || $login_route || $register_route || $forgot_password))) { 
+            return;
+        }
+    } else {
+        $user = \Drupal::currentUser()->getRoles();
+        if (in_array("administrator", $user)) { 
+        return;           
+        }
+    }
+ 
+ 
+  $access_token = [];
+  $lrPhoneId = [];
+  if (!$anonymous && $session = \Drupal::service('session')) {
+    $access_token = $session->get('access_token', []);
+    $lrPhoneId = $session->get('user_profile_phoneId', []);
+  } 
 
   $my_settings = [
     'verificationUrl' => $emailVerificationUrl,
-    'resetPasswordUrl' => $forgotVerificationUrl,
+    'resetPasswordUrl' => $resetPasswordUrl,
     'loggedIn' => $loggedIn,
     'accessToken' => isset($access_token) ? $access_token : '',
-    'phoneId' => isset($lrPhoneId->PhoneId) ? $lrPhoneId->PhoneId : '',
+    'phoneId' => isset($lrPhoneId) ? $lrPhoneId : '',
     'appName' => trim($config->get('sso_site_name')),
     'apiKey' => trim($config->get('api_key')),
     'autoHideTime' => trim($config->get('ciam_auto_hide_messages')),
@@ -388,9 +418,10 @@ function lr_ciam_page_attachments(&$page) {
     $my_settings['instantOTPLogin'] = (boolean) $config->get('ciam_instant_otp_login');
   }
 
-  $request_uri = \Drupal::request()->getRequestUri();
+ // $request_uri = \Drupal::request()->getRequestUri();
   $sott = '';
-  if (strpos($request_uri, 'register') !== FALSE) {
+  // if (strpos($request_uri, 'register') !== FALSE) {
+  if ($register_route) {
     $sott = lr_ciam_get_sott($config->get('api_key'), $config->get('api_secret'), $config->get('api_request_signing'));
   }
   $my_settings['sott'] = $sott;
@@ -450,9 +481,13 @@ function lr_ciam_page_attachments(&$page) {
     }
   }
 
+
   $page['#attached']['drupalSettings']['ciam'] = $my_settings;
   $page['#attached']['library'][] = 'lr_ciam/drupal.ciam_core';
-  $page['#attached']['library'][] = 'lr_ciam/drupal.ciam_custom';
+
+  if($loggedIn === TRUE){
+     $page['#attached']['library'][] = 'lr_ciam/drupal.ciam_custom';
+  } 
 }
 
 /**
@@ -469,7 +504,7 @@ function lr_ciam_get_sott($apiKey, $apiSecret, $apiSigning) {
     if (isset($apiSigning) && $apiSigning == 'true') {
       $apiRequestSigning = TRUE;
     }
-   
+
     $accountObject = new AccountAPI($apiKey, $apiSecret, ['output_format' => 'json', 'api_request_signing' => $apiRequestSigning]);
     try {
       $result = $accountObject->generateSOTT();
@@ -533,6 +568,7 @@ Password : @pass
  */
 function lr_ciam_get_callback_url() {
   global $base_url;
+
   $destination = (\Drupal::destination()->getAsArray());
   $callback = $destination['destination'];
 
@@ -552,8 +588,8 @@ function lr_ciam_get_callback_url() {
   }
   $parse_url = parse_url($base_url);
   $http_referer = isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"] : '';
-  if (isset($parse_url['host']) && !empty($parse_url['host']) && (strpos($http_referer, $parse_url['host']) !== FALSE)) {
-    \Drupal::service('session')->set('referer_url', $_SERVER["HTTP_REFERER"]);
+  if (\Drupal::currentUser()->isAuthenticated() && isset($parse_url['host']) && !empty($parse_url['host']) && (strpos($http_referer, $parse_url['host']) !== FALSE)) {
+      \Drupal::service('session')->set('referer_url', $_SERVER["HTTP_REFERER"]);
   }
   return urlencode($url);
 }
@@ -770,10 +806,12 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
     $apiKey = trim($config->get('api_key'));
     $apiSecret = trim($config->get('api_secret'));
     $apiSigning = trim($config->get('api_request_signing'));
+
     $apiRequestSigning = FALSE;
-    if (isset($apiSigning) && $apiSigning == 'true') {
+    if (isset($apiSigning) && $apiSigning == 'true') { 
       $apiRequestSigning = TRUE;
     }
+    
     $userObject = new UserAPI($apiKey, $apiSecret, ['output_format' => 'json']);
     $socialObject = new SocialLoginAPI($apiKey, $apiSecret, ['output_format' => 'json']);
     $accountObject = new AccountAPI($apiKey, $apiSecret, ['output_format' => 'json', 'api_request_signing' => $apiRequestSigning]);
@@ -796,9 +834,11 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
       return $response->send();
     }
 
-    $userprofile = \Drupal::service('session')->get('user_profile_data', []);
+ 
+    $userProfileUid = \Drupal::service('session')->get('user_profile_uid', []);
+
     try {
-      $result = $accountObject->getProfileByUid($userprofile->Uid);
+      $result = $accountObject->getProfileByUid($userProfileUid);      
     }
     catch (LoginRadiusException $e) {
       \Drupal::logger('ciam')->error($e);
@@ -830,7 +870,7 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
       '#open' => TRUE,
     ];
 
-    if (isset($userprofile->PhoneId) && $userprofile->PhoneId != '') {
+    if (isset($result->PhoneId) && $result->PhoneId != '') {
       $form['account_phone'] = [
         '#type'   => 'container',
         '#weight' => -15,
@@ -840,7 +880,7 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
         '#title' => t('Phone ID'),
         '#attributes' => ['readonly' => 'readonly'],
         '#description' => t('A valid phone number.'),
-        '#default_value' => $userprofile->PhoneId,
+        '#default_value' => $result->PhoneId,
       ];
     }
 
@@ -965,6 +1005,27 @@ function lr_ciam_form_user_form_alter(&$form, FormStateInterface $form_state) {
     }
   }
   return $form;
+}
+
+/**
+ * Implements hook_user_format_name_alter().
+ */
+function lr_ciam_user_format_name_alter(&$name, AccountInterface $account) {
+
+    if (!\Drupal::currentUser()->isAnonymous()) {
+
+      // If Login Radius name is used as Drupal user name, we
+      // don't need to look it up.
+      if (empty(\Drupal::config('lr_ciam.settings')->get('ciam_dont_save_name_in_db'))) {
+        return;
+      }
+
+		$userFullName = \Drupal::service('session')->get('user_profile_fullName', []);
+      if (!empty($userFullName)) {
+        $name = $userFullName;
+      }
+
+    }
 }
 
 /**

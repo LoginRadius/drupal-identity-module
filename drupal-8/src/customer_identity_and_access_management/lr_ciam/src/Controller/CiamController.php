@@ -59,8 +59,8 @@ class CiamController extends ControllerBase {
 
           try {
             $accountObject = new AccountAPI($apiKey, $apiSecret, ['output_format' => 'json', 'api_request_signing' => $apiRequestSigning]);
-            $userProfile = \Drupal::service('session')->get('user_profile_data', []);
-            $result = $accountObject->setPassword($userProfile->Uid, $post_value['setnewpassword']);
+     		    $userProfileUid = \Drupal::service('session')->get('user_profile_uid', []);
+            $result = $accountObject->setPassword($userProfileUid, $post_value['setnewpassword']);
             if (isset($result) && $result) {
               drupal_set_message($this->t('Password set successfully.'));
             }
@@ -174,13 +174,18 @@ class CiamController extends ControllerBase {
       try {
         $userprofile = $userObject->getProfile($request_token);
         $userprofile->widget_token = $request_token;
-        \Drupal::service('session')->set('user_profile_data', $userprofile);
-      }
+  
+	    \Drupal::service('session')->set('user_profile_uid', $userprofile->Uid);
+	    \Drupal::service('session')->set('user_profile_fullName', $userprofile->FullName);
+		  \Drupal::service('session')->set('user_profile_phoneId', $userprofile->PhoneId);
+      } 
       catch (LoginRadiusException $e) {
         \Drupal::logger('ciam')->error($e);
         drupal_set_message($e->getMessage(), 'error');
         return $this->redirect('user.login');
       }
+	  
+	   
       // Advanced module LR Code Hook Start.
       // Make sure at least one module implements our hook.
       if (count(\Drupal::moduleHandler()->getImplementations('add_loginradius_userdata')) > 0) {

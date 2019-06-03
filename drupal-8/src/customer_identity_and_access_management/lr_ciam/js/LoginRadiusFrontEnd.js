@@ -329,7 +329,7 @@ function initializeRegisterCiamForm() {
         var disableemailverification = '';
         if (typeof LRObject.options.optionalEmailVerification != 'undefined') {
             optionalemailverification = LRObject.options.optionalEmailVerification;
-        } 
+        }
         if (typeof LRObject.options.disabledEmailVerification != 'undefined') {
             disableemailverification = LRObject.options.disabledEmailVerification;
         }
@@ -338,14 +338,18 @@ function initializeRegisterCiamForm() {
             if ((typeof (optionalemailverification) == 'undefined' || optionalemailverification !== true) && (typeof (disableemailverification) == 'undefined' || disableemailverification !== true)) {
                 handleResponse(true, "A verification email has been sent to " + jQuery("#loginradius-registration-emailid").val() + ", please check your email for further instructions");
                 jQuery('html, body').animate({scrollTop: 0}, 1000);
-            }            
+            }      
         }else if (response.access_token != null && response.access_token != "") {
             handleResponse(true, "");
             ciamRedirect(response.access_token);
         }else if(LRObject.options.phoneLogin && typeof response.Data !== 'undefined'){
-            handleResponse(true, "An OTP has been sent to your number.");
+			if(response.Data.Email != ''){
+				handleResponse(true, "An OTP has been verified successfully.");
+			}else{
+                handleResponse(true, "An OTP has been sent to your number.");
+			}
             jQuery('html, body').animate({scrollTop: 0}, 1000);
-        }        
+        }      
     };
     registration_options.onError = function (response) {
         if (response[0].Description != null) {
@@ -425,7 +429,6 @@ function initializeResetPasswordCiamForm(commonOptions) {
                     };
 
                     LRObject.init("instantLinkLogin", options);
-
                 }
             }
         }
@@ -438,13 +441,17 @@ function initializeForgotPasswordCiamForms() {
     var forgotpassword_options = {};
     forgotpassword_options.container = "forgotpassword-container";
     forgotpassword_options.onSuccess = function (response) {
-            if (response.IsPosted == true && typeof (response.Data) == "undefined") {
+            if (response.IsPosted == true && typeof (response.Data) === "undefined") {
                 if(jQuery('form[name="loginradius-resetpassword"]').length > 0) {
                 handleResponse(true, "Password reset successfully.");  
                 } else {
                 handleResponse(true, "An Email has been sent to " + jQuery("#loginradius-forgotpassword-emailid").val() + ", please check your email for further instructions.");   
                 }
-            } else {
+            } else if (response.IsPosted == true && typeof (response.Data) === "object") {				
+                if(jQuery('form[name="loginradius-resetpassword"]').length > 0) {
+                handleResponse(true, "Password reset successfully.");  
+                }           
+			} else {
                 handleResponse(true, "OTP has been sent to your phone number.");             
             }
     };
@@ -513,16 +520,16 @@ function initializeTwoFactorAuthenticator() {
     var authentication_options = {};
     authentication_options.container = "authentication-container";
     authentication_options.onSuccess = function (response) {
-        if(response.AccountSid){              
+        if(response.Sid){          
             handleResponse(true, "An OTP has been sent.");
-        } else if (response.IsDeleted) {
-            handleResponse(true, "Disabled successfully.", "showmsg");  
+        } if (response.IsDeleted == true) {
+            handleResponse(true, "Two Factor Authenticaion is disabled.", "showmsg");  
             jQuery('html, body').animate({scrollTop: 0}, 1000);
             window.setTimeout(function () {
                 window.location.reload();
             }, 3000);
-        } else if (response.Uid) {
-            handleResponse(true, "Verified successfully.", "showmsg"); 
+        } else if(typeof response.Uid != 'undefined'){
+            handleResponse(true, "Two Factor Authenticaion is enabled.", "showmsg"); 
             jQuery('html, body').animate({scrollTop: 0}, 1000);
              window.setTimeout(function () {
                 window.location.reload();
@@ -548,14 +555,15 @@ function initializePhoneUpdate() {
     var updatephone_options = {};
     updatephone_options.container = "updatephone-container";
     updatephone_options.onSuccess = function (response) {
-        if(response.access_token) {
-            handleResponse(true, "Updated successfully.", 'showmsg');  
+        if(typeof response.Data !== 'undefined'){
+            handleResponse(true, "An OTP has been sent.", 'showmsg');            
+        }
+        else if(response.IsPosted == true) {
+            handleResponse(true, "Phone number updated successfully.", 'showmsg');  
             window.setTimeout(function () {
                 window.location.reload();
             }, 3000);
-        } else {
-            handleResponse(true, "Resend OTP.", 'showmsg');
-        }
+        } 
     };
     updatephone_options.onError = function (errors) {
         if (errors[0].Description != null) {

@@ -42,7 +42,7 @@ class CustomHttpClient implements IHttpClient {
             if (($options['api_request_signing'] === false) || ($options['api_request_signing'] === 'false')) {
                 $options = array_merge($options, Functions::authentication(array(), $options['authentication']));
             }
-                $query_array = isset($options['authentication']) ? Functions::authentication($query_array) : $query_array;
+            $query_array = isset($options['authentication']) ? Functions::authentication($query_array) : $query_array;
         } else {
             $query_array = isset($options['authentication']) ? Functions::authentication($query_array, $options['authentication']) : $query_array;
         }
@@ -113,6 +113,7 @@ class CustomHttpClient implements IHttpClient {
    * @return json data
    */
   private function curlApiMethod($request_url, $options = []) {
+
     $ssl_verify = isset($options['ssl_verify']) ? $options['ssl_verify'] : FALSE;
     $method = isset($options['method']) ? strtoupper($options['method']) : 'GET';
     $data = isset($options['post_data']) ? $options['post_data'] : [];

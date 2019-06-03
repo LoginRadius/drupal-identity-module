@@ -139,7 +139,7 @@ class CiamSettingsForm extends ConfigFormBase {
       ->set('sso_site_name', isset($configOptions->AppName) ? $configOptions->AppName : '')
       ->set('api_key', $form_state->getValue('api_key'))
       ->set('api_secret', $form_state->getValue('api_secret'))
-      ->set('api_request_signing', isset($configOptions->ApiRequestSigningConfig->IsEnabled) ? $configOptions->ApiRequestSigningConfig->IsEnabled : false)
+      ->set('api_request_signing', (isset($configOptions->ApiRequestSigningConfig->IsEnabled) && $configOptions->ApiRequestSigningConfig->IsEnabled) ? 'true' : 'false')
       ->set('login_redirection', $form_state->getValue('login_redirection'))
       ->set('custom_login_url', $form_state->getValue('custom_login_url'))
       ->save();

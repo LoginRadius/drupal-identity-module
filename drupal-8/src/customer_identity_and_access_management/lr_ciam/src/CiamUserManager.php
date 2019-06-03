@@ -113,7 +113,7 @@ class CiamUserManager {
   /**
    * Block user at CIAM.
    */
-  public function lrCiamBlockUser($uid) { 
+  public function lrCiamBlockUser($uid) {
     $apiSigning = $this->apirequestsigning;
     $apiRequestSigning = FALSE;
     if (isset($apiSigning) && $apiSigning == 'true') {
@@ -386,7 +386,7 @@ class CiamUserManager {
       return $this->redirectUser($url);
     }
     else {
-      drupal_set_message(t('You are either blocked, or have not activated your account. Please check your email.', 'error'));
+        drupal_set_message(t('You are either blocked, or have not activated your account. Please check your email.'), 'error');
       return new RedirectResponse(Url::fromRoute('<front>')->toString());
     }
   }
@@ -418,9 +418,9 @@ class CiamUserManager {
   public function redirectUser($variable_path = '') {
     $user = \Drupal::currentUser();
     $variable_path = (!empty($variable_path) ? $variable_path : 'login_redirection');
-    $variable_custom_path = (($variable_path == 'login_redirection') ? 'custom_login_url' : '');
-
+    $variable_custom_path = (($variable_path == 'login_redirection') ? 'custom_login_url' : ''); 
     $request_uri = \Drupal::request()->getRequestUri();
+    
     if (strpos($request_uri, 'redirect_to') !== FALSE) {
       // Redirect to front site.
       $redirectUrl = \Drupal::request()->query->get('redirect_to');
@@ -444,7 +444,7 @@ class CiamUserManager {
       }
     }
     else {
-      // Redirect to same page.
+      // Redirect to same page.     
       $referer_url = \Drupal::service('session')->get('referer_url', []);
       if (!empty($referer_url)) {
         $response = new RedirectResponse($referer_url);
@@ -530,7 +530,7 @@ class CiamUserManager {
         // Set up the user fields.
         $password = user_password(32);
         $fields = [
-          'name' => $data['username'],
+          'name' => ($this->moduleconfig->get('ciam_save_name_in_db') == 'false') ? $userprofile->ID : $data['username'],
           'mail' => $userprofile->Email_value,
           'init' => $userprofile->Email_value,
           'pass' => $password,
@@ -646,12 +646,12 @@ class CiamUserManager {
       }
     }
 
-    if (!$drupal_user) {
-      if (empty($userprofile->Email_value)) {
+    if (!$drupal_user) {    
+     if (empty($userprofile->Email_value) || $this->moduleconfig->get('ciam_save_mail_in_db') == 'false') {
         $phoneid = isset($userprofile->PhoneId) ? $userprofile->PhoneId : $userprofile->ID;
-        $userprofile->Email_value = $this->getRandomEmail($_SERVER['HTTP_HOST'], $phoneid);
+        $userprofile->Email_value = $this->getRandomEmail($_SERVER['HTTP_HOST'], $phoneid); 
       }
-      if (!empty($userprofile->Email_value)) {
+      if (!empty($userprofile->Email_value)) {      
         $drupal_user = $this->getUserByEmail($userprofile->Email_value);
         if ($drupal_user) {
           $this->insertSocialData($drupal_user->id(), $userprofile->ID, $userprofile->Provider);
@@ -662,7 +662,7 @@ class CiamUserManager {
     if ($drupal_user) {
       return $this->provideLogin($drupal_user, $userprofile, TRUE);
     }
-    else {
+    else {  
       return $this->createUser($userprofile);
     }
   }

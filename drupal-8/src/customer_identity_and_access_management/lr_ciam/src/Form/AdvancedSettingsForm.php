@@ -132,6 +132,28 @@ class AdvancedSettingsForm extends ConfigFormBase {
         'false' => $this->t('No'),
       ],
     ];
+    
+    $form['lr_user_settings']['ciam_save_mail_in_db'] = [
+      '#type' => 'radios',
+      '#title' => $this->t("Do you want to store user's email address in the database?"),
+      '#default_value' => $config->get('ciam_save_mail_in_db') ? $config->get('ciam_save_mail_in_db') : 'true',
+      '#options' => [
+        'true' => $this->t('Yes'),
+        'false' => $this->t('No'),
+      ],
+    ];
+
+    $form['lr_user_settings']['ciam_save_name_in_db'] = [
+      '#type' => 'radios',
+      '#title' => $this->t("Do you want to store user's first and last name as their username in the database?"),
+      '#default_value' => $config->get('ciam_save_name_in_db') ? $config->get('ciam_save_name_in_db') : 'true',
+      '#options' => [
+        'true' => $this->t('Yes'),
+        'false' => $this->t('No'),
+      ],
+    ];
+
+
     $form['lr_user_settings']['ciam_prompt_password_on_social_login'] = [
       '#type' => 'radios',
       '#title' => $this->t('Do you want to enable prompt password on social login<a title="This feature when enabled, will prompt the user to set the password at the time of login for the time from any social provider."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
@@ -202,7 +224,6 @@ class AdvancedSettingsForm extends ConfigFormBase {
         '#options' => $this->getEmailTemplate($email_templates->EmailTemplates->Verification),
         '#default_value' => $config->get('ciam_email_verification_template'),
       ];
-
       $form['lr_template_settings']['ciam_reset_password_email_template'] = [
         '#type' => 'select',
         '#title' => $this->t('Enter template name for reset password email'),
@@ -471,6 +492,8 @@ class AdvancedSettingsForm extends ConfigFormBase {
       ->set('interface_label', $form_state->getValue('interface_label'))
       ->set('user_fields', $form_state->getValue('user_fields'))
       ->set('ciam_debug_mode', $form_state->getValue('ciam_debug_mode'))
+      ->set('ciam_save_mail_in_db', $form_state->getValue('ciam_save_mail_in_db'))
+      ->set('ciam_save_name_in_db', $form_state->getValue('ciam_save_name_in_db'))
       ->save();
     if (count(\Drupal::moduleHandler()->getImplementations('add_extra_config_settings')) > 0) {
       // Call all modules that implement the hook,

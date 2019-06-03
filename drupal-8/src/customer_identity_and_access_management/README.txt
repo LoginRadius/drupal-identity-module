@@ -27,6 +27,14 @@ further information.
 
 
 -- CHANGE LOG --
+
+  -- 8.x-3.16 --
+  *  Removed page attachments hook from admin pages.
+  *  Removed Session which was storing all the user profile data.
+  *  Removed anonymous user session from database.
+  *  Add option to not store email/username in drupal.
+  *  Fixed some bugs.
+  
   -- 8.x-3.15 --
   *  Handled API Request Signing feature.
   *  Standardize the code as per Drupal coding standard reported.

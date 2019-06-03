@@ -5,8 +5,7 @@ jQuery(document).ready(function () {
     initializeAddEmailCiamForms();
     initializeRemoveEmailCiamForms();
     getBackupCodes();
-    initializePhoneUpdate();
-    initializeForgotPasswordCiamForms(); 
+    initializePhoneUpdate();  
    }
 });
 
