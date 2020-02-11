@@ -7,6 +7,14 @@ jQuery(document).ready(function () {
         };   
         LRObject.init("logout", options);        
     });
+
+    if (window.location.href.indexOf('user/logout') > 0) {
+        var options = {};
+        options.onSuccess = function () {
+            window.location = drupalSettings.sso.loginUrl;
+        };   
+        LRObject.init("logout", options);  
+    }
 });
 
 if (drupalSettings.sso.isNotLogin) {

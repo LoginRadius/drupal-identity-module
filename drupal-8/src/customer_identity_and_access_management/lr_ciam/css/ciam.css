@@ -41,6 +41,7 @@ div.loginradius-ciam-validation-message {
 .ciam-lr-form.my-form-wrapper input[type=email],
 .ciam-lr-form.my-form-wrapper input[type=password] {
   width: 363px;
+  color:black;
 }
 
 #social-registration-container .loginradius-ciam--form-element-content input,
@@ -698,6 +699,7 @@ div.form-item-ciam-sms-template-change-phone-no label,
 div.form-item-ciam-sms-template-2fa label {
   margin-top: 18px;
   margin-bottom: -18px;
+  position: relative;
 }
 
 #edit-ciam-welcome-email-template,
@@ -713,4 +715,49 @@ div.form-item-ciam-sms-template-2fa label {
   margin: 0px 0px 0px 440px;
   clear: both;
   width: 150px;
+}
+
+#ciam_show_button {
+  left: 504px;
+  padding: 7px 8px;
+  background: #29d;
+  width: 40px;
+  color: #fff;
+  position: absolute;
+  text-align: center;
+  cursor: pointer;
+  margin-top: -40px;
+}
+#loginradius-submit-login,
+#loginradius-submit-register,
+#loginradius-submit-send{
+  color: black;
+}
+.oneclick--errormsg{
+  color: #a51b00;
+  background-color: #fcf4f2;
+  box-shadow: -8px 0 0 #e62600;
+  padding: 15px 20px 15px 35px;
+  border: 1px solid;
+  border-width: 1px 1px 1px 0;
+  margin-top: 15px;
+  border-radius: 2px;
+  overflow-wrap: break-word;
+}
+.field--type-boolean,
+.field--type-string,
+.field--type-list-string,
+.field--type-entity-reference,
+.field--type-datetime,
+.field--type-email,
+.field--type-timestamp,
+.field--type-link,
+.field--type-list-float,
+.field--type-list-integer,
+.field--type-decimal,
+.field--type-float,
+.field--type-integer,
+.field--type-text
+{
+  display:none;
 }

@@ -4,6 +4,31 @@ jQuery(document).ready(function () {
         jQuery('#lr-loading').hide();
     });
 
+    window.addEventListener( "pageshow", function ( event ) {
+        var historyTraversal = event.persisted || 
+                               ( typeof window.performance != "undefined" && 
+                                    window.performance.navigation.type === 2 );
+        if ( historyTraversal ) {
+          // Handle page restore.
+          window.location.reload();
+        }
+    });
+  
+    showOrHideCustomRedirection(jQuery('input:radio[name="login_redirection"]:checked').val());
+    jQuery('input:radio[name="login_redirection"]').change(function () {
+        showOrHideCustomRedirection(jQuery(this).val());
+    });
+
+    showOrHidePasswordlessTemplate(jQuery('input:radio[name="ciam_instant_link_login"]:checked').val());
+    jQuery('input:radio[name="ciam_instant_link_login"]').change(function () {
+        showOrHidePasswordlessTemplate(jQuery(this).val());
+    });
+
+    showOrHidePasswordlessOTPTemplate(jQuery('input:radio[name="ciam_instant_otp_login"]:checked').val());
+    jQuery('input:radio[name="ciam_instant_otp_login"]').change(function () {
+        showOrHidePasswordlessOTPTemplate(jQuery(this).val());
+    });
+
     if (window.location.href == window.location.origin + domainName + 'admin/people/create') {
         jQuery('.form-item-mail label').attr('class', 'js-form-required form-required');
         jQuery('#edit-mail').attr('required', 'required');
@@ -22,9 +47,32 @@ jQuery(document).ready(function () {
         });
     });   
     
-    jQuery('#addEmail').attr('onClick', 'showAddEmailPopup()'); 
-    
+    jQuery('#addEmail').attr('onClick', 'showAddEmailPopup()');    
 });
+
+function showOrHidePasswordlessTemplate(option) {
+    if ('false' === option || '' === option) {
+        jQuery('.form-item-ciam-instant-link-login-email-template').hide();
+    } else {
+        jQuery('.form-item-ciam-instant-link-login-email-template').show();
+    }
+}
+
+function showOrHidePasswordlessOTPTemplate(option) {
+    if ('false' === option || '' === option) {
+        jQuery('.form-item-ciam-sms-template-one-time-passcode').hide();
+    } else {
+        jQuery('.form-item-ciam-sms-template-one-time-passcode').show();
+    }
+}
+
+function showOrHideCustomRedirection(option) {
+    if ('0' === option || '1' === option || '' === option) {
+        jQuery('.form-item-custom-login-url').hide();
+    } else {
+        jQuery('.form-item-custom-login-url').show();
+    }
+}
 
 if (typeof LoginRadiusV2 === 'undefined') {
     var e = document.createElement('script');
@@ -57,31 +105,6 @@ function lrCloseRemovePopup() {
 
 function lrCloseAddEmailPopup() {
     jQuery('#addemail-form').hide();
-}
-
-function lrCheckValidJson() {
-    jQuery('#add_custom_options').change(function () {
-        var profile = jQuery('#add_custom_options').val();
-        var response = '';
-        try
-        {
-            response = jQuery.parseJSON(profile);
-            if (response != true && response != false) {
-                var validjson = JSON.stringify(response, null, '\t').replace(/</g, '&lt;');
-                if (validjson != 'null') {
-                    jQuery('#add_custom_options').val(validjson);
-                    jQuery('#add_custom_options').css("border", "1px solid green");
-                } else {
-                    jQuery('#add_custom_options').css("border", "1px solid red");
-                }
-            } else {
-                jQuery('#add_custom_options').css("border", "1px solid green");
-            }
-        } catch (e)
-        {
-            jQuery('#add_custom_options').css("border", "1px solid green");
-        }
-    });
 }
 
 function show_birthdate_date_block() {
@@ -123,7 +146,7 @@ function handleResponse(isSuccess, message, show, status) {
         jQuery('#lr-loading').hide();
         jQuery('.messages').text(message);
         jQuery(".messages__wrapper").show();
-        jQuery(".messages").show();
+        jQuery(".messages").show();    
 
         jQuery(".messages").removeClass("messages--error messages--status showmsg");
         jQuery(".messages").addClass(status);
@@ -137,6 +160,28 @@ function handleResponse(isSuccess, message, show, status) {
         jQuery('.messages').text("");
     }
 }
+
+function showErrorMsgForOneClickSignIn(isSuccess, message) {
+    if (isSuccess) {
+        jQuery('form').each(function () {
+            this.reset();
+        });
+    }
+    if (message != null && message != "") {
+        jQuery('#lr-loading').hide();
+        jQuery('div[data-drupal-messages-fallback]').text(message);
+        jQuery("div[data-drupal-messages-fallback]").show(); 
+        jQuery("div[data-drupal-messages-fallback]").removeClass("oneclick--errormsg");
+        jQuery("div[data-drupal-messages-fallback]").addClass("oneclick--errormsg");
+        if (autoHideTime != "" && autoHideTime != "0") {
+            setTimeout(fade_out, autoHideTime * 1000);
+        }
+    } else {
+        jQuery(".div[data-drupal-messages-fallback]").hide();   
+        jQuery('.div[data-drupal-messages-fallback]').text("");
+    }
+}
+
 function fade_out() {
     jQuery(".messages").hide();
 }
@@ -166,6 +211,8 @@ var setButtonInterval = setInterval(function () {
         LRObject.$hooks.call('setButtonsName', {
             removeemail: "Remove"
         });
+       
+        LRObject.registrationFormSchema  = registrationSchema;
 
         LRObject.$hooks.register('socialLoginFormRender', function () {
             //on social login form render
@@ -177,9 +224,9 @@ var setButtonInterval = setInterval(function () {
         LRObject.$hooks.register('afterFormRender', function (name) {
             if (name == "socialRegistration") {
                 jQuery('#login-container').find('form[name=loginradius-socialRegistration]').parent().addClass('socialRegistration');
-            }            
+            }       
             if (name == "updatePhone") {
-                if(phoneId == ""){
+                if(phoneId == "") {
                      jQuery('#updatephone-container').find('#loginradius-submit-update').attr('value', 'Add');
                 }
             }
@@ -189,6 +236,7 @@ var setButtonInterval = setInterval(function () {
         });
     }
 }, 1);
+
 function getBackupCodes() {
     var lrGetBackupInterval = setInterval(function () {
         if (typeof LRObject !== 'undefined')
@@ -267,7 +315,7 @@ function initializeSocialRegisterCiamForm() {
             ciamRedirect(response.access_token);
             jQuery('#lr-loading').hide();
         } else if (response.IsPosted) {
-            handleResponse(true, "An email has been sent to " + jQuery("#loginradius-socialRegistration-emailid").val() + ". Please verify your email address.");
+            handleResponse(true, commonOptions.messagesList.SOCIAL_LOGIN_MSG);
             jQuery('#social-registration-form').hide();
             jQuery('#lr-loading').hide();
         }
@@ -294,18 +342,25 @@ function initializeLoginCiamForm() {
     //initialize Login form
     var login_options = {};
     login_options.onSuccess = function (response) {
-        if (response.access_token) {
-            handleResponse(true);
-            ciamRedirect(response.access_token);
-        } else if(LRObject.options.phoneLogin && typeof (response.Data) != "undefined"){
-            handleResponse(true, "An OTP has been sent to your number.");
-        } else {
+        if (response.IsPosted == true && typeof response.access_token !== 'undefined') {
             if (jQuery('#loginradius-login-username').length !== 0) {
-                handleResponse(true, "An email has been sent to " + jQuery("#loginradius-login-username").val() + ". Please verify your email address");
+                handleResponse(true, commonOptions.messagesList.LOGIN_BY_EMAIL_MSG);
             } else if (jQuery('#loginradius-login-emailid').length !== 0) {
-                handleResponse(true, "An email has been sent to " + jQuery("#loginradius-login-emailid").val() + ". Please verify your email address");
+                handleResponse(true, commonOptions.messagesList.LOGIN_BY_EMAIL_MSG);
             }
-        }
+       }
+       else if( typeof response.Data !== 'undefined' && typeof response.Data.Sid !== 'undefined')
+       { 
+           handleResponse(true, commonOptions.messagesList.LOGIN_BY_PHONE_MSG);           
+       } else if( typeof response.Data !== 'undefined')
+       {     
+           handleResponse(true, commonOptions.messagesList.EMAIL_VERIFICATION_SUCCESS_MSG);         
+       }else if(response.IsPosted == true) {
+           handleResponse(true, commonOptions.messagesList.LOGIN_BY_EMAIL_MSG);     
+       }else if (response.access_token) {
+           handleResponse(true);
+           ciamRedirect(response.access_token);
+       }
     };
     login_options.onError = function (response) {
         handleResponse(false, response[0].Description, "", "error");
@@ -332,24 +387,23 @@ function initializeRegisterCiamForm() {
         }
         if (typeof LRObject.options.disabledEmailVerification != 'undefined') {
             disableemailverification = LRObject.options.disabledEmailVerification;
-        }
-                
+        }                
         if (response.IsPosted && response.Data == null) {
             if ((typeof (optionalemailverification) == 'undefined' || optionalemailverification !== true) && (typeof (disableemailverification) == 'undefined' || disableemailverification !== true)) {
-                handleResponse(true, "A verification email has been sent to " + jQuery("#loginradius-registration-emailid").val() + ", please check your email for further instructions");
+                handleResponse(true, commonOptions.messagesList.REGISTRATION_SUCCESS_MSG);
                 jQuery('html, body').animate({scrollTop: 0}, 1000);
-            }      
+            }
         }else if (response.access_token != null && response.access_token != "") {
             handleResponse(true, "");
             ciamRedirect(response.access_token);
-        }else if(LRObject.options.phoneLogin && typeof response.Data !== 'undefined'){
-			if(response.Data.Email != ''){
-				handleResponse(true, "An OTP has been verified successfully.");
-			}else{
-                handleResponse(true, "An OTP has been sent to your number.");
-			}
-            jQuery('html, body').animate({scrollTop: 0}, 1000);
-        }      
+        } else if(response.IsPosted && typeof response.Data !== 'undefined' && response.Data!==null && typeof response.Data.Sid !== 'undefined')
+        {
+            handleResponse(true, commonOptions.messagesList.REGISTRATION_OTP_MSG);
+        } else if(LRObject.options.otpEmailVerification==true && response.Data==null) {
+            handleResponse(true, commonOptions.messagesList.REGISTRATION_OTP_VERIFICATION_MSG);           
+        } else {
+            handleResponse(true, commonOptions.messagesList.REGISTRATION_SUCCESS_MSG);
+        }
     };
     registration_options.onError = function (response) {
         if (response[0].Description != null) {
@@ -384,9 +438,10 @@ function initializeResetPasswordCiamForm(commonOptions) {
                     resetpassword_options.container = "resetpassword-container";
                     jQuery('#login-container').hide();
                     jQuery('.interfacecontainerdiv').hide();
+                    jQuery('.page-title').text('Reset Password');
                     jQuery('#interfaceLabel').hide();
                     resetpassword_options.onSuccess = function (response) {
-                        handleResponse(true, "Password reset successfully. Now you can login with changed password.");
+                        handleResponse(true, commonOptions.messagesList.FORGOT_PASSWORD_SUCCESS_MSG);
                         window.setTimeout(function () {
                            window.location.replace(commonOptions.verificationUrl);
                         }, 3000);
@@ -406,7 +461,7 @@ function initializeResetPasswordCiamForm(commonOptions) {
                             } else if (!loggedIn && response.Data != null && response.Data.access_token != null && response.Data.access_token != "") {
                                 ciamRedirect(response.Data.access_token);
                             } else {
-                                lrSetCookie('lr_message', 'Your email has been verified successfully.');
+                                lrSetCookie('lr_message', commonOptions.messagesList.EMAIL_VERIFICATION_SUCCESS_MSG);
                                 window.location.href = window.location.href.split('?')[0] + '?lrresponse=true';
                             }
                         }
@@ -425,7 +480,11 @@ function initializeResetPasswordCiamForm(commonOptions) {
                         ciamRedirect(response.access_token);
                     };
                     options.onError = function (errors) {
-                        handleResponse(false, errors[0].Description, "", "error");
+                        if (!loggedIn){
+                            showErrorMsgForOneClickSignIn(false, errors[0].Description);
+                        }else{
+                            window.location.href = homeDomain;
+                        }
                     };
 
                     LRObject.init("instantLinkLogin", options);
@@ -441,18 +500,22 @@ function initializeForgotPasswordCiamForms() {
     var forgotpassword_options = {};
     forgotpassword_options.container = "forgotpassword-container";
     forgotpassword_options.onSuccess = function (response) {
-            if (response.IsPosted == true && typeof (response.Data) === "undefined") {
-                if(jQuery('form[name="loginradius-resetpassword"]').length > 0) {
-                handleResponse(true, "Password reset successfully.");  
-                } else {
-                handleResponse(true, "An Email has been sent to " + jQuery("#loginradius-forgotpassword-emailid").val() + ", please check your email for further instructions.");   
-                }
+            if(response.IsPosted == true && typeof response.Data !== 'undefined' && response.Data!==null)
+            {
+                handleResponse(true, commonOptions.messagesList.FORGOT_PASSWORD_PHONE_MSG);   
+            }else if(LRObject.options.otpEmailVerification==true && typeof response.Data==='undefined')
+            {
+                handleResponse(true, commonOptions.messagesList.FORGOT_PHONE_OTP_VERIFICATION_MSG);  
             } else if (response.IsPosted == true && typeof (response.Data) === "object") {				
                 if(jQuery('form[name="loginradius-resetpassword"]').length > 0) {
-                handleResponse(true, "Password reset successfully.");  
+                handleResponse(true, commonOptions.messagesList.FORGOT_PASSWORD_SUCCESS_MSG);  
                 }           
-			} else {
-                handleResponse(true, "OTP has been sent to your phone number.");             
+			}else if (response.IsPosted == true && typeof (response.Data) === "undefined") {
+                if(jQuery('form[name="loginradius-resetpassword"]').length > 0) {
+                handleResponse(true, commonOptions.messagesList.FORGOT_PASSWORD_SUCCESS_MSG);  
+                } else {
+                handleResponse(true, commonOptions.messagesList.FORGOT_PASSWORD_MSG);   
+                }
             }
     };
     forgotpassword_options.onError = function (response) {
@@ -481,7 +544,7 @@ function initializeAccountLinkingCiamForms() {
             handleResponse(true, "");
             ciamRedirect(response);
         } else {
-            handleResponse(true, "Account linked successfully", "showmsg");
+            handleResponse(true, commonOptions.messagesList.ACCOUNT_LINKING_MSG, "showmsg");
             window.setTimeout(function () {
                 window.location.reload();
             }, 3000);
@@ -494,7 +557,7 @@ function initializeAccountLinkingCiamForms() {
     var unlink_options = {};
     unlink_options.onSuccess = function (response) {
         if (response.IsDeleted == true) {
-            handleResponse(true, "Account unlinked successfully", "showmsg");
+            handleResponse(true, commonOptions.messagesList.ACCOUNT_UNLINKING_MSG, "showmsg");
             window.setTimeout(function () {
                 window.location.reload();
             }, 3000);
@@ -521,15 +584,15 @@ function initializeTwoFactorAuthenticator() {
     authentication_options.container = "authentication-container";
     authentication_options.onSuccess = function (response) {
         if(response.Sid){          
-            handleResponse(true, "An OTP has been sent.");
+            handleResponse(true, commonOptions.messagesList.TWO_FA_MSG);
         } if (response.IsDeleted == true) {
-            handleResponse(true, "Two Factor Authenticaion is disabled.", "showmsg");  
+            handleResponse(true, commonOptions.messagesList.TWO_FA_DISABLED_MSG, "showmsg");  
             jQuery('html, body').animate({scrollTop: 0}, 1000);
             window.setTimeout(function () {
                 window.location.reload();
             }, 3000);
         } else if(typeof response.Uid != 'undefined'){
-            handleResponse(true, "Two Factor Authenticaion is enabled.", "showmsg"); 
+            handleResponse(true, commonOptions.messagesList.TWO_FA_ENABLED_MSG, "showmsg"); 
             jQuery('html, body').animate({scrollTop: 0}, 1000);
              window.setTimeout(function () {
                 window.location.reload();
@@ -551,19 +614,42 @@ function initializeTwoFactorAuthenticator() {
     }, 1);
 }
 
+function initializeProfileUpdate() {
+    var profileeditor_options = {};
+    profileeditor_options.container = "profileeditor-container";
+    profileeditor_options.onSuccess = function(response) {
+        handleResponse(true, commonOptions.messagesList.UPDATE_USER_PROFILE, 'showmsg');   
+        lrSetCookie('lr_profile_update', 'true');
+        window.location.href = window.location.href;
+         
+    };
+    profileeditor_options.onError = function(errors) {
+        if (errors[0].Description != null) {
+            handleResponse(false, errors[0].Description, "showmsg", "error");       
+        }
+    };
+    var lrUpdateInterval = setInterval(function () {
+        if (typeof LRObject !== 'undefined')
+        {
+            clearInterval(lrUpdateInterval);
+            LRObject.init("profileEditor",profileeditor_options);          
+        }
+    }, 1);    
+}
+
 function initializePhoneUpdate() {
     var updatephone_options = {};
     updatephone_options.container = "updatephone-container";
     updatephone_options.onSuccess = function (response) {
         if(typeof response.Data !== 'undefined'){
-            handleResponse(true, "An OTP has been sent.", 'showmsg');            
+            handleResponse(true, commonOptions.messagesList.UPDATE_PHONE_MSG, 'showmsg');            
         }
         else if(response.IsPosted == true) {
-            handleResponse(true, "Phone number updated successfully.", 'showmsg');  
+            handleResponse(true, commonOptions.messagesList.UPDATE_PHONE_SUCCESS_MSG, 'showmsg');  
             window.setTimeout(function () {
                 window.location.reload();
             }, 3000);
-        } 
+        }
     };
     updatephone_options.onError = function (errors) {
         if (errors[0].Description != null) {
@@ -576,8 +662,7 @@ function initializePhoneUpdate() {
             clearInterval(lrUpdateInterval);
             LRObject.init("updatePhone", updatephone_options);            
         }
-    }, 1);
-    
+    }, 1);    
 }
 
 function initializeAddEmailCiamForms() {
@@ -585,7 +670,7 @@ function initializeAddEmailCiamForms() {
     addemail_options.container = "addemail-container";
     addemail_options.onSuccess = function (response) {
         jQuery('#addemail-form').hide();
-        handleResponse(true, "Email added successfully. Please verify your email address.", 'showmsg');
+        handleResponse(true, commonOptions.messagesList.ADD_EMAIL_MSG, 'showmsg');
         jQuery('html, body').animate({scrollTop: 0}, 1000);
     };
     addemail_options.onError = function (errors) {
@@ -609,7 +694,7 @@ function initializeRemoveEmailCiamForms(divhtml) {
     removeemail_options.container = "removeemail-container";
     removeemail_options.onSuccess = function (response) {
         jQuery('#removeemail-form').hide();
-        handleResponse(true, "Email has been removed successfully.", 'showmsg');
+        handleResponse(true, commonOptions.messagesList.REMOVE_EMAIL_MSG, 'showmsg');
         divhtml.remove();
         jQuery('html, body').animate({scrollTop: 0}, 1000);
     };
@@ -619,7 +704,7 @@ function initializeRemoveEmailCiamForms(divhtml) {
         jQuery('html, body').animate({scrollTop: 0}, 1000);
 
     };
-    var lrRemoveInterval = setInterval(function () {
+    var lrRemoveInterval = setInterval(function () {             
         if (typeof LRObject !== 'undefined')
         {
             clearInterval(lrRemoveInterval);
@@ -633,7 +718,7 @@ function initializeChangePasswordCiamForms() {
     var changepassword_options = {};
     changepassword_options.container = "changepassword-container";
     changepassword_options.onSuccess = function (response) {
-        handleResponse(true, "Password has been updated successfully.");
+        handleResponse(true, commonOptions.messagesList.CHANGE_PASSWORD_SUCCESS_MSG);
     };
     changepassword_options.onError = function (errors) {
         handleResponse(false, errors[0].Description, "", "error");

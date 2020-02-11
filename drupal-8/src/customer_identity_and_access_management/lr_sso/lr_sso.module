@@ -16,7 +16,9 @@ function lr_sso_page_attachments(&$page) {
   $sl_config = \Drupal::config('lr_ciam.settings');
   $site_name = $sl_config->get('sso_site_name');
 
+
   if ($sso_config->get('sso_enable') == 1 && !empty($site_name)) {
+  
     $user = \Drupal::currentUser()->getRoles();
     $my_settings['logoutUrl'] = Url::fromRoute('user.logout')->setAbsolute()->toString();
 

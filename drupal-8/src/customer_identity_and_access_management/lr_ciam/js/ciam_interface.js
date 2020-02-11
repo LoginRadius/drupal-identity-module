@@ -7,6 +7,7 @@ var phoneId = drupalSettings.ciam.phoneId;
 var autoHideTime = drupalSettings.ciam.autoHideTime;
 var loggedIn = drupalSettings.ciam.loggedIn;
 var domainName = drupalSettings.ciam.appPath;
+var registrationSchema = drupalSettings.ciam.registrationSchema;
 commonOptions.apiKey = drupalSettings.ciam.apiKey;
 commonOptions.appName = drupalSettings.ciam.appName;
 commonOptions.appPath = drupalSettings.ciam.appPath;
@@ -16,6 +17,7 @@ commonOptions.resetPasswordUrl = drupalSettings.ciam.resetPasswordUrl;
 commonOptions.callbackUrl = drupalSettings.ciam.callback;
 commonOptions.hashTemplate = true;
 commonOptions.formValidationMessage = true;
+commonOptions.messagesList = JSON.parse(drupalSettings.ciam.commonMessages);
 
 if (drupalSettings.ciam.termsAndConditionHtml) {
     commonOptions.termsAndConditionHtml = drupalSettings.ciam.termsAndConditionHtml;
@@ -25,12 +27,14 @@ if (drupalSettings.ciam.displayPasswordStrength) {
 }
 if (drupalSettings.ciam.askRequiredFieldForTraditionalLogin) {
     commonOptions.askRequiredFieldForTraditionalLogin = drupalSettings.ciam.askRequiredFieldForTraditionalLogin;
-}else {
+}
+else {
     commonOptions.askRequiredFieldForTraditionalLogin = false;
 }
 if (drupalSettings.ciam.askEmailForUnverifiedProfileAlways) {
     commonOptions.askEmailForUnverifiedProfileAlways = drupalSettings.ciam.askEmailForUnverifiedProfileAlways;
-} else {
+} 
+else {
     commonOptions.askEmailForUnverifiedProfileAlways = false;
 }
 if (drupalSettings.ciam.usernameLogin) {

@@ -7,9 +7,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\user\Entity\User;
 use Drupal\Core\Access\AccessResult;
 use LoginRadiusSDK\LoginRadiusException;
-use LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
+use LoginRadiusSDK\CustomerRegistration\Authentication\AuthenticationAPI;
 use LoginRadiusSDK\CustomerRegistration\Account\AccountAPI;
-use LoginRadiusSDK\Advance\ConfigAPI;
+use LoginRadiusSDK\CustomerRegistration\Advanced\ConfigurationAPI;
 
 /**
  * Returns responses for user Login routes.
@@ -42,15 +42,7 @@ class CiamController extends ControllerBase {
    */
   public function userChangePassword($user) {
     $post_value = \Drupal::request()->request->all();
-    $config = \Drupal::config('lr_ciam.settings');
-    $apiKey = trim($config->get('api_key'));
-    $apiSecret = trim($config->get('api_secret'));
-    $apiSigning = trim($config->get('api_request_signing'));
-    $apiRequestSigning = FALSE;
-    if (isset($apiSigning) && $apiSigning == 'true') {
-      $apiRequestSigning = TRUE;
-    }
-
+      
     if (isset($post_value['setpasswordsubmit']) && $post_value['setpasswordsubmit'] == 'submit') {
 
       if (isset($post_value['setnewpassword']) && !empty($post_value['setnewpassword']) && isset($post_value['setconfirmpassword']) && !empty($post_value['setconfirmpassword'])) {
@@ -58,9 +50,9 @@ class CiamController extends ControllerBase {
         if ($post_value['setnewpassword'] == $post_value['setconfirmpassword']) {
 
           try {
-            $accountObject = new AccountAPI($apiKey, $apiSecret, ['output_format' => 'json', 'api_request_signing' => $apiRequestSigning]);
+            $accountObject = new AccountAPI();
      		    $userProfileUid = \Drupal::service('session')->get('user_profile_uid', []);
-            $result = $accountObject->setPassword($userProfileUid, $post_value['setnewpassword']);
+            $result = $accountObject->setAccountPasswordByUid($post_value['setnewpassword'], $userProfileUid);
             if (isset($result) && $result) {
               drupal_set_message($this->t('Password set successfully.'));
             }
@@ -80,8 +72,8 @@ class CiamController extends ControllerBase {
     }
 
     try {
-      $userObject = new UserAPI($apiKey, $apiSecret, ['output_format' => 'json']);
-      $userprofile = $userObject->getProfile(\Drupal::service('session')->get('access_token', []), 'Password');
+      $authObject = new AuthenticationAPI();
+      $userprofile = $authObject->getProfileByAccessToken(\Drupal::service('session')->get('access_token', []), 'Password');
     }
     catch (LoginRadiusException $e) {
       \Drupal::logger('ciam')->error($e);
@@ -108,14 +100,12 @@ class CiamController extends ControllerBase {
    * Show change password form.
    */
   public function changePasswordAccess() {
-    $config = \Drupal::config('lr_ciam.settings');
     $user = \Drupal::currentUser()->getRoles();
     $access_granted = in_array("administrator", $user);
-    $apiKey = $config->get('api_key');
-    $apiSecret = $config->get('api_secret');
+   
     try {
-      $configObject = new ConfigAPI($apiKey, $apiSecret, ['output_format' => 'json']);
-      $configData = $configObject->getConfigurationList();
+      $configObject = new ConfigurationAPI();
+      $configData = $configObject->getConfigurations();
     }
     catch (LoginRadiusException $e) {
       \Drupal::logger('ciam')->error($e);
@@ -151,34 +141,34 @@ class CiamController extends ControllerBase {
    *
    * Handle token and validate the user.
    */
-  public function userRegisterValidate() {
-    $config = \Drupal::config('lr_ciam.settings');
-    if (isset($_GET['action_completed']) && $_GET['action_completed'] == 'register') {
+  public function userRegisterValidate() { 
+    $action = \Drupal::request()->query->get('action_completed');
+    if (isset($action) && $action == 'register') {
       drupal_set_message($this->t('Email for verification has been sent to your provided email id, check email for further instructions'));
       return $this->redirect("<front>");
     }
 
-    if (isset($_GET['action_completed']) && $_GET['action_completed'] == 'forgotpassword') {
+    if (isset($action) && $action == 'forgotpassword') {
       drupal_set_message($this->t('Password reset information sent to your provided email id, check email for further instructions'));
       return $this->redirect("<front>");
     }
 
     $request_token = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
     if (isset($_REQUEST['token'])) {
-      $apiKey = trim($config->get('api_key'));
-      $apiSecret = trim($config->get('api_secret'));
-      $userObject = new UserAPI($apiKey, $apiSecret, ['output_format' => 'json']);
+
+      $authObject = new AuthenticationAPI();
       \Drupal::service('session')->set('access_token', $request_token);
 
       // Get Userprofile form Access Token.
+ 
       try {
-        $userprofile = $userObject->getProfile($request_token);
-        $userprofile->widget_token = $request_token;
-  
-	    \Drupal::service('session')->set('user_profile_uid', $userprofile->Uid);
-	    \Drupal::service('session')->set('user_profile_fullName', $userprofile->FullName);
-		  \Drupal::service('session')->set('user_profile_phoneId', $userprofile->PhoneId);
-      } 
+        $userprofile = $authObject->getProfileByAccessToken($request_token);
+        $userprofile->widget_token = $request_token;   
+        \Drupal::service('session')->set('user_profile_uid', $userprofile->Uid);
+        \Drupal::service('session')->set('user_profile_fullName', $userprofile->FullName);
+        \Drupal::service('session')->set('user_profile_phoneId', $userprofile->PhoneId);
+    
+      }
       catch (LoginRadiusException $e) {
         \Drupal::logger('ciam')->error($e);
         drupal_set_message($e->getMessage(), 'error');
@@ -232,5 +222,4 @@ class CiamController extends ControllerBase {
       return $this->redirect('user.login');
     }
   }
-
 }

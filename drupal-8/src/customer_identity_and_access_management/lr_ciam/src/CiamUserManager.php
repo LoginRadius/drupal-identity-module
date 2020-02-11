@@ -10,7 +10,7 @@ use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Url;
 use Drupal\Component\Utility\Html;
 use LoginRadiusSDK\LoginRadiusException;
-use LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
+use LoginRadiusSDK\CustomerRegistration\Authentication\AuthenticationAPI;
 use LoginRadiusSDK\CustomerRegistration\Account\AccountAPI;
 
 /**
@@ -64,15 +64,10 @@ class CiamUserManager {
    *
    * @return mixed
    */
-  public function userDelete($user_id) {  
-    $apiSigning = $this->apirequestsigning;
-    $apiRequestSigning = FALSE;
-    if (isset($apiSigning) && $apiSigning == 'true') {
-      $apiRequestSigning = TRUE;
-    }
-    $accountObj = new AccountAPI($this->apiKey, $this->apiSecret, ['output_format' => 'json', 'api_request_signing' => $apiRequestSigning]);
+  public function userDelete($user_id) {
     try {
-      return $accountObj->delete($user_id);
+      $accountObj = new AccountAPI();
+      return $accountObj->deleteAccountByUid($user_id);
     }
     catch (LoginRadiusException $e) {
     }
@@ -114,15 +109,10 @@ class CiamUserManager {
    * Block user at CIAM.
    */
   public function lrCiamBlockUser($uid) {
-    $apiSigning = $this->apirequestsigning;
-    $apiRequestSigning = FALSE;
-    if (isset($apiSigning) && $apiSigning == 'true') {
-      $apiRequestSigning = TRUE;
-    }
-    $accountObj = new AccountAPI($this->apiKey, $this->apiSecret, ['output_format' => 'json', 'api_request_signing' => $apiRequestSigning]);
     try {
+      $accountObj = new AccountAPI();
       $data = ["IsActive" => "false"];
-      return $accountObj->update($uid, $data);
+      return $accountObj->updateAccountByUid($data, $uid);
     }
     catch (LoginRadiusException $e) {
       \Drupal::logger('ciam')->error($e);
@@ -133,15 +123,10 @@ class CiamUserManager {
    * Unblock user at CIAM.
    */
   public function lrCiamUnblockUser($uid) {
-    $apiSigning = $this->apirequestsigning;
-    $apiRequestSigning = FALSE;
-    if (isset($apiSigning) && $apiSigning == 'true') {
-      $apiRequestSigning = TRUE;
-    }
-    $accountObj = new AccountAPI($this->apiKey, $this->apiSecret, ['output_format' => 'json', 'api_request_signing' => $apiRequestSigning]);
     try {
+      $accountObj = new AccountAPI();
       $data = ["IsActive" => "true"];
-      return $accountObj->update($uid, $data);
+      return $accountObj->updateAccountByUid($data, $uid);
     }
     catch (LoginRadiusException $e) {
       \Drupal::logger('ciam')->error($e);
@@ -229,7 +214,67 @@ class CiamUserManager {
   }
 
   /**
-   * Get username.
+   * Check exist username.
+   *
+   * @param object $userprofile
+   *
+   * @return string Username of user
+   */
+  public function checkUserName($userprofile) {
+    $user_name = $this->usernameOption($userprofile);    
+    $index = 0;
+
+    while (TRUE) {
+      if (user_load_by_name($user_name)) {
+        $index++;
+        $user_name = $user_name . $index;
+      }
+      else {
+        break;
+      }
+    }
+    $data['username'] = $this->removeUnescapedChar($user_name);
+    $data['fname'] = (!empty($userprofile->FirstName) ? $userprofile->FirstName : '');
+    $data['lname'] = (!empty($userprofile->LastName) ? $userprofile->LastName : '');
+
+    if (empty($data['fname'])) {
+      $data['fname'] = $this->getDisplayName($userprofile);
+    }
+
+    if (empty($data['lname'])) {
+      $data['lname'] = $this->getDisplayName($userprofile);
+    }
+    return $data;
+  }
+
+    /**
+   * Get username from user profile data.
+   *
+   * @param object $userprofile
+   *   User profile information.
+   *
+   * @return string Username of user
+   */
+  public function usernameOption($userprofile) {
+    if (isset($userprofile->Provider) && $userprofile->Provider == 'Email' && isset($userprofile->UserName) && $userprofile->UserName != '') {
+      $username = $userprofile->UserName;   
+    }
+    elseif (!empty($userprofile->FirstName) && !empty($userprofile->LastName)) {
+      $username = $userprofile->FirstName . ' ' . $userprofile->LastName;
+    }
+    elseif (!empty($userprofile->Email_value) && (isset($userprofile->Random_email_generated) && !$userprofile->Random_email_generated)) {
+      $user_name = explode('@', $userprofile->Email_value);
+      $username = $user_name[0];
+    }
+    else {
+      $username = $this->getDisplayName($userprofile);
+    }
+    return $username;
+  }
+
+  
+  /**
+   * Get username
    */
   public function getDisplayName($userprofile) {
     if (!empty($userprofile->FullName)) {
@@ -247,57 +292,28 @@ class CiamUserManager {
         "+",
       ], "", $userprofile->PhoneId);
     }
+    elseif (!empty($userprofile->Email_value)) {
+      $user_name = explode('@', $userprofile->Email_value);
+      $username = $user_name[0];
+    }
     else {
       $username = $userprofile->ID;
     }
     return $username;
   }
 
-  /**
-   * Get username from user profile data.
-   *
-   * @param object $userprofile
-   *   User profile information.
-   *
-   * @return string Username of user
-   */
-  public function usernameOption($userprofile) {
-    if (isset($userprofile->Provider) && $userprofile->Provider == 'Email' && isset($userprofile->UserName) && $userprofile->UserName != '') {
-      $username = $userprofile->UserName;
-    }
-    elseif (!empty($userprofile->FirstName) && !empty($userprofile->LastName)) {
-      $username = $userprofile->FirstName . ' ' . $userprofile->LastName;
-    }
-    elseif (!empty($userprofile->Email_value)) {
-      $user_name = explode('@', $userprofile->Email_value);
-      $username = $user_name[0];
-    }
-    else {
-      $username = $this->getDisplayName($userprofile);
-    }
-    return $username;
-  }
 
   /**
-   * Check exist username.
+   * Check exist username on update profile.
    *
    * @param object $userprofile
    *
    * @return string Username of user
    */
-  public function checkExistUsername($userprofile) {
-    $user_name = $this->usernameOption($userprofile);
-    $index = 0;
 
-    while (TRUE) {
-      if (user_load_by_name($user_name)) {
-        $index++;
-        $user_name = $user_name . $index;
-      }
-      else {
-        break;
-      }
-    }
+  public function getUserNameOnUpdateProfile($userprofile) {
+    $user_name = $this->usernameOption($userprofile);    
+  
     $data['username'] = $this->removeUnescapedChar($user_name);
     $data['fname'] = (!empty($userprofile->FirstName) ? $userprofile->FirstName : '');
     $data['lname'] = (!empty($userprofile->LastName) ? $userprofile->LastName : '');
@@ -358,11 +374,11 @@ class CiamUserManager {
         }
 
         $user_manager = \Drupal::service('lr_ciam.user_manager');
-        $dbuname = $user_manager->lrCiamGetCiamUname($new_user->id());
+        $db_uname = $user_manager->lrCiamGetCiamUname($new_user->id());
 
-        if (isset($dbuname) && $dbuname != '') {
-          if (isset($user_name) && $user_name != '' && $dbuname != $user_name) {
-            try {
+        if (isset($db_uname) && $db_uname != '') {
+          if (isset($user_name) && $user_name != '' && $db_uname != $user_name) {
+              try {
               $this->connection->update('users_field_data')
                 ->fields(['name' => $user_name])
                 ->condition('uid', $new_user->id())
@@ -386,11 +402,21 @@ class CiamUserManager {
       return $this->redirectUser($url);
     }
     else {
-        drupal_set_message(t('You are either blocked, or have not activated your account. Please check your email.'), 'error');
-      return new RedirectResponse(Url::fromRoute('<front>')->toString());
+      $sso_config = \Drupal::config('lr_sso.settings');
+      drupal_set_message(t('You are either blocked, or have not activated your account. Please check your email.'), 'error');
+      if ($sso_config->get('sso_enable') == 1) {
+        $domain = Url::fromRoute('<front>')->setAbsolute()->toString();
+        $redirectUrl = $domain . 'user/logout';
+        $response = new TrustedRedirectResponse($redirectUrl);
+        return $response->send();
+      }else {
+        $domain = Url::fromRoute('<front>')->setAbsolute()->toString();
+        $redirectUrl = $domain . 'user/login';
+        $response = new TrustedRedirectResponse($redirectUrl);
+        return $response->send();
+      }
     }
-  }
-
+}
   /**
    * Check provider id exist or not.
    *
@@ -525,10 +551,10 @@ class CiamUserManager {
         if ($user_register != 'visitors_admin_approval' && ($user_register == 'visitors')) {
           $newUserStatus = 1;
         }
-
-        $data = $this->checkExistUsername($userprofile);
+        $data = $this->checkUserName($userprofile);
         // Set up the user fields.
         $password = user_password(32);
+
         $fields = [
           'name' => ($this->moduleconfig->get('ciam_save_name_in_db') == 'false') ? $userprofile->ID : $data['username'],
           'mail' => $userprofile->Email_value,
@@ -603,32 +629,7 @@ class CiamUserManager {
     }
   }
 
-  /**
-   * Get random email.
-   *
-   * @param string $host
-   * @param string $id
-   *
-   * @return mixed
-   */
-  public function getRandomEmail($host, $id) {
-    $email_name = substr(str_replace([
-      "-",
-      "/",
-      ".",
-      "+",
-    ], "", $id), -13);
-    $email = $email_name . '@' . $host . '.com';
-    $account = user_load_by_mail($email);
-
-    if ($account) {
-      $id = $email_name . rand();
-      $email = $this->getRandomEmail($id, $host);
-    }
-    return $email;
-  }
-
-  /**
+ /**
    * Check existing user.
    *
    * @param $userprofile
@@ -646,12 +647,14 @@ class CiamUserManager {
       }
     }
 
-    if (!$drupal_user) {    
-     if (empty($userprofile->Email_value) || $this->moduleconfig->get('ciam_save_mail_in_db') == 'false') {
-        $phoneid = isset($userprofile->PhoneId) ? $userprofile->PhoneId : $userprofile->ID;
-        $userprofile->Email_value = $this->getRandomEmail($_SERVER['HTTP_HOST'], $phoneid); 
+    if (!$drupal_user) {
+      if (empty($userprofile->Email_value) || $this->moduleconfig->get('ciam_save_mail_in_db') == 'false') {
+          $userprofile->Email_value = $this->randomEmailGeneration(); 
+          $userprofile->Random_email_generated = true;               
+      } else{
+          $userprofile->Random_email_generated = false;
       }
-      if (!empty($userprofile->Email_value)) {      
+      if (!empty($userprofile->Email_value)) {  
         $drupal_user = $this->getUserByEmail($userprofile->Email_value);
         if ($drupal_user) {
           $this->insertSocialData($drupal_user->id(), $userprofile->ID, $userprofile->Provider);
@@ -662,27 +665,52 @@ class CiamUserManager {
     if ($drupal_user) {
       return $this->provideLogin($drupal_user, $userprofile, TRUE);
     }
-    else {  
+    else {
       return $this->createUser($userprofile);
     }
   }
 
   /**
+   * Get random email.
+   *
+  */
+  public function randomEmailGeneration()
+  {
+     $randomNo = $this->getRandomNumber(4);
+     $base_root = Url::fromRoute('<front>')->setAbsolute()->toString();
+     $site_domain = str_replace(array("http://","https://"), "", $base_root);
+     $email = $randomNo . '@' . $site_domain.'.com';
+     $variable = substr($email, 0, strpos($email, ".com"));
+     $result = explode('.com', $variable);
+     $email = $result[0].'.com';
+     return $email;
+  }
+
+   /*
+   * function to generate a random string
+   */
+  function getRandomNumber($n) {            
+      $characters = 'abcdefghijklmnopqrstuvwxyz'.time(); 
+      $randomString = ''; 
+  
+      for ($i = 0; $i < $n; $i++) { 
+          $index = rand(0, strlen($characters) - 1); 
+          $randomString .= $characters[$index]; 
+      }         
+      return $randomString. time(); 
+  } 
+
+  /**
    * Create user.
    *
-   * @param $data
+   * @param $payload
    *
    * @return array
    */
-  public function lrCiamCreateUser($data) {
-    try {      
-      $apiSigning = $this->apirequestsigning;
-      $apiRequestSigning = FALSE;
-      if (isset($apiSigning) && $apiSigning == 'true') {
-        $apiRequestSigning = TRUE;
-      }
-      $accountObj = new AccountAPI($this->apiKey, $this->apiSecret, ['output_format' => 'json', 'api_request_signing' => $apiRequestSigning]);
-      return $accountObj->create($data);
+  public function lrCiamCreateUser($payload) {
+    try {
+      $accountObj = new AccountAPI();
+      return $accountObj->createAccount($payload);
     }
     catch (LoginRadiusException $e) {    
       if (isset($e->getErrorResponse()->Description) && $e->getErrorResponse()->Description) {
@@ -700,14 +728,9 @@ class CiamUserManager {
    * @return mixed
    */
   public function lrCiamSetPassword($uid, $password) {
-    try {     
-      $apiSigning = $this->apirequestsigning;
-      $apiRequestSigning = FALSE;
-      if (isset($apiSigning) && $apiSigning == 'true') {
-        $apiRequestSigning = TRUE;
-      }
-      $accountObj = new AccountAPI($this->apiKey, $this->apiSecret, ['output_format' => 'json', 'api_request_signing' => $apiRequestSigning]);
-      $accountObj->setPassword($uid, $password);
+    try {
+      $accountObj = new AccountAPI();
+      $accountObj->setAccountPasswordByUid($password, $uid);
     }
     catch (LoginRadiusException $e) {
     }
@@ -723,8 +746,8 @@ class CiamUserManager {
    */
   public function lrCiamForgotPassword($email, $reset_password_url) {
     try {
-      $userObj = new UserAPI($this->apiKey, $this->apiSecret, ['output_format' => 'json']);
-      return $userObj->forgotPassword($email, $reset_password_url);
+      $authObj = new AuthenticationAPI();
+      return $authObj->forgotPassword($email, $reset_password_url);
     }
     catch (LoginRadiusException $e) {
       if (isset($e->getErrorResponse()->Description) && $e->getErrorResponse()->Description) {
@@ -744,6 +767,7 @@ class CiamUserManager {
   public function handleUserCallback($userprofile) {
     return new RedirectResponse(Url::fromRoute('user.page')->toString());
   }
+  
 
   /**
    * Convert field data.
@@ -772,9 +796,13 @@ class CiamUserManager {
         'label' => t('Long text'),
         'callback' => 'fieldFieldConvertText',
       ],
-      'list_text' => [
-        'label' => t('List (\'text\')'),
+      'list_string' => [
+        'label' => t('List String'),
         'callback' => 'fieldFieldConvertList',
+      ],
+      'boolean' => [
+        'label' => t('Boolean'),
+        'callback' => 'fieldFieldConvertBool',
       ],
       'datetime' => [
         'label' => t('Date'),
@@ -812,19 +840,64 @@ class CiamUserManager {
   public function fieldFieldConvertText($property_name, $userprofile, $field, $instance) {
     $value = NULL;
     if (!empty($property_name)) {
+  
       if (isset($userprofile->$property_name)) {
-        if (is_string($userprofile->$property_name)) {
+        if (is_string($userprofile->$property_name)) {   
           $value = $userprofile->$property_name;
         }
-        elseif (is_object($userprofile->$property_name)) {
-          $object = $userprofile->$property_name;
-          if (isset($object->name)) {
-            $value = $object->name;
-          }
+        elseif (is_object($userprofile->$property_name)) {  
+          $value = $userprofile->$property_name;
+          if (isset($value->Name)) {           
+            $value = $value->Name;      
+          }       
+        }elseif (is_bool($userprofile->$property_name)) {  
+          $value = $userprofile->$property_name;    
+          $value ? ['value' => (isset($value) && $value == 'true') ? true : '0'] : NULL;      
         }
       }
+
+
       return $value ? ['value' => $value] : NULL;
     }
+  }
+
+
+   /**
+   * Convert bool data.
+   *
+   * @param string $property_name
+   *   User profile property name through which data mapped.
+   * @param object $userprofile
+   *   User profile data that you got from traditional/social network.
+   * @param string $field
+   *   User field name stored in database.
+   * @param string $instance
+   *   Field instance.
+   *
+   * @return array
+   *   Contain value of field map data
+   */
+
+  public function fieldFieldConvertBool($property_name, $userprofile, $field, $instance) {
+    $value = NULL;
+    $property_name =  explode("_", $property_name);  
+
+      if(is_array($property_name)){
+       if(isset($property_name[0]) && $property_name[0] == 'cf') {
+          $name = $property_name[1];
+          $value = $userprofile->CustomFields->$name;       
+        }
+      }
+      elseif (is_string($userprofile->$property_name)) {
+              $value = $userprofile->$property_name;
+      }
+      elseif (is_object($userprofile->$property_name)) {
+            $object = $userprofile->$property_name;
+            if (isset($object->name)) {
+              $value = $object->name;
+            }
+      }
+    return $value ? ['value' => (isset($value) && $value == 'true') ? true : '0'] : NULL;
   }
 
   /**
@@ -843,15 +916,17 @@ class CiamUserManager {
    *   Contain value of field map data
    */
   public function fieldFieldConvertList($property_name, $userprofile, $field, $instance) {
+
     if (!empty($property_name)) {
-      if (!isset($userprofile->$property_name) && !is_string($userprofile->$property_name)) {
+      if (!isset($userprofile->$property_name) && !is_string($userprofile->$property_name)) { 
         return;
       }
-
-      $options = list_allowed_values($field);
+   
+      $options = options_allowed_values($field); 
       $best_match = 0.0;
       $match_sl = strtolower($userprofile->$property_name);
 
+ 
       foreach ($options as $key => $option) {
         $option = trim($option);
         $match_option = strtolower($option);
@@ -929,6 +1004,20 @@ class CiamUserManager {
     $this->fieldCreateUser(NULL, $drupal_user, $userprofile, TRUE);
   }
 
+   /**
+   * Field update user object.
+   *
+   */
+  public function fieldUpdateUserObject($uid, $userprofile) {
+      if ($uid) {
+        $drupal_user = User::load($uid);
+      }
+   
+      if (isset($drupal_user) && $drupal_user->id()) {
+        $this->fieldUpdateUser($uid, $drupal_user, $drupal_user, $userprofile, FALSE);
+      }
+  }
+
   /**
    * Field create user object.
    *
@@ -960,8 +1049,9 @@ class CiamUserManager {
    *   Contain value of user field map data
    */
   public function fieldCreateUser($drupal_user, &$drupal_user_ref, $userprofile, $register_form = FALSE) {
-    $field_map = $this->moduleconfig->get('user_fields');
+    $field_map = $this->moduleconfig->get('user_fields');  
     $field_convert_info = $this->fieldFieldConvertInfo();
+
     $entity_type = 'user';
     $instances = [];
     foreach (\Drupal::service('entity_field.manager')
@@ -973,8 +1063,8 @@ class CiamUserManager {
         $instances[$field_name]['label'] = $field_definition->getLabel();
       }
     }
+  
     foreach ($instances as $field_name => $instance) {
-
       $field = FieldStorageConfig::loadByName($entity_type, $field_name);
 
       if (isset($field_map[$field_name]) && isset($field_convert_info[$field->getType()]['callback'])) {
@@ -982,11 +1072,74 @@ class CiamUserManager {
         $field_property_name = $field_map[$field_name];
 
         if ($value = $this->$callback($field_property_name, $userprofile, $field, $instance)) {
-          if ($register_form) {
+     
+          if (FALSE) {      
+            $drupal_user_ref[$field_name]['widget']['0']['value']['#default_value'] = isset($value['value']) ? $value['value'] : $value;
+          }
+          else {            
+            $drupal_user->set($field_name, $value);
+          }
+        }
+      }
+    }
+  }
+
+   /**
+   * Field update user.
+   *
+   * @param string $uid
+   *   User id.
+   * @param string $drupal_user
+   *   User data.
+   * @param string $drupal_user_ref
+   *   user data reference.
+   * @param object $userprofile
+   *   User profile data that you got from traditional/social network.   *.
+   * @param $register_form
+   *   Passed boolean true or false
+   *
+   * @return array
+   *   Contain value of user field map data
+   */
+
+  public function fieldUpdateUser($uid, $drupal_user, &$drupal_user_ref, $userprofile, $register_form = FALSE) {
+    $field_map = $this->moduleconfig->get('user_fields');  
+    $field_convert_info = $this->fieldFieldConvertInfo();
+
+    $entity_type = 'user';
+    $instances = [];
+    foreach (\Drupal::service('entity_field.manager')
+      ->getFieldDefinitions($entity_type, 'user') as $field_name => $field_definition) {
+      $user_bundle = $field_definition->getTargetBundle();
+
+      if (!empty($user_bundle)) {
+        $instances[$field_name]['type'] = $field_definition->getType();
+        $instances[$field_name]['label'] = $field_definition->getLabel();
+      }
+    }
+  
+    foreach ($instances as $field_name => $instance) {
+      $field = FieldStorageConfig::loadByName($entity_type, $field_name);
+
+      if (isset($field_map[$field_name]) && isset($field_convert_info[$field->getType()]['callback'])) {
+        $callback = $field_convert_info[$field->getType()]['callback'];
+        $field_property_name = $field_map[$field_name];
+
+        if ($value = $this->$callback($field_property_name, $userprofile, $field, $instance)) {
+     
+          if ($register_form) {      
             $drupal_user_ref[$field_name]['widget']['0']['value']['#default_value'] = isset($value['value']) ? $value['value'] : $value;
           }
           else {
-            $drupal_user->set($field_name, $value);
+      
+            try {
+              $this->connection->update('user__'.$field_name)
+                ->fields([$field_name.'_value' => $value['value']])
+                ->condition('entity_id', $uid)
+                ->execute();
+            }
+            catch (Exception $e) {
+            }
           }
         }
       }

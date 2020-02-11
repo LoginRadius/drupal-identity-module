@@ -38,7 +38,12 @@ drupal.social_interface:
 drupal.ciam_custom:
   version: VERSION
   js:  
-      js/ciam_custom.js: {}    
+      js/ciam_custom.js: {} 
+      
+drupal.ciam_admin:
+  version: VERSION
+  js:  
+      js/ciam_admin.js: {}  
 
 drupal.ciam_core:
   header: true

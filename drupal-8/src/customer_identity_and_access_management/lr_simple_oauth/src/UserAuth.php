@@ -5,7 +5,7 @@ namespace Drupal\lr_simple_oauth;
 use Drupal\user\UserAuthInterface;
 use Drupal\user\Entity\User;
 use LoginRadiusSDK\LoginRadiusException;
-use LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
+use LoginRadiusSDK\CustomerRegistration\Authentication\AuthenticationAPI;
 
 /**
  * Validates user authentication credentials via LoginRadius.
@@ -38,8 +38,8 @@ class UserAuth implements UserAuthInterface {
 
     // Get a user profile using email and password.
     try {
-      $userObj = new UserAPI($this->apiKey, $this->apiSecret, ['output_format' => 'json']);
-      $result = $userObj->authLoginByEmail($data);
+      $authObj = new AuthenticationAPI();
+      $result = $authObj->loginByEmail($data);
     }
     catch (LoginRadiusException $e) {
       return FALSE;

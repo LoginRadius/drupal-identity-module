@@ -18,7 +18,7 @@ class RouteSubscriber extends RouteSubscriberBase {
       $route->setPath('admin/config/people/ciam');
 
       $defaults = $route->getDefaults();
-      $defaults['_title'] = "CIAM Loginradius";
+      $defaults['_title'] = "LoginRadius";
 
       $route->setDefaults($defaults);
     }
