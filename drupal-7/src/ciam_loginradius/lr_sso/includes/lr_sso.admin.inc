@@ -13,15 +13,18 @@ module_load_include('inc', 'lr_ciam', 'includes/lr_ciam.admin');
  * @return array A renderable form array for the respective request.
  */
 function lr_sso_settings_form($form, &$form_state) {
+  drupal_add_css(drupal_get_path('module', 'lr_ciam') . '/css/lr_ciam.admin.min.css');
   $sso_group = 'sso';
   $form[$sso_group] = array(
     '#type' => 'fieldset',
     '#title' => t('Single Sign On Settings'),
-    '#group' => 'settings',
+    '#id' => 'setup',
+    '#collapsible' => TRUE,
   );
+
   $form[$sso_group]['lr_sso_enable'] = array(
     '#type' => 'radios',
-    '#title' => t('Do you want to enable Single sign on (SSO)?'),
+    '#title' => t('Do you want to enable Single Sign On (SSO)<a title="This feature allows Single Sign On to be enabled on different sites with common LoginRadius app." class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a>'),
     '#default_value' => variable_get('lr_sso_enable', 0),
     '#options' => array(
       1 => t('Yes'),

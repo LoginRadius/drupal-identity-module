@@ -1,10 +1,10 @@
 name = SSO (Single Sign ON)
 description = Enable a single login system for multiple websites: users only need to log in once to get access to all of your web properties.
 dependencies[] = lr_ciam
-package = CIAM
+package = LoginRadius
 core = 7.x
 configure = admin/config/people/ciam/sso
-version = "3.2"
+version = "4.0"
 project = "ciam_loginradius"
 
 

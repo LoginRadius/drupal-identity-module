@@ -18,13 +18,13 @@ if (!empty($ciam_api_key)):
       ?>
        
         var isClear = 1;
-          var formIntval;
+        var formIntval;
         setTimeout(show_birthdate_date_block, 1000);
           formIntval = setInterval(function(){ jQuery('#lr-loading').hide();
-             if (isClear > 0) {
+            if (isClear > 0) {
                  clearInterval(formIntval);
-             }
-         }, 1000);
+            }
+        }, 1000);
     });
   </script>
 

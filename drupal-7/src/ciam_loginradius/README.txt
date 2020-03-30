@@ -6,18 +6,18 @@ Fully managed registration service including Email Registration, Social Login, p
 
 
 -- Description --
-<b>Note:This is a paid subscription Module offered by <a href="http://www.loginradius.com/">LoginRadius</a>.</b>
+<b>Note:This is a paid subscription Module offered by <a href="https://www.loginradius.com/">LoginRadius</a>.</b>
 
 This Module enables CIAM LoginRadius for your Drupal website. Along with that it also captures users’ profile data, with their permission of course, and automatically creates a profile. 
 
 -- Product Overview --
-- 1. <a href="http://www.loginradius.com/customer-registration-service">User Registration</a> = As a fully managed Customer Registration Service, LoginRadius takes care of the entire authentication process, including everything from password resets and profile creation, to email verification and account linking—saving you significant resources.
-- 2. <a href="http://www.loginradius.com">Hosted Page</a> = LoginRadius Hosted Page is a feature for login and registration through the LoginRadius hosted pages.
-- 3. <a href="http://www.loginradius.com/single-sign-on">Single sign-on</a> = Single Sign-On creates a single authentication system for multiple web properties allowing users to navigate websites with a single account.
+- 1. <a href="https://www.loginradius.com/registration-and-authentication">User Registration</a> = As a fully managed Customer Registration Service, LoginRadius takes care of the entire authentication process, including everything from password resets and profile creation, to email verification and account linking—saving you significant resources.
+- 2. <a href="https://www.loginradius.com/identity-experience-framework">Identity Experience Framework</a> = LoginRadius Identity Experience Framework page is a feature for login and registration through the LoginRadius Identity Experience Framework pages.
+- 3. <a href="https://www.loginradius.com/single-sign-on">Single sign-on</a> = Single Sign-On creates a single authentication system for multiple web properties allowing users to navigate websites with a single account.
 
-This Module runs on <a href="http://www.loginradius.com/">LoginRadius</a> SaaS (Software-as-a-Service). To see our packages please visit <a href="http://www.loginradius.com/pricing">Pricing section</a>.
+This Module runs on <a href="https://www.loginradius.com/">LoginRadius</a> SaaS (Software-as-a-Service). To see our packages please visit <a href="http://www.loginradius.com/pricing">Pricing section</a>.
 
-If you have any questions or would like a product demo please <a href="http://social.loginradius.com/contact-sales">contact us here.</a>
+If you have any questions or would like a product demo please <a href="https://www.loginradius.com/contact-sales">contact us here.</a>
 
 -- Features of this Module --
 * A clean, user friendly Drupal admin U/I with tab structure with various options for User Registration, social login and single sign on
@@ -49,8 +49,17 @@ Please share your comments and feedback at feedback@loginradius.com
 
  -- Changelog --
 
+ -- 7.x-4.0 --
+1. Compatible with our latest PHP SDK 10.0.0
+2. Added custom domain option for the IEF page
+3. Added registration form schema option.
+4. Standardize the naming convention of labels and text of the plugin.
+5. Separate file for all notification messages for easy maintenance.
+6. Standardize the debug log logging method.
+7. Replaced Hosted page module name with Identity Experience Framework Module.
+
  -- 7.x-3.2 --
- 1. Capitalised HTTP method names
+1. Capitalised HTTP method names
 
  -- 7.x-3.1 --
 1. Implemented Cloud API Functionality

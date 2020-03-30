@@ -1,0 +1,10 @@
+name = 	Identity Experience Framework
+description = Allow users to sign up/login/forgot password etc on Identity Experience Framework.
+dependencies[] = lr_ciam
+package = LoginRadius
+core = 7.x
+configure = admin/config/people/ciam/ief
+version = "4.0"
+project = "ciam_loginradius"
+
+

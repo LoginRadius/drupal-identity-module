@@ -10,31 +10,28 @@
 module_load_include('inc', 'lr_ciam', 'includes/lr_ciam.functions');
 module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Utility/Functions');
 module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/LoginRadiusException');
-module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Clients/IHttpClient');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Clients/IHttpClientInterface');
 module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Clients/DefaultHttpClient');
-module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/CustomerRegistration/Authentication/UserAPI');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/CustomerRegistration/Authentication/AuthenticationAPI');
 
 
 use \LoginRadiusSDK\Utility\Functions;
 use \LoginRadiusSDK\LoginRadiusException;
-use \LoginRadiusSDK\Clients\IHttpClient;
+use \LoginRadiusSDK\Clients\IHttpClientInterface;
 use \LoginRadiusSDK\Clients\DefaultHttpClient;
-use \LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
+use \LoginRadiusSDK\CustomerRegistration\Authentication\AuthenticationAPI;
 
-module_load_include('php', 'lr_ciam', 'customhttpclient');
-global $apiClient_class;
-$apiClient_class = 'CustomHttpClient';
 
 function lr_sso_menu() {
   $file_path = drupal_get_path('module', 'lr_sso');
   $items['admin/config/people/ciam/sso'] = array(
-    'title' => 'SSO',
+    'title' => 'Single Sign On',
     'description' => 'Single Sign On',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('lr_sso_settings_form'),
     'access arguments' => array('administer sso'),
     'type' => MENU_LOCAL_TASK,
-    'weight' => 7,
+    'weight' => 6,
     'file path' => $file_path,
     'file' => 'includes/lr_sso.admin.inc',
   );
@@ -71,7 +68,7 @@ function lr_sso_preprocess_page(&$vars, $hook) {
       $GLOBALS['conf']['cache'] = FALSE;
     }
   
-    if (variable_get('lr_user_logout') == 1) {
+    if (variable_get('lr_user_logout') == 1) {      
       variable_del('lr_user_logout');
       drupal_add_js('
         jQuery(document).ready(function () {   
@@ -178,6 +175,14 @@ function lr_sso_user_logout($account) {
   }
 }
 
+function lr_sso_clear_sso_token($ssoEnable) {
+  
+  if ($ssoEnable == '1') {
+    
+    variable_set('lr_user_logout', 1);
+  }
+}
+
 /**
  * Check valid token retrieved to perform sso.
  *
@@ -185,19 +190,14 @@ function lr_sso_user_logout($account) {
  * @return string
  */
 function lr_sso_check_lrtoken_valid($token) {
-  if (!empty($token)) {  
-
-    $apiKey = trim(variable_get('lr_ciam_apikey'));
-    $secret = trim(variable_get('lr_ciam_apisecret'));
-    $userObject = new UserAPI($apiKey, $secret, array('output_format' => 'json'));
+  if (!empty($token)) {
+    $authObject = new AuthenticationAPI();
     try {
-        $userprofile = $userObject->getProfile($token);        
+        $userprofile = $authObject->getProfileByAccessToken($token);        
     }
     catch (LoginRadiusException $e) {
          variable_set('lr_user_logout', 1);
-    }    
-//    if (!empty($userprofile)) {
-//      return $token;
-//    }    
+    }  
+
   }
 }

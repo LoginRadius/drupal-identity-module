@@ -32,7 +32,6 @@
 .form-item .form-type-radio.form-item-lr-social-login-registerpage-position,
 .form-item.form-type-radio.form-item-lr-social-login-attach-login-form,
 .form-item.form-type-radio.form-item-lr-social-login-commenting-enable,
-.form-item.form-type-radio.form-item-lr-social-login-debug-mode,
 .form-item.form-type-radio.form-item-lr-social-login-enable,
 .form-item.form-type-radio.form-item-lr-social-login-enable-user-registration,
 .form-item.form-type-radio.form-item-lr-social-login-interface-size,
@@ -71,4 +70,20 @@
 .lrTooltipColor
 {
    color:#3CF;
+}
+div#ciam_show_button {
+    left: calc(424.8px - 41px);
+    padding: 0px 8px;
+    background: #29d;
+    width: 40px;
+    height: 21.11px;
+    color: #fff;
+    position: absolute;
+    text-align: center;
+    cursor: pointer;
+    margin-top: -40px;
+}
+form#lr-ciam-activation-settings input[type=text],
+form#lr-ciam-activation-settings input[type=password]{
+width: 418.8px;
 }

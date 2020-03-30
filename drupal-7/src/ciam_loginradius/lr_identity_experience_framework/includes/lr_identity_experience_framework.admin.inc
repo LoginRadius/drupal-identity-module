@@ -12,25 +12,26 @@ module_load_include('inc', 'lr_ciam', 'includes/lr_ciam.admin');
  * @param array $form_state A keyed array containing the current state of the form.
  * @return array A renderable form array for the respective request.
  */
-function lr_hosted_settings_form($form, &$form_state) {
-  $hosted_group = 'hosted';
-  $form[$hosted_group] = array(
+function lr_ief_settings_form($form, &$form_state) {
+  drupal_add_css(drupal_get_path('module', 'lr_ciam') . '/css/lr_ciam.admin.min.css');
+  $ief_group = 'ief';
+  $form[$ief_group] = array(
     '#type' => 'fieldset',
-    '#title' => t('Hosted Page Settings'),
-    '#group' => 'settings',
+    '#title' => t('Identity Experience Framework Settings'),
+    '#id' => 'setup',
+    '#collapsible' => TRUE,
   );
-  $form[$hosted_group]['lr_hosted_page_enable'] = array(
+  $form[$ief_group]['lr_ief_enable'] = array(
     '#type' => 'radios',
-    '#title' => t('Do you want to enable hosted page <a title="Choosing yes will redirect users to signin and signup on hosted page"  style="text-decoration:none; cursor:pointer">(<span style="color:#3CF;">?</span>)</a>'),
-    '#default_value' => variable_get('lr_hosted_page_enable', 0),
+    '#title' => t('Enable Identity Experience Framework<a title="From here, Identity Experience Framework functionality can be enabled. It is recommended that SSO should be enabled with the Identity Experience Framework." class="lrTooltip"> (<span class="lrTooltipColor">?</span>)</a>'),
+    '#default_value' => variable_get('lr_ief_enable', 0),
     '#options' => array(
       1 => t('Yes'),
       0 => t('No'),
     )
-  );
-  
+  );  
 
-  $form['#submit'][] = 'lr_hosted_settings_form_submit';
+  $form['#submit'][] = 'lr_ief_form_submit';
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
@@ -40,13 +41,13 @@ function lr_hosted_settings_form($form, &$form_state) {
 }
 
 /**
- * Submit sso settings.
+ * Submit ief settings.
  *
  * @param array $form Nested array of form elements that comprise the form.
  * @param array $form_state A keyed array containing the current state of the form
  * @return bool
  */
-function lr_hosted_settings_form_submit($form, &$form_state) {
+function lr_ief_form_submit($form, &$form_state) {
   if (!lr_ciam_save_settings($form_state)) {
     return FALSE;
   }

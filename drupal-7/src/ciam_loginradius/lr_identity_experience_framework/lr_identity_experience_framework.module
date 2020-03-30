@@ -1,0 +1,98 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ * Responed to url handling for lr_sso_menu module.
+ *
+ * @return array An array of menu items
+ */
+
+module_load_include('inc', 'lr_ciam', 'includes/lr_ciam.functions');
+
+function lr_identity_experience_framework_menu() {
+  $file_path = drupal_get_path('module', 'lr_identity_experience_framework');
+  $items['admin/config/people/ciam/ief'] = array(
+    'title' => 'Identity Experience Framework',
+    'description' => 'Identity experience framework system',  
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('lr_ief_settings_form'),
+    'access arguments' => array('administer ief'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 7,
+    'file path' => $file_path,
+    'file' => 'includes/lr_identity_experience_framework.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ *
+ * Responed to Define user permissions.
+ *
+ * @return array An array of permission settings
+ */
+function lr_identity_experience_framework_permission() {
+  return array(
+    'administer ief' => array(
+      'title' => t('Administer ief settings'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+function lr_identity_experience_framework_preprocess_page(&$variables) {
+  global $user;
+  $current_path = current_path();
+  $node = arg(1);
+  $destination = array('destination' => "node/$node#comment-form");
+ 
+  $current_alias = drupal_get_path_alias($current_path);
+  $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https://' : 'http://';
+  $homeDomain = $_SERVER['HTTP_HOST'].$GLOBALS['base_path'];
+  $fulldomainname = $protocol.$homeDomain; 
+
+  $enableIEF = variable_get('lr_ief_enable');
+  $site_name = variable_get('lr_ciam_site_name');
+  $custom_hub_domain = variable_get('lr_ciam_custom_hub_domain');
+  if((isset($enableIEF) && $enableIEF == '1') && (isset($site_name) && $site_name != '')) {
+  if (!user_is_logged_in()) {
+
+    if (variable_get('lr_ief_logout') == 1) {
+        variable_del('lr_ief_logout');       
+        drupal_goto('https://'.variable_get('lr_ciam_site_name').'.hub.loginradius.com/auth.aspx?action=logout&return_url='.$fulldomainname);
+      } else if(($current_alias == 'user/login') && (isset($_GET['destination']) && $_GET['destination'] == $destination['destination']) || ($current_alias == 'user/login') || ($current_alias == 'user')){
+        if(isset($custom_hub_domain) && $custom_hub_domain !== '') {
+          drupal_goto('https://' . $custom_hub_domain . '/auth.aspx?action=login&return_url='.urldecode(lr_ciam_get_callback_url()));
+        } else {
+          drupal_goto('https://'.variable_get('lr_ciam_site_name').'.hub.loginradius.com/auth.aspx?action=login&return_url='.urldecode(lr_ciam_get_callback_url()));
+        }     
+      }
+      else if(($current_alias == 'user/register') && (isset($_GET['destination']) && $_GET['destination'] == $destination['destination']) || ($current_alias == 'user/register')){
+        if(isset($custom_hub_domain) && $custom_hub_domain !== '') {
+          drupal_goto('https://' . $custom_hub_domain . '/auth.aspx?action=register&return_url='.urldecode(lr_ciam_get_callback_url()));
+        } else {
+          drupal_goto('https://'.variable_get('lr_ciam_site_name').'.hub.loginradius.com/auth.aspx?action=register&return_url='.urldecode(lr_ciam_get_callback_url()));
+        }       
+      }
+      else if($current_alias == 'user/password') {
+        if(isset($custom_hub_domain) && $custom_hub_domain !== '') {
+          drupal_goto('https://' . $custom_hub_domain . '/auth.aspx?action=forgotpassword&return_url='.urldecode(lr_ciam_get_callback_url()));
+        } else {
+          drupal_goto('https://'.variable_get('lr_ciam_site_name').'.hub.loginradius.com/auth.aspx?action=forgotpassword&return_url='.urldecode(lr_ciam_get_callback_url()));
+        }
+      }
+    }
+  }
+}
+
+/**
+ * When user logout the set variable.
+ *
+ * @param $account
+ */
+function lr_identity_experience_framework_user_logout($account) { 
+    if(isset($_GET['notlogged']) && $_GET['notlogged'] != '1') {
+    variable_set('lr_ief_logout', 1); 
+    }
+}

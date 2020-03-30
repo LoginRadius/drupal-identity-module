@@ -1,0 +1,6 @@
+.field-type-text,
+.field-type-list-text,
+.field-type-list-boolean
+{
+  display:none !important;
+}
