@@ -30,6 +30,9 @@ further information.
 
 ## CHANGE LOG
 
+###  8.x-4.1
+  *  Added option - Do you want to delete the customer profile from the LoginRadius database on account delete in Drupal.
+  
 ###  8.x-4.0
   *  Compatible with our latest PHP SDK 10.0.0.
   *  Added custom domain option for the IEF page.

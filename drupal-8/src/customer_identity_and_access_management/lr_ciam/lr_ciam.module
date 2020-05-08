@@ -1230,10 +1230,13 @@ function lr_ciam_entity_base_field_info_alter(&$fields, EntityTypeInterface $ent
  * @param object $account
  */
 function lr_ciam_user_predelete($account) {
+  $config = \Drupal::config('lr_ciam.settings');
+  $ciam_delete_lr_useraccount = $config->get('ciam_delete_lr_useraccount');
   $user_manager = \Drupal::service('lr_ciam.user_manager');
   $ciam_uid = $user_manager->lrCiamGetCiamUid($account->id());
-
-  $user_manager->userDelete($ciam_uid);
+  if($ciam_delete_lr_useraccount=='true'){
+    $user_manager->userDelete($ciam_uid);
+   }
   $user_manager->deleteMapUser($account->id());
 }
 
@@ -1278,7 +1281,7 @@ function lr_ciam_add_extra_config_settings() {
  */
 function lr_ciam_add_advance_config_settings() {
   return ['ciam_instant_link_login', 'ciam_instant_link_login_email_template', 'ciam_instant_otp_login', 'ciam_sms_template_one_time_passcode',
-    'ciam_display_password_strength', 'ciam_notification_timeout_setting', 'ciam_save_mail_in_db', 'ciam_save_name_in_db', 'ciam_terms_and_condition_html',
+    'ciam_display_password_strength', 'ciam_notification_timeout_setting', 'ciam_save_mail_in_db', 'ciam_save_name_in_db', 'ciam_delete_lr_useraccount','ciam_terms_and_condition_html',
     'ciam_custom_options', 'ciam_registation_form_schema',
   ];
 }

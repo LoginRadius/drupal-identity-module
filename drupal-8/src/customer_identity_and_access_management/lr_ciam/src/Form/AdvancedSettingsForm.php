@@ -130,7 +130,7 @@ class AdvancedSettingsForm extends ConfigFormBase {
     
     $form['lr_advanced_settings']['ciam_save_mail_in_db'] = [
       '#type' => 'radios',
-      '#title' => $this->t("Do you want to store user's email address in the database?"),
+	  '#title' => $this->t('Do you want to store customer email address in the database<a title="If this option is selected as yes it will store customer email address otherwise a random email id will be stored." style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
       '#default_value' => $config->get('ciam_save_mail_in_db') ? $config->get('ciam_save_mail_in_db') : 'true',
       '#options' => [
         'true' => $this->t('Yes'),
@@ -140,8 +140,18 @@ class AdvancedSettingsForm extends ConfigFormBase {
 
     $form['lr_advanced_settings']['ciam_save_name_in_db'] = [
       '#type' => 'radios',
-      '#title' => $this->t("Do you want to store user's first and last name as their username in the database?"),
+	  '#title' => $this->t('Do you want to store customer first and last name as their username in the database<a title="If this option is selected as yes then customer will get, first and last name as their username." style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
       '#default_value' => $config->get('ciam_save_name_in_db') ? $config->get('ciam_save_name_in_db') : 'true',
+      '#options' => [
+        'true' => $this->t('Yes'),
+        'false' => $this->t('No'),
+      ],
+    ]; 
+	
+	$form['lr_advanced_settings']['ciam_delete_lr_useraccount'] = [
+	  '#type' => 'radios',
+	  '#title' => $this->t('Do you want to delete the customer profile from the LoginRadius database on account delete in Drupal<a title=\' If this option is selected as "No", the customer&apos;s profile will not be deleted from the LoginRadius database. The customer will not be able to register again with the same email ID, but he will be able to login with the same credentials.\' style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
+	  '#default_value' => $config->get('ciam_delete_lr_useraccount') ? $config->get('ciam_delete_lr_useraccount') : 'true',
       '#options' => [
         'true' => $this->t('Yes'),
         'false' => $this->t('No'),
@@ -152,8 +162,8 @@ class AdvancedSettingsForm extends ConfigFormBase {
       '#type' => 'text_format',
       '#title' => $this->t('Terms and Conditions<a title="Enter the content which needs to be displayed on the registration form."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
       '#default_value' => $config->get('ciam_terms_and_condition_html') ? $config->get('ciam_terms_and_condition_html')['value'] : '',
-    ];
-   
+    ];	
+
     $form['lr_advanced_settings']['ciam_custom_options'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Custom options for LoginRadius interface<a title="This feature allows custom CIAM options to be enabled on the LoginRadius interface."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
