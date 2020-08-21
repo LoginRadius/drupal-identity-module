@@ -1,0 +1,74 @@
+<?php
+
+/**
+ * @file
+ * The Identity Experience Framework module file.
+ */
+
+use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+
+/**
+ * Implements hook_page_attachment().
+ */
+function lr_identity_experience_framework_page_attachments(&$page) {
+  $user = \Drupal::currentUser();
+  $ief_config = \Drupal::config('lr_ief.settings');
+  $config = \Drupal::config('lr_ciam.settings');
+  
+  \Drupal::service('page_cache_kill_switch')->trigger();
+
+  $destination = ['destination' => "destination"];
+  $current_alias = \Drupal::service('path.current')->getPath();
+  $enable_ief = $ief_config->get('lr_ief_enable');
+  $site_name = $config->get('sso_site_name');
+  $custom_hub_domain = $config->get('custom_hub_domain');
+
+  if ((isset($enable_ief) && $enable_ief == '1') && (isset($site_name) && $site_name != '')) {
+    if (\Drupal::currentUser()->isAnonymous()) {
+      $getDestination = \Drupal::request()->query->get('destination');
+      if (($current_alias == '/user/login') && (isset($getDestination) && $getDestination == $destination['destination']) || ($current_alias == '/user/login') || ($current_alias == '/user')) {
+        if(isset($custom_hub_domain) && $custom_hub_domain !== '') {
+          $url = 'https://' . $custom_hub_domain . '/auth.aspx?action=login&return_url=' . urldecode(lr_ciam_get_callback_url());
+        } else {
+          $url = 'https://' . $site_name . '.hub.loginradius.com/auth.aspx?action=login&return_url=' . urldecode(lr_ciam_get_callback_url());
+        }
+        $response = new RedirectResponse($url);
+        return $response->send();
+      }
+      elseif (($current_alias == '/user/register') && (isset($getDestination) && $getDestination == $destination['destination']) || ($current_alias == '/user/register')) {
+        if(isset($custom_hub_domain) && $custom_hub_domain !== '') {
+          $url = 'https://' . $custom_hub_domain . '/auth.aspx?action=register&return_url=' . urldecode(lr_ciam_get_callback_url());
+        } else {
+          $url = 'https://' . $site_name . '.hub.loginradius.com/auth.aspx?action=register&return_url=' . urldecode(lr_ciam_get_callback_url());
+        }       
+        $response = new RedirectResponse($url);
+        return $response->send();
+      }
+      elseif ($current_alias == '/user/password') {
+        if(isset($custom_hub_domain) && $custom_hub_domain !== '') {
+          $response = new RedirectResponse('https://' . $custom_hub_domain . '/auth.aspx?action=forgotpassword&return_url=' . urldecode(lr_ciam_get_callback_url()));
+        } else {
+          $response = new RedirectResponse('https://' . $site_name . '.hub.loginradius.com/auth.aspx?action=forgotpassword&return_url=' . urldecode(lr_ciam_get_callback_url()));
+        }
+        return $response->send();
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_user_logout().
+ */
+function lr_identity_experience_framework_user_logout($account) {
+  $sso_config = \Drupal::config('lr_sso.settings');
+  $ief_config = \Drupal::config('lr_ief.settings');
+  $enable_ief = $ief_config->get('lr_ief_enable');
+  if ($sso_config->get('sso_enable') != 1 && $enable_ief == '1') {
+    $config = \Drupal::config('lr_ciam.settings');
+    $site_name = $config->get('sso_site_name');
+    $base_url = Url::fromRoute('<front>')->setAbsolute()->toString();
+    $response = new RedirectResponse('https://' . $site_name . '.hub.loginradius.com/auth.aspx?action=logout&return_url=' . $base_url);
+    return $response->send();
+  }
+}
