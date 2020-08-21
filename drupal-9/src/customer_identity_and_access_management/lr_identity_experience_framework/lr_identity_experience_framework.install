@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Install Identity Experience Framework module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function lr_identity_experience_framework_install() {
+  module_set_weight('lr_identity_experience_framework', 4);
+}
