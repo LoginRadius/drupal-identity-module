@@ -76,7 +76,7 @@ function showOrHideCustomRedirection(option) {
 
 if (typeof LoginRadiusV2 === 'undefined') {
     var e = document.createElement('script');
-    e.src = 'https://auth.lrcontent2.com/v2/js/LoginRadiusV2.js';
+    e.src = 'https://auth.lrcontent.com/v2/js/LoginRadiusV2.js';
     e.type = 'text/javascript';
     document.getElementsByTagName("head")[0].appendChild(e);
 }

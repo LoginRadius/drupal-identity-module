@@ -21,7 +21,7 @@ further information.
 5. Let Composer download LoginRadius PHP SDK library for you. On command line of your server:
   1. Go to the root directory of your Drupal installation.
   2. Execute the following command to install PHP SDK 
-     composer require loginradius/php-sdk:10.0.0
+     composer require loginradius/php-sdk:11.0.0
 6. After Successfully install LoginRadius PHP SDK, Enable CIAM Module.
 7. Click on configuration link shown in CIAM or click on 
    configuration tab, Then go to people block and click on CIAM LoginRadius 
@@ -30,6 +30,10 @@ further information.
 
 ## CHANGE LOG
 
+###  8.x-4.2
+  *  Updated V2JS version.
+  *  Compatible with our latest PHP SDK 11.0.0
+  
 ###  8.x-4.1
   *  Added option - Do you want to delete the customer profile from the LoginRadius database on account delete in Drupal.
   
