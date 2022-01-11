@@ -19,7 +19,7 @@ Fully managed registration service including Email Registration, Social Login, p
 5. Let Composer download LoginRadius PHP SDK library for you. On command line of your server:
   1. Go to the root directory of your Drupal installation.
   2. Execute the following command to install PHP SDK 
-     composer require loginradius/php-sdk:11.0.0
+     composer require loginradius/php-sdk:11.2.0
 6. After Successfully install LoginRadius PHP SDK, Enable CIAM Module.
 7. Click on configuration link shown in CIAM or click on 
    configuration tab, Then go to people block and click on CIAM LoginRadius 
@@ -27,6 +27,10 @@ Fully managed registration service including Email Registration, Social Login, p
 
 
 ## CHANGE LOG
+
+###  5.1.0
+  *  Added compatibility with Drupal-9.x
+  *  Compatible with our latest PHP SDK 11.2.0
 
 ###  5.0.0
   *  Added compatibility with Drupal-9.x

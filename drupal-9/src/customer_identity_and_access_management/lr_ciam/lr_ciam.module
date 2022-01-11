@@ -23,7 +23,7 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\user\UserInterface;
 use LoginRadiusSDK\LoginRadiusException;
-
+use \LoginRadiusSDK\CustomerRegistration\Authentication\AuthenticationAPI;
 module_load_include('php', 'lr_ciam', 'customhttpclient');
 module_load_include('php', 'lr_ciam', 'ciam_lang');
 global $apiClientClass;
@@ -1131,10 +1131,11 @@ if (!in_array("administrator", $user) && !\Drupal::currentUser()->isAnonymous())
     $form['account']['current_pass_required_value']['#access'] = FALSE;
     $form['account']['current_pass']['#access'] = FALSE;
 
-    
-    if (isset($configSettings->TwoFactorAuthentication) && $configSettings->TwoFactorAuthentication->IsEnabled) {
+
+     if (isset($configSettings->TwoFactorAuthentication) && $configSettings->TwoFactorAuthentication->IsEnabled) {
+    $authenticationAPI = new AuthenticationAPI(); 
       try {
-        $socialProfileData = $socialObject->getSocialUserProfile(trim(\Drupal::service('session')->get('access_token', [])), FALSE, 'Provider');
+        $socialProfileData = $authenticationAPI->getProfileByAccessToken(trim(\Drupal::service('session')->get('access_token', [])), FALSE, 'Provider');
       }
       catch (LoginRadiusException $e) {
         \Drupal::logger('ciam')->error($e);
@@ -1151,7 +1152,9 @@ if (!in_array("administrator", $user) && !\Drupal::currentUser()->isAnonymous())
       }
 
       try {
-        $isEnabled = $mfaObject->mfaConfigureByAccessToken(\Drupal::service('session')->get('access_token', []));
+        $socialAPI = new SocialAPI(); 
+        $isEnabled = $socialAPI->validateAccessToken(\Drupal::service('session')->get('access_token', []));
+        
       }
       catch (LoginRadiusException $e) {
         \Drupal::logger('ciam')->error($e);
