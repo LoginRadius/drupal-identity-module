@@ -459,8 +459,7 @@ class CiamUserManager {
     }
     elseif ($this->moduleconfig->get($variable_path) == 1) {
       // Redirect to profile.
-      $response = new RedirectResponse($user->id() . '/edit');
-      return $response->send();
+      return new RedirectResponse($user->id() . '/edit');
     }
     elseif ($this->moduleconfig->get($variable_path) == 2) {
       // Redirect to custom page.
