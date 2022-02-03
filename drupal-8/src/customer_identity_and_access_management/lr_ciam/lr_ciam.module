@@ -16,6 +16,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use LoginRadiusSDK\Utility\Functions;
 use LoginRadiusSDK\CustomerRegistration\Advanced\ConfigurationAPI;
 use LoginRadiusSDK\CustomerRegistration\Advanced\MultiFactorAuthenticationAPI;
+use LoginRadiusSDK\CustomerRegistration\Authentication\AuthenticationAPI;
 use LoginRadiusSDK\CustomerRegistration\Account\AccountAPI;
 use LoginRadiusSDK\CustomerRegistration\Account\SottAPI;
 use LoginRadiusSDK\CustomerRegistration\Social\SocialAPI;
@@ -1137,15 +1138,15 @@ if (!in_array("administrator", $user) && !\Drupal::currentUser()->isAnonymous())
 
     $configSettings = lr_ciam_get_config_option();
     if (isset($configSettings->TwoFactorAuthentication) && $configSettings->TwoFactorAuthentication->IsEnabled) {
-
+      $authenticationAPI = new AuthenticationAPI();
       try {
-        $socialProfileData = $socialObject->getSocialUserProfile(trim(\Drupal::service('session')->get('access_token', [])), FALSE, 'Provider');
+        $userProfileData =  $authenticationAPI->getProfileByAccessToken(trim(\Drupal::service('session')->get('access_token', [])),'Provider');
       }
       catch (LoginRadiusException $e) {
         \Drupal::logger('ciam')->error($e);
       }
 
-      if ($socialProfileData->Provider == 'RAAS') {
+      if ($userProfileData->Provider == 'Email') {
         $form['lr_2fa_container'] = [
           '#type' => 'item',
           '#theme' => '2fa_container',
