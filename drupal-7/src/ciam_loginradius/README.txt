@@ -49,6 +49,10 @@ Please share your comments and feedback at feedback@loginradius.com
 
  -- Changelog --
 
+ -- 7.x-4.1 --
+ 1.  Replaced the getSocialUserProfile API with getProfileByAccessToken API as getSocialUserProfile API is deprecated in PHP-SDK version 11.2.0 or above.   
+ 2.  Added Compatibility with our latest PHP SDK 11.3.0
+
  -- 7.x-4.0 --
 1. Compatible with our latest PHP SDK 10.0.0
 2. Added custom domain option for the IEF page

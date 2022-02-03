@@ -832,9 +832,9 @@ function lr_ciam_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
             setcookie ('lr_profile_update', '', time() - 3600,'/');  
               
         }
-        
+        $authenticationAPI = new AuthenticationAPI();
         try{
-        $social_profile = $socialObject->getSocialUserProfile($_SESSION['access_token']);
+        $userProfileData = $authenticationAPI->getProfileByAccessToken($_SESSION['access_token']);
         }
         catch (LoginRadiusException $e) {            
              watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
@@ -1007,7 +1007,7 @@ function lr_ciam_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
             );
         
 
-        if (isset($social_profile->Provider) && $social_profile->Provider == 'RAAS') {
+        if (isset($userProfileData->Provider) && $userProfileData->Provider == 'Email') {
             if (count(module_implements('2fa_container_widget')) > 0) {
                 // Call all modules that implement the hook, and let them make changes to $variables.
                 $result = module_invoke_all('2fa_container_widget');

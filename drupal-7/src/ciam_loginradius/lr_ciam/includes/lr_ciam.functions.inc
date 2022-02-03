@@ -974,15 +974,15 @@ function lr_ciam_provide_login_to_unblock_user($account, $userprofile, &$form, &
             lr_ciam_existing_user_save($account, $userprofile, $form, $form_state);
         } 
       
-        $socialLoginObject = new SocialAPI();
+        $authenticationAPI = new AuthenticationAPI();
         try {                            
-            $socialProfile = $socialLoginObject->getSocialUserProfile($_SESSION['access_token']); 
+            $userProfileData = $authenticationAPI->getProfileByAccessToken($_SESSION['access_token']); 
         }
         catch (LoginRadiusException $e) {          
             watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
         }        
         $_SESSION['current_social_provider'] = $userprofile->ID;
-        $_SESSION['current_provider'] = isset($socialProfile->Provider) ? $socialProfile->Provider : '';
+        $_SESSION['current_provider'] = isset($userProfileData->Provider) ? $userProfileData->Provider : '';
         
         return lr_ciam_user_redirect($form, $account, $userprofile);
     }

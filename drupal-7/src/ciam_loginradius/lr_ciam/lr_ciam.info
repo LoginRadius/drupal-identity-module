@@ -4,7 +4,7 @@ package = LoginRadius
 core = 7.x
 stylesheets[all][] = css/lr_ciam.min.css
 configure = admin/config/people/ciam
-version = "4.0"
+version = "4.1"
 project = "ciam_loginradius"
 
 

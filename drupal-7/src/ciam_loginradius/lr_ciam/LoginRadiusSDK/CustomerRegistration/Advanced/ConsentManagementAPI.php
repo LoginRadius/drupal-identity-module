@@ -7,7 +7,7 @@
  * @license             : https://opensource.org/licenses/MIT
  */
 
-namespace LoginRadiusSDK\CustomerRegistration\Account;
+namespace LoginRadiusSDK\CustomerRegistration\Advanced;
 
 use LoginRadiusSDK\Utility\Functions;
 use LoginRadiusSDK\LoginRadiusException;
