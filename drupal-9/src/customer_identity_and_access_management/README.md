@@ -30,6 +30,9 @@ Fully managed registration service including Email Registration, Social Login, p
 
 ## CHANGE LOG
 
+###  5.1.1
+  *  Fixed the issue with the redirection after login.
+
 ###  5.1.0
   *  Replaced the getSocialUserProfile API with getProfileByAccessToken API as getSocialUserProfile API is deprecated in PHP-SDK version 11.2.0 or above.
   *  Fixed the issue with the redirection to the profile page.

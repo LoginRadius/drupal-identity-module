@@ -5,3 +5,7 @@ services:
     class: Drupal\lr_ciam\Routing\RouteSubscriber
     tags:
       - { name: event_subscriber } 
+  lr_ciam.http_middleware:
+    class: Drupal\lr_ciam\RedirectMiddleware
+    tags:
+      - { name: http_middleware }      

@@ -24,6 +24,7 @@ class CiamUserManager {
   protected $apiSecret;
   protected $apiKey;
   protected $apirequestsigning;
+  protected $redirectMiddleware;
 
   /**
    * Here LR configuration fetch from database and used in functions.
@@ -34,6 +35,7 @@ class CiamUserManager {
     $this->apiSecret = trim($this->moduleconfig->get('api_secret'));
     $this->apiKey = trim($this->moduleconfig->get('api_key'));
     $this->apirequestsigning = trim($this->moduleconfig->get('api_request_signing'));
+    $this->redirectMiddleware = \Drupal::service('lr_ciam.http_middleware');
   }
 
   /**
@@ -411,12 +413,13 @@ class CiamUserManager {
         $domain = Url::fromRoute('<front>')->setAbsolute()->toString();
         $redirectUrl = $domain . 'user/logout';
         $response = new TrustedRedirectResponse($redirectUrl);
-        return $response->send();
+        return $this->redirectMiddleware->setRedirectResponse($response);
+
       }else {
         $domain = Url::fromRoute('<front>')->setAbsolute()->toString();
         $redirectUrl = $domain . 'user/login';
         $response = new TrustedRedirectResponse($redirectUrl);
-        return $response->send();
+        return $this->redirectMiddleware->setRedirectResponse($response);
       }
     }
 }
@@ -455,18 +458,19 @@ class CiamUserManager {
       // Redirect to front site.
       $redirectUrl = \Drupal::request()->query->get('redirect_to');
       $response = new TrustedRedirectResponse($redirectUrl);
-      return $response->send();
+      return $this->redirectMiddleware->setRedirectResponse($response);
     }
     elseif ($this->moduleconfig->get($variable_path) == 1) {
       // Redirect to profile.
-      return new RedirectResponse($user->id() . '/edit');
+      $response = new RedirectResponse($user->id() . '/edit');
+      return $this->redirectMiddleware->setRedirectResponse($response);
     }
     elseif ($this->moduleconfig->get($variable_path) == 2) {
       // Redirect to custom page.
       $custom_url = $this->moduleconfig->get($variable_custom_path);
       if (!empty($custom_url)) {
         $response = new RedirectResponse($custom_url);
-        return $response->send();
+        return $this->redirectMiddleware->setRedirectResponse($response);
       }
       else {
         return new RedirectResponse(Url::fromRoute('<front>')->toString());
@@ -477,7 +481,7 @@ class CiamUserManager {
       $referer_url = \Drupal::service('session')->get('referer_url', []);
       if (!empty($referer_url)) {
         $response = new RedirectResponse($referer_url);
-        return $response->send();
+        return $this->redirectMiddleware->setRedirectResponse($response);
       }
       else {
         $destination = (\Drupal::destination()->getAsArray());
@@ -487,7 +491,7 @@ class CiamUserManager {
         else {
           $response = new RedirectResponse(Url::fromRoute('<front>')->toString());
         }
-        return $response->send();
+        return $this->redirectMiddleware->setRedirectResponse($response);
       }
     }
   }
