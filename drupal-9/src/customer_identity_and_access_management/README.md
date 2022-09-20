@@ -30,6 +30,9 @@ Fully managed registration service including Email Registration, Social Login, p
 
 ## CHANGE LOG
 
+###  5.2.0
+  *  Added New feild to a view using users as data source.
+
 ###  5.1.1
   *  Fixed the issue with the redirection after login.
 
