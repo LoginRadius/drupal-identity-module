@@ -4,6 +4,7 @@ namespace Drupal\lr_sso\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\user\Entity\Role;
 
 /**
  * Displays the SSO settings form.
@@ -28,6 +29,8 @@ class SSOSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    //get role
+    $roleArray=Role::loadMultiple();
     $config = $this->config('lr_sso.settings');
     // Configuration of which forms to protect, with what challenge.
     $form['sso'] = [
@@ -44,6 +47,21 @@ class SSOSettingsForm extends ConfigFormBase {
         0 => $this->t('No'),
       ],
     ];
+    //SSO Role selection checkbox role.
+    $form['role_base_sso'] = [
+      '#type' => 'details',
+      '#title' => $this->t('SSO restriction for specific roles <a title="This feature allows you to restrict the people to login through the Single Sign On based on the selectd roles."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
+      '#open' => TRUE,
+    ];
+    $option=array();
+    foreach ($roleArray as $key => $value) {
+      $key!="anonymous"?$option[$key]=$value->label():null;
+    }
+    $form['role_base_sso']['role_base_sso_data']= array(
+      '#type' => 'checkboxes',
+      '#options' => $option,
+      '#default_value' =>  $config->get('sso_role_data')? $config->get('sso_role_data') : [],
+    );
     // Submit button.
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = [
@@ -58,6 +76,14 @@ class SSOSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    $user_role_list=[];
+    $dataf=$form_state->getValue("role_base_sso_data");
+    foreach ($dataf as $key => $val){
+      if($val!="0"){
+        array_push($user_role_list, $val);
+      }
+    }
+    $role_based_sso_restriction=!empty($user_role_list)?true:false;
     $sl_config = $this->config('lr_ciam.settings');
     $api_key = $sl_config->get('api_key');
     $api_secret = $sl_config->get('api_secret');
@@ -75,6 +101,8 @@ class SSOSettingsForm extends ConfigFormBase {
     parent::SubmitForm($form, $form_state);
     $this->config('lr_sso.settings')
       ->set('sso_enable', $form_state->getValue('sso_enable'))
+      ->set('sso_role_data',$user_role_list)
+      ->set('role_based_sso_restriction',$role_based_sso_restriction)
       ->save();
   }
 

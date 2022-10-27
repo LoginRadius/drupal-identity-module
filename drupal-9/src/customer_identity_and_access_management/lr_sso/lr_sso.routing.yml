@@ -7,3 +7,13 @@ lr_sso.settings_form:
     _permission: 'administer user registration settings'
   options:
     no_cache: TRUE
+
+lr_sso.call:
+  path: '/user/sso/checkrole'
+  defaults:
+    _controller: '\Drupal\lr_sso\Controller\CheckSSORole::checkSSO'
+    _title: 'validate uer role'
+  requirements:
+    _permission: 'access content'
+  options:
+    no_cache: TRUE

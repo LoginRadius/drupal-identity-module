@@ -16,24 +16,41 @@ function lr_sso_page_attachments(&$page) {
   $sl_config = \Drupal::config('lr_ciam.settings');
   $site_name = $sl_config->get('sso_site_name');
 
-
+  //Execute only when the SSO Is enabled
   if ($sso_config->get('sso_enable') == 1 && !empty($site_name)) {
   
     $user = \Drupal::currentUser()->getRoles();
+    $permited_roles_SSO = $sso_config->get('sso_role_data');
+    $is_permitted_to_sso = !empty(array_intersect($user, $permited_roles_SSO));
     $my_settings['logoutUrl'] = Url::fromRoute('user.logout')->setAbsolute()->toString();
 
-    if (\Drupal::currentUser()->isAnonymous()) {
-
-      $my_settings['isNotLogin'] = TRUE;
-      $my_settings['loginUrl'] = Url::fromRoute('user.login')->setAbsolute()->toString();
-    }
-    if (!\Drupal::currentUser()->isAnonymous() && !in_array("administrator", $user)) {
-
-      $my_settings['isNotLoginThenLogout'] = TRUE;
+    if (!$sso_config->get('role_based_sso_restriction')) {
+      //Execute when any Role is not having  SSO Restriction
+      if (\Drupal::currentUser()->isAnonymous()) {
+        $my_settings['isNotLogin'] = TRUE;
+      }
+      if (!\Drupal::currentUser()->isAnonymous() && !in_array("administrator", $user) && !$is_permitted_to_sso) {
+        $my_settings['isNotLoginThenLogout'] = TRUE;
+      }
+      $page['#attached']['library'][] = 'lr_sso/drupal.coresso';
+    } else if ($sso_config->get('role_based_sso_restriction') &&  !$is_permitted_to_sso && !\Drupal::currentUser()->isAnonymous()) {
+      //Execute  and allow when the Role is having the SSO Restriction but the specific role is not exist in user profile
+      $my_settings['isSetToken'] = TRUE;
+      $page['#attached']['library'][] = 'lr_sso/drupal.coresso';
+    } else if ($sso_config->get('role_based_sso_restriction') && \Drupal::currentUser()->isAnonymous() && !$is_permitted_to_sso) {  
+      //Execute when the user is anonimous and the user comes to login using the SSO from the other wesites
+      $url = Url::fromUserInput('/user/ciamlogin', [
+        'query' => ['destination' => Url::fromRoute('user.login')->setAbsolute()->toString()],
+        'absolute' => TRUE,
+      ])->toString();
+      $validationurl= Url::fromUserInput('/user/sso/checkrole')->toString();
+      $my_settings['loginUrl'] = $url;
+      $my_settings['validationUrl'] = $validationurl;
+      $page['#attached']['library'][] = 'lr_sso/drupal.frontendSSO';
     }
 
     $page['#cache']['contexts'][] = 'user.roles';
     $page['#attached']['drupalSettings']['sso'] = $my_settings;
-    $page['#attached']['library'][] = 'lr_sso/drupal.coresso';
+
   }
 }

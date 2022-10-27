@@ -2,8 +2,16 @@ drupal.coresso:
   header: true
   version: VERSION
   js:
-    js/sso_frontend.min.js: {weight: -8}
+    js/sso_backend.min.js: {weight: -8}
   dependencies:
     - core/jquery
     - core/drupalSettings
-    
+
+drupal.frontendSSO:
+  header: true
+  version: VERSION
+  js:
+    js/sso_frontend.min.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupalSettings

@@ -20,7 +20,7 @@ Fully managed registration service including Email Registration, Social Login, p
   1. Go to the root directory of your Drupal installation.
   2. Execute the following command to install PHP SDK 
   ```PHP
-  composer require loginradius/php-sdk:11.3.0
+  composer require loginradius/php-sdk:11.4.2
   ```
 6. After Successfully install LoginRadius PHP SDK, Enable CIAM Module.
 7. Click on configuration link shown in CIAM or click on 
@@ -29,6 +29,11 @@ Fully managed registration service including Email Registration, Social Login, p
 
 
 ## CHANGE LOG
+
+###  5.2.0
+  *  Added the functionality to contol the SSO login based on the User Roles.
+  *  Added Compatibility with our latest PHP SDK 11.4.2
+  *  Added New field to a view using users as data source.
 
 ###  5.1.1
   *  Fixed the issue with the redirection after login.
