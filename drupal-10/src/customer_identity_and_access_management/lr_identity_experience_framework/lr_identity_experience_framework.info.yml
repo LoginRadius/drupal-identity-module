@@ -1,0 +1,10 @@
+name: Identity Experience Framework
+type: module
+description: 'Allow users to sign up/login/forgot password etc on Identity Experience Framework.'
+package: CIAM LoginRadius
+dependencies:
+  - drupal:lr_ciam
+configure: lr_identity_experience_framework.settings_form
+version: '5.1.2'
+core_version_requirement: ^9.4 || ^10
+project: 'customer_identity_and_access_management'

@@ -1,0 +1,6 @@
+name: CIAM
+type: module
+description: 'Allow users to sign up through a registration form. User Registration offers fully customized options for collecting and updating user data.'
+package: CIAM LoginRadius
+configure: lr_ciam.settings_form
+core_version_requirement: ^9.4 || ^10

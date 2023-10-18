@@ -1,0 +1,8 @@
+name: SSO (Single Sign On)
+type: module
+description: 'Enable a single login system for multiple websites: users only need to log in once to get access to all of your web properties.'
+package: CIAM LoginRadius
+dependencies:
+  - drupal:lr_ciam
+configure: lr_sso.settings_form
+core_version_requirement: ^9.4 || ^10

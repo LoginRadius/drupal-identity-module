@@ -1,0 +1,6 @@
+lr_ciam.settings_form:
+  title: LoginRadius
+  description: 'Configure settings for LoginRadius'
+  route_name: lr_ciam.settings_form
+  parent: user.admin_index
+  
