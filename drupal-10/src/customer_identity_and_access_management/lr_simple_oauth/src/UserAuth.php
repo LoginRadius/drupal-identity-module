@@ -21,8 +21,8 @@ class UserAuth implements UserAuthInterface {
    */
   public function __construct() {
     $this->moduleconfig = \Drupal::config('lr_ciam.settings');
-    $this->apiKey = trim($this->moduleconfig->get('api_key'));
-    $this->apiSecret = trim($this->moduleconfig->get('api_secret'));
+    $this->apiKey = trim((string) $this->moduleconfig->get('api_key'));
+    $this->apiSecret = trim((string) $this->moduleconfig->get('api_secret'));
   }
 
   /**

@@ -8,6 +8,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Cache\Cache;
 use LoginRadiusSDK\CustomerRegistration\Advanced\ConfigurationAPI;
+use LoginRadiusSDK\LoginRadiusException;
 use LoginRadiusSDK\Utility\Functions;
 
 /**
@@ -34,8 +35,8 @@ class AuthenticationSettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('lr_ciam.settings');
-    $apiKey = trim($config->get('api_key'));
-    $apiSecret = trim($config->get('api_secret'));
+    $apiKey = trim((string) $config->get('api_key'));
+    $apiSecret = trim((string) $config->get('api_secret'));
     // Configuration of which forms to protect, with what challenge.
     if (isset($apiKey) && $apiKey != '' && isset($apiSecret) && $apiSecret != '') {
       try {
@@ -129,7 +130,7 @@ class AuthenticationSettingsForm extends ConfigFormBase {
         'false' => $this->t('No'),
       ],
     ];
-    if (isset($email_templates->EmailTemplates)) {
+    if (isset($email_templates) && isset($email_templates->EmailTemplates)) {
       $form['lr_email_auth_settings']['ciam_welcome_email_template'] = [
         '#title' => $this->t('Welcome email template<a title="Select the name of Welcome email template which is created in the LoginRadius Dashboard."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
         '#type' => 'select',
@@ -148,7 +149,7 @@ class AuthenticationSettingsForm extends ConfigFormBase {
         '#options' => $this->getEmailTemplate($email_templates->EmailTemplates->ResetPassword),
         '#default_value' => $config->get('ciam_reset_password_email_template'),
       ];
-      if (isset($configOptions) && $configOptions->TwoFactorAuthentication->IsEnabled) {
+      if (isset($configOptions) && $configOptions->TwoFactorAuthentication->IsEnabled && isset($email_templates->SMSTemplates)) {
         $form['lr_email_auth_settings']['ciam_sms_template_2fa'] = [
           '#type' => 'select',
           '#title' => $this->t('Two-factor authentication SMS template<a title="Select the name of Two-factor authentication SMS template which is created in the LoginRadius Dashboard."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
@@ -158,7 +159,7 @@ class AuthenticationSettingsForm extends ConfigFormBase {
       }
     }
 
-    if (isset($configOptions) && $configOptions->IsPhoneLogin) {
+    if (isset($configOptions) && $configOptions->IsPhoneLogin && isset($email_templates) && isset($email_templates->SMSTemplates)) {
       $form['lr_phone_auth_settings'] = [
         '#type' => 'details',
         '#title' => $this->t('Phone Authentication Settings'),
@@ -285,9 +286,10 @@ class AuthenticationSettingsForm extends ConfigFormBase {
  * Get fields for mapping.
  */
 public function fieldUserProperties() {
+  $common = [];
   $config = $this->config('lr_ciam.settings');
-  $apiKey = trim($config->get('api_key'));
-  $apiSecret = trim($config->get('api_secret'));
+  $apiKey = trim((string) $config->get('api_key'));
+  $apiSecret = trim((string) $config->get('api_secret'));
   if (isset($apiKey) && $apiKey != '' && isset($apiSecret) && $apiSecret != '') {
     try {
       $configObject = new ConfigurationAPI();
@@ -297,7 +299,7 @@ public function fieldUserProperties() {
       \Drupal::logger('ciam')->error($e);
     }
   
-    $common = [];
+   
     if(isset($configOptions->RegistrationFormSchema)){
         foreach($configOptions->RegistrationFormSchema as $key => $val){
      
@@ -353,7 +355,7 @@ public function fieldUserProperties() {
       ->set('login_redirection', $form_state->getValue('login_redirection'))   
       ->set('custom_login_url', $form_state->getValue('custom_login_url'))
       ->save();
-    if (count(\Drupal::moduleHandler()->getImplementations('add_extra_config_settings')) > 0) {
+    if (\Drupal::moduleHandler()->hasImplementations('add_extra_config_settings')) {
       // Call all modules that implement the hook,
       // and let them make changes to $variables.
       $data = \Drupal::moduleHandler()->invokeAll('add_extra_config_settings');

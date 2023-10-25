@@ -17,14 +17,14 @@ class RedirectMiddleware implements HttpKernelInterface {
   /**
    * The wrapped HTTP kernel.
    *
-   * @var HttpKernelInterface
+   * @var \Symfony\Component\HttpKernel\HttpKernelInterface
    */
   protected $httpKernel;
 
   /**
    * The redirect URL.
    *
-   * @var RedirectResponse
+   * @var \Symfony\Component\HttpFoundation\RedirectResponse
    */
   protected $redirectResponse;
 
@@ -32,7 +32,7 @@ class RedirectMiddleware implements HttpKernelInterface {
    * Constructs a RedirectMiddleware
    * object.
    *
-   * @param HttpKernelInterface $http_kernel
+   * @param \Symfony\Component\HttpKernel\HttpKernelInterface $http_kernel
    *   The decorated kernel.
    */
   public function __construct(HttpKernelInterface $http_kernel) {
@@ -42,7 +42,7 @@ class RedirectMiddleware implements HttpKernelInterface {
   /**
    * {@inheritdoc}
    */
-  public function handle(Request $request, int $type = self::MAIN_REQUEST, bool $catch = true): Response {
+  public function handle(Request $request, $type = self::MAIN_REQUEST, $catch = TRUE): Response {
     $response = $this->httpKernel->handle($request, $type, $catch);
     return $this->redirectResponse ?: $response;
   }
@@ -50,7 +50,7 @@ class RedirectMiddleware implements HttpKernelInterface {
   /**
    * Stores the requested redirect response.
    *
-   * @param RedirectResponse|null $redirectResponse
+   * @param \Symfony\Component\HttpFoundation\RedirectResponse|null $redirectResponse
    *   Redirect response.
    */
   public function setRedirectResponse(?RedirectResponse $redirectResponse) {

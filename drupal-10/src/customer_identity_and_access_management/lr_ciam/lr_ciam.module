@@ -25,14 +25,14 @@ use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\user\UserInterface;
 use LoginRadiusSDK\LoginRadiusException;
 
-module_load_include('php', 'lr_ciam', 'customhttpclient');
-module_load_include('php', 'lr_ciam', 'ciam_lang');
+\Drupal::moduleHandler()->loadInclude('lr_ciam', 'php', 'customhttpclient');
+\Drupal::moduleHandler()->loadInclude('lr_ciam', 'php', 'ciam_lang');
 global $apiClientClass;
 $apiClientClass = 'CustomHttpClient';
 
 $config = \Drupal::config('lr_ciam.settings');
-$api_key = trim($config->get('api_key'));
-$api_secret = trim($config->get('api_secret'));
+$api_key = trim((string) $config->get('api_key'));
+$api_secret = trim((string)  $config->get('api_secret'));
 $api_request_signing = $config->get('api_request_signing');
  
 if($api_key != ''){
@@ -62,13 +62,13 @@ define('API_CONFIG_DOMAIN', 'https://config.lrcontent.com');
     $secret_iv = $secretIv;
     $output = false;
     $encrypt_method = "AES-256-CBC";
-    $key = hash( 'sha256', $secret_key );
-    $iv = substr( hash( 'sha256', $secret_iv ), 0, 16 );
+    $key = hash( 'sha256', (string) $secret_key );
+    $iv = substr( hash( 'sha256', (string) $secret_iv ), 0, 16 );
     if( $action == 'e' ) {
     $output = base64_encode( openssl_encrypt( $string, $encrypt_method, $key, 0, $iv ) );
     }
     else if( $action == 'd' ){       
-    $output = openssl_decrypt( base64_decode( $string ), $encrypt_method, $key, 0, $iv );
+    $output = openssl_decrypt( base64_decode( (string) $string ), $encrypt_method, $key, 0, $iv );
     }
     return $output;
   }
@@ -77,7 +77,8 @@ define('API_CONFIG_DOMAIN', 'https://config.lrcontent.com');
  * Implements hook_theme().
  */
 function lr_ciam_theme() {
-  $path = \Drupal::service('extension.list.module')->getPath('lr_ciam') . '/theme';
+
+  $path =\Drupal::service('extension.path.resolver')->getPath('module', 'lr_ciam'). '/theme';
   $theme = [
     'user_login_form' => [
       'template' => 'user_login_form',
@@ -209,7 +210,7 @@ function lr_ciam_theme() {
  */
 function template_preprocess_lr_ciam_linked(&$vars) {
   global $base_url;
-  $vars['image_url'] = $base_url . '/' . \Drupal::service('extension.list.module')->getPath('lr_ciam') . '/images';
+  $vars['image_url'] = $base_url . '/' . Drupal::service('extension.path.resolver')->getPath('module', 'lr_ciam'). '/images';
   $vars['callback'] = lr_ciam_get_callback_url();
 }
 
@@ -218,7 +219,7 @@ function template_preprocess_lr_ciam_linked(&$vars) {
  */
 function template_preprocess_user_pass(&$variables) {
   $config = \Drupal::config('lr_ciam.settings');
-  $variables['api_key'] = trim($config->get('api_key'));
+  $variables['api_key'] = trim((string) $config->get('api_key'));
 
   $blocks = Block::loadMultiple();
   foreach ($blocks as $key => $block) {
@@ -245,7 +246,7 @@ function template_preprocess_user_pass(&$variables) {
  */
 function template_preprocess_user_pass_form(&$variables) {
   $config = \Drupal::config('lr_ciam.settings');
-  $variables['api_key'] = trim($config->get('api_key'));
+  $variables['api_key'] = trim((string) $config->get('api_key'));
   if (!\Drupal::currentUser()->isAnonymous()) {
     $variables['showpassonlogin'] = FALSE;
     $variables['rendered'] = \Drupal::service('renderer')->render($variables['form']);
@@ -290,7 +291,7 @@ function template_preprocess_user_register_form(&$variables) {
     }
       
   $config = \Drupal::config('lr_ciam.settings');
-  $variables['api_key'] = trim($config->get('api_key'));
+  $variables['api_key'] = trim((string) $config->get('api_key'));
   $variables['rendered'] = \Drupal::service('renderer')->render($variables['form']);
 }
 
@@ -317,7 +318,7 @@ function template_preprocess_user_register(&$variables) {
 
   $variables['link_login'] = isset($block_settings['register_block_link_login']) ? $block_settings['register_block_link_login'] : '';
   $variables['link_forgot'] = isset($block_settings['register_block_link_forgot']) ? $block_settings['register_block_link_forgot'] : '';
-  $variables['api_key'] = trim($config->get('api_key'));
+  $variables['api_key'] = trim((string) $config->get('api_key'));
   $variables['rendered'] = \Drupal::service('renderer')->render($variables['form']);
 }
 
@@ -328,7 +329,7 @@ function template_preprocess_user_register(&$variables) {
  */
 function template_preprocess_user_login_form(&$variables) {
   $config = \Drupal::config('lr_ciam.settings');
-  $variables['api_key'] = trim($config->get('api_key'));
+  $variables['api_key'] = trim((string) $config->get('api_key'));
 }
 
 /**
@@ -347,7 +348,7 @@ function template_preprocess_user_login(&$variables) {
     }
   }
 
-  $variables['api_key'] = trim($config->get('api_key'));
+  $variables['api_key'] = trim((string) $config->get('api_key'));
   $variables['link_register'] = isset($block_settings['login_block_link_register']) ? $block_settings['login_block_link_register'] : '';
   $variables['link_forgot'] = isset($block_settings['login_block_link_forgot']) ? $block_settings['login_block_link_forgot'] : '';
 }
@@ -435,10 +436,10 @@ function lr_ciam_page_attachments(&$page) {
     'loggedIn' => $loggedIn,
     'accessToken' => isset($access_token) ? $access_token : '',
     'phoneId' => isset($lrPhoneId) ? $lrPhoneId : '',
-    'appName' => trim($config->get('sso_site_name')),
-    'apiKey' => trim($config->get('api_key')),
-    'autoHideTime' => trim($config->get('ciam_notification_timeout_setting')),
-    'appPath' => trim($sso_path),
+    'appName' => trim((string) $config->get('sso_site_name')),
+    'apiKey' => trim((string) $config->get('api_key')),
+    'autoHideTime' => trim((string) $config->get('ciam_notification_timeout_setting')),
+    'appPath' => trim((string) $sso_path),
     'callback' => urldecode(lr_ciam_get_callback_url()),
     'home' => Url::fromRoute('<front>')->setAbsolute()->toString(),
   ];
@@ -446,9 +447,9 @@ function lr_ciam_page_attachments(&$page) {
   if ($config->get('ciam_terms_and_condition_html') != '') {
     $string = $config->get('ciam_terms_and_condition_html');
     $string = str_replace(array('<script>', '</script>'), '', $string['value']);
-    $string = trim(str_replace('"', "'", $string));
+    $string = trim((string) str_replace('"', "'", $string));
     $terms = str_replace(array("\r\n", "\r", "\n"), " ", $string);
-    $my_settings['termsAndConditionHtml'] = trim($terms);
+    $my_settings['termsAndConditionHtml'] = trim((string) $terms);
   }
   if ($config->get('ciam_ask_required_fields_on_traditional_login') != '' && $config->get('ciam_ask_required_fields_on_traditional_login') != 'false') {
     $my_settings['askRequiredFieldForTraditionalLogin'] = (boolean) $config->get('ciam_ask_required_fields_on_traditional_login');
@@ -479,7 +480,7 @@ function lr_ciam_page_attachments(&$page) {
   }
 
   $configSettings = lr_ciam_get_config_option();  
-  if ($configSettings->IsPhoneLogin === true) {
+  if ( isset($configSettings) && $configSettings->IsPhoneLogin === true) {
     if ($config->get('ciam_check_phone_no_availability') != '' && $config->get('ciam_check_phone_no_availability') != 'false') {
       $my_settings['existPhoneNumber'] = (boolean) $config->get('ciam_check_phone_no_availability');
     }
@@ -729,7 +730,7 @@ function lr_ciam_user_insert($account) {
         if (isset($post_value['notify']) && $post_value['notify'] == '1') {
           try {
             $forgotVerificationUrl = Url::fromRoute('user.login')->setAbsolute()->toString();
-            $result = $user_manager->lrCiamForgotPassword(trim($post_value['mail']), $forgotVerificationUrl);
+            $result = $user_manager->lrCiamForgotPassword(trim((string) $post_value['mail']), $forgotVerificationUrl);
  
             if (isset($result->IsPosted) && $result->IsPosted) {
               \Drupal::messenger()->addStatus(t('A welcome message with further instructions has been emailed to the new user <a href=":url">%name</a>.', [':url' => $account->url(), '%name' => $post_value['name']]));
@@ -803,10 +804,10 @@ function lr_ciam_user_update($account) {
         if ($value == 'BirthDate') {
           $output[$value] = isset($post_value[$key][0]["value"]['date']) ? $post_value[$key][0]["value"]['date'] : '';
           $sldate = explode('-', $output[$value]);
-          $year = isset($sldate[0]) ? trim($sldate[0]) : '';
-          $month = isset($sldate[1]) ? trim($sldate[1]) : '';
-          $date = isset($sldate[2]) ? trim($sldate[2]) : '';
-          $formatDate = trim($month . '-' . $date . '-' . $year);
+          $year = isset($sldate[0]) ? trim((string) $sldate[0]) : '';
+          $month = isset($sldate[1]) ? trim((string) $sldate[1]) : '';
+          $date = isset($sldate[2]) ? trim((string) $sldate[2]) : '';
+          $formatDate = trim((string) $month . '-' . $date . '-' . $year);
           $output[$value] = $formatDate;
         }
         else {
@@ -955,7 +956,7 @@ if (!in_array("administrator", $user) && !\Drupal::currentUser()->isAnonymous())
     $mfaObject = new MultiFactorAuthenticationAPI();
     
     try {
-      $res = $socialObject->validateAccessToken(trim(\Drupal::service('session')->get('access_token', '')));
+      $res = $socialObject->validateAccessToken(trim((string) \Drupal::service('session')->get('access_token', [])));   
 
       if (isset($res->errorCode) && $res->errorCode == '906') {
         $domain = Url::fromRoute('<front>')->setAbsolute()->toString();
@@ -1136,7 +1137,7 @@ if (!in_array("administrator", $user) && !\Drupal::currentUser()->isAnonymous())
     if (isset($configSettings->TwoFactorAuthentication) && $configSettings->TwoFactorAuthentication->IsEnabled) {
       $authenticationAPI = new AuthenticationAPI();
       try {
-        $userProfileData = $authenticationAPI->getProfileByAccessToken(trim(\Drupal::service('session')->get('access_token', [])),'Provider');
+        $userProfileData = $authenticationAPI->getProfileByAccessToken(trim((string) \Drupal::service('session')->get('access_token', [])),'Provider');
       }
       catch (LoginRadiusException $e) {
         \Drupal::logger('ciam')->error($e);

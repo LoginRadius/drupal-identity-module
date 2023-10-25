@@ -9,6 +9,7 @@ use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Cache\Cache;
 use LoginRadiusSDK\CustomerRegistration\Advanced\ConfigurationAPI;
 use LoginRadiusSDK\Utility\Functions;
+use LoginRadiusSDK\LoginRadiusException;
 
 /**
  * Displays the advanced settings form.
@@ -34,8 +35,8 @@ class AdvancedSettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('lr_ciam.settings');
-    $apiKey = trim($config->get('api_key'));
-    $apiSecret = trim($config->get('api_secret'));
+    $apiKey = trim((string) $config->get('api_key'));
+    $apiSecret = trim((string) $config->get('api_secret'));
     // Configuration of which forms to protect, with what challenge.
     if (isset($apiKey) && $apiKey != '' && isset($apiSecret) && $apiSecret != '') {
       try {
@@ -79,37 +80,36 @@ class AdvancedSettingsForm extends ConfigFormBase {
         'false' => $this->t('No'),
       ],
     ];
-
-    if (isset($configOptions) && $configOptions->IsInstantSignin->EmailLink) {
-      $form['lr_advanced_settings']['ciam_instant_link_login_email_template'] = [
-        '#type' => 'select',
-        '#title' => $this->t('Passwordless link login email template<a title="Select the name of Passwordless link login email template which is created in the LoginRadius Dashboard."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
-        '#options' => $this->getEmailTemplate($email_templates->EmailTemplates->InstantSignIn),
-        '#default_value' => $config->get('ciam_instant_link_login_email_template'),
-      ];
+    if(isset($email_templates)){
+      if (isset($configOptions) && $configOptions->IsInstantSignin->EmailLink) {
+        $form['lr_advanced_settings']['ciam_instant_link_login_email_template'] = [
+          '#type' => 'select',
+          '#title' => $this->t('Passwordless link login email template<a title="Select the name of Passwordless link login email template which is created in the LoginRadius Dashboard."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
+          '#options' => $this->getEmailTemplate($email_templates->EmailTemplates->InstantSignIn),
+          '#default_value' => $config->get('ciam_instant_link_login_email_template'),
+        ];
+      }
+      if (isset($configOptions) && $configOptions->IsPhoneLogin) {
+        $form['lr_advanced_settings']['ciam_instant_otp_login'] = [
+          '#type' => 'radios',
+          '#title' => $this->t('Enable passwordless OTP login<a title="Turn on, if you want to enable Passwordless OTP login."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
+          '#default_value' => $config->get('ciam_instant_otp_login') ? $config->get('ciam_instant_otp_login') : 'false',
+          '#options' => [
+            'true' => $this->t('Yes'),
+            'false' => $this->t('No'),
+          ],
+        ];
+    
+        if (isset($configOptions) && $configOptions->IsInstantSignin->SmsOtp) {
+          $form['lr_advanced_settings']['ciam_sms_template_one_time_passcode'] = [
+            '#type' => 'select',
+            '#title' => $this->t('Passwordless OTP login SMS template<a title="Select the name of Passwordless OTP template which is created in the LoginRadius Dashboard."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
+            '#options' => $this->getEmailTemplate($email_templates->SMSTemplates->OneTimePassCode),
+            '#default_value' => $config->get('ciam_sms_template_one_time_passcode'),
+          ];
+        }
+      }
     }
-
-    if (isset($configOptions) && $configOptions->IsPhoneLogin) {
-    $form['lr_advanced_settings']['ciam_instant_otp_login'] = [
-      '#type' => 'radios',
-      '#title' => $this->t('Enable passwordless OTP login<a title="Turn on, if you want to enable Passwordless OTP login."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
-      '#default_value' => $config->get('ciam_instant_otp_login') ? $config->get('ciam_instant_otp_login') : 'false',
-      '#options' => [
-        'true' => $this->t('Yes'),
-        'false' => $this->t('No'),
-      ],
-    ];
-
-    if (isset($configOptions) && $configOptions->IsInstantSignin->SmsOtp) {
-      $form['lr_advanced_settings']['ciam_sms_template_one_time_passcode'] = [
-        '#type' => 'select',
-        '#title' => $this->t('Passwordless OTP login SMS template<a title="Select the name of Passwordless OTP template which is created in the LoginRadius Dashboard."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
-        '#options' => $this->getEmailTemplate($email_templates->SMSTemplates->OneTimePassCode),
-        '#default_value' => $config->get('ciam_sms_template_one_time_passcode'),
-      ];
-    }
-  }
-
     $form['lr_advanced_settings']['ciam_display_password_strength'] = [
       '#type' => 'radios',
       '#title' => $this->t('Enable password strength<a title="This feature when enabled, shows the strength bar under the password field on registration form, reset password form and change password form."  style="text-decoration:none; cursor:pointer;"> (<span style="color:#3CF;">?</span>)</a>'),
@@ -235,7 +235,7 @@ class AdvancedSettingsForm extends ConfigFormBase {
     Database::getConnection()->delete('config')
       ->condition('name', 'lr_ciam.settings')->execute();
 
-    if (count(\Drupal::moduleHandler()->getImplementations('add_advance_config_settings')) > 0) {
+    if (\Drupal::moduleHandler()->hasImplementations('add_advance_config_settings')) {
       // Call all modules that implement the hook,
       // and let them make changes to $variables.
       $data = \Drupal::moduleHandler()->invokeAll('add_advance_config_settings');

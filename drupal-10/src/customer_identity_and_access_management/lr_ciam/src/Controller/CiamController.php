@@ -142,7 +142,6 @@ class CiamController extends ControllerBase {
    * Handle token and validate the user.
    */
   public function userRegisterValidate() { 
-    
     $action = \Drupal::request()->query->get('action_completed');
     if (isset($action) && $action == 'register') {
       $this->messenger()->addStatus($this->t('Email for verification has been sent to your provided email id, check email for further instructions'));
@@ -153,10 +152,9 @@ class CiamController extends ControllerBase {
       $this->messenger()->addStatus($this->t('Password reset information sent to your provided email id, check email for further instructions'));
       return $this->redirect("<front>");
     }
-
-    $request_token = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
-    if (isset($_REQUEST['token'])) {
-
+    $request_token =isset(\Drupal::request()->request->all()["token"])?\Drupal::request()->request->all()["token"]:trim((string) \Drupal::request()->query->get('token'));
+    if (isset($request_token)) {
+      
       $authObject = new AuthenticationAPI();
       \Drupal::service('session')->set('access_token', $request_token);
 
@@ -179,7 +177,7 @@ class CiamController extends ControllerBase {
 	   
       // Advanced module LR Code Hook Start.
       // Make sure at least one module implements our hook.
-      if (count(\Drupal::moduleHandler()->getImplementations('add_loginradius_userdata')) > 0) {
+      if (\Drupal::moduleHandler()->hasImplementations('add_loginradius_userdata')) {
         // Call all modules that implement the hook, and let them.
         // Make changes to $variables.
         $result = \Drupal::moduleHandler()->invokeAll('add_loginradius_userdata', [$userprofile, $userprofile->widget_token]);
@@ -208,6 +206,7 @@ class CiamController extends ControllerBase {
               return $this->usermanager->provideLogin($drupal_user, $userprofile);
             }
           }
+
           return $this->usermanager->checkExistingUser($userprofile);
         }
         else {

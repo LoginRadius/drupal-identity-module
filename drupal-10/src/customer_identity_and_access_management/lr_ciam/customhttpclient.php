@@ -133,12 +133,12 @@ class CustomHttpClient implements IHttpClientInterface {
     $sslVerify = isset($options['ssl_verify']) ? $options['ssl_verify'] : false;
     $method = isset($options['method']) ? strtoupper($options['method']) : 'GET';
     $data = isset($options['post_data']) ? $options['post_data'] : array();
-    $contentType = isset($options['content_type']) ? trim($options['content_type']) : 'x-www-form-urlencoded';
-    $authAccessToken = isset($options['access-token']) ? trim($options['access-token']) : '';
-    $sottHeaderContent = isset($options['X-LoginRadius-Sott']) ? trim($options['X-LoginRadius-Sott']) : '';
-    $secretHeaderContent = isset($options['X-LoginRadius-ApiSecret']) ? trim($options['X-LoginRadius-ApiSecret']) : '';
-    $expiryTime = isset($options['X-Request-Expires']) ? trim($options['X-Request-Expires']) : '';
-    $digest = isset($options['digest']) ? trim($options['digest']) : '';
+    $contentType = isset($options['content_type']) ? trim((string) $options['content_type']) : 'x-www-form-urlencoded';
+    $authAccessToken = isset($options['access-token']) ? trim((string) $options['access-token']) : '';
+    $sottHeaderContent = isset($options['X-LoginRadius-Sott']) ? trim((string) $options['X-LoginRadius-Sott']) : '';
+    $secretHeaderContent = isset($options['X-LoginRadius-ApiSecret']) ? trim((string) $options['X-LoginRadius-ApiSecret']) : '';
+    $expiryTime = isset($options['X-Request-Expires']) ? trim((string) $options['X-Request-Expires']) : '';
+    $digest = isset($options['digest']) ? trim((string) $options['digest']) : '';
 
     $curlHandle = curl_init();
         curl_setopt($curlHandle, CURLOPT_URL, $requestUrl);
@@ -203,11 +203,11 @@ class CustomHttpClient implements IHttpClientInterface {
     $method = isset($options['method']) ? strtoupper($options['method']) : 'GET';
     $data = isset($options['post_data']) ? $options['post_data'] : array();
     $contentType = isset($options['content_type']) ? $options['content_type'] : 'form_params';
-    $authAccessToken = isset($options['access-token']) ? trim($options['access-token']) : '';
-    $sottHeaderContent = isset($options['X-LoginRadius-Sott']) ? trim($options['X-LoginRadius-Sott']) : '';
-    $secretHeaderContent = isset($options['X-LoginRadius-ApiSecret']) ? trim($options['X-LoginRadius-ApiSecret']) : '';
-    $expiryTime = isset($options['X-Request-Expires']) ? trim($options['X-Request-Expires']) : '';
-    $digest = isset($options['digest']) ? trim($options['digest']) : '';
+    $authAccessToken = isset($options['access-token']) ? trim((string) $options['access-token']) : '';
+    $sottHeaderContent = isset($options['X-LoginRadius-Sott']) ? trim((string) $options['X-LoginRadius-Sott']) : '';
+    $secretHeaderContent = isset($options['X-LoginRadius-ApiSecret']) ? trim((string) $options['X-LoginRadius-ApiSecret']) : '';
+    $expiryTime = isset($options['X-Request-Expires']) ? trim((string) $options['X-Request-Expires']) : '';
+    $digest = isset($options['digest']) ? trim((string) $options['digest']) : '';
 
     $optionsArray = array('http' =>
             array(

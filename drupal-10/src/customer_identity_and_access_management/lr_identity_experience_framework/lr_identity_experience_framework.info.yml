@@ -5,6 +5,11 @@ package: CIAM LoginRadius
 dependencies:
   - drupal:lr_ciam
 configure: lr_identity_experience_framework.settings_form
-version: '5.1.2'
-core_version_requirement: ^9.4 || ^10
+# version: '5.2.0'
+core_version_requirement: ^9 || ^10
+# project: 'customer_identity_and_access_management'
+
+# Information added by Drupal.org packaging script on 2023-10-25
+version: '5.2.0'
 project: 'customer_identity_and_access_management'
+datestamp: 1698240101

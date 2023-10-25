@@ -32,9 +32,9 @@ class CiamUserManager {
   public function __construct() {
     $this->connection = Database::getConnection();
     $this->moduleconfig = \Drupal::config('lr_ciam.settings');
-    $this->apiSecret = trim($this->moduleconfig->get('api_secret'));
-    $this->apiKey = trim($this->moduleconfig->get('api_key'));
-    $this->apirequestsigning = trim($this->moduleconfig->get('api_request_signing'));
+    $this->apiSecret = trim((string) $this->moduleconfig->get('api_secret'));
+    $this->apiKey = trim((string) $this->moduleconfig->get('api_key'));
+    $this->apirequestsigning = trim((string) $this->moduleconfig->get('api_request_signing'));
     $this->redirectMiddleware = \Drupal::service('lr_ciam.http_middleware');
   }
 
@@ -207,12 +207,11 @@ class CiamUserManager {
       ',',
     ], [''], $str);
     $cur_encoding = mb_detect_encoding($in_str);
-
     if ($cur_encoding == "UTF-8" && mb_check_encoding($in_str, "UTF-8")) {
       return $in_str;
     }
     else {
-      return utf8_encode($in_str);
+      return mb_convert_encoding($in_str,"UTF-8");
     }
   }
 
@@ -528,7 +527,7 @@ class CiamUserManager {
       $request = @file_get_contents($picture_url);
       if ($request) {
      //   $picture_file_data = file_save_data($request, $destination, FILE_EXISTS_REPLACE);
-        $picture_file_data = \Drupal::service('file.repository')->writeData($request, $destination, FileSystemInterface::EXISTS_REPLACE);
+        $picture_file_data = file_save_data($request, $destination, FileSystemInterface::EXISTS_REPLACE);
         $maxResolution = $picture_config->get('settings.max_resolution');
         $minResolution = $picture_config->get('settings.min_resolution');
         file_validate_image_resolution($picture_file_data, $maxResolution, $minResolution);
@@ -563,7 +562,7 @@ class CiamUserManager {
         }
         $data = $this->checkUserName($userprofile);
         // Set up the user fields.
-        $password = \Drupal::service('password_generator')->generate(32);
+        $password =  \Drupal::service('password_generator')->generate(32);
 
         $fields = [
           'name' => ($this->moduleconfig->get('ciam_save_name_in_db') == 'false') ? $userprofile->ID : $data['username'],
@@ -595,7 +594,7 @@ class CiamUserManager {
           $this->downloadProfilePic($userprofile->ImageUrl, $userprofile->ID, $new_user);
 
           // Advanced module LR Code Hook Start.
-          if (count(\Drupal::moduleHandler()->getImplementations('add_user_data_after_save')) > 0) {
+          if (\Drupal::moduleHandler()->hasImplementations('add_user_data_after_save')) {
             // Call all modules that implement the hook, and let them make changes to $variables.
             \Drupal::moduleHandler()->invokeAll('add_user_data_after_save', [$new_user, $userprofile]);
           }
@@ -606,7 +605,6 @@ class CiamUserManager {
           }
 
           if ($new_user->isActive() && $status && \Drupal::service('session')->get('user_verify', []) != 1) {
-          //  $new_user->setLastLoginTime(REQUEST_TIME);
             $new_user->setLastLoginTime(\Drupal::time()->getRequestTime());
           }
         }
@@ -941,7 +939,7 @@ class CiamUserManager {
 
  
       foreach ($options as $key => $option) {
-        $option = trim($option);
+        $option = trim((string) $option);
         $match_option = strtolower($option);
         $this_match = 0;
         similar_text($match_option, $match_sl, $this_match);
@@ -982,10 +980,10 @@ class CiamUserManager {
         }
         else {
           $sldate = explode('-', $userprofile->$property_name);
-          $month = isset($sldate[0]) ? trim($sldate[0]) : '';
-          $date = isset($sldate[1]) ? trim($sldate[1]) : '';
-          $year = isset($sldate[2]) ? trim($sldate[2]) : '';
-          $formatDate = trim($year . '-' . $month . '-' . $date, '-');
+          $month = isset($sldate[0]) ? trim((string) $sldate[0]) : '';
+          $date = isset($sldate[1]) ? trim((string) $sldate[1]) : '';
+          $year = isset($sldate[2]) ? trim((string) $sldate[2]) : '';
+          $formatDate = trim((string) $year . '-' . $month . '-' . $date, '-');
           $formatDate = $formatDate . 'T00:00:00';
         }
 

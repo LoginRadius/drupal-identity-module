@@ -30,6 +30,10 @@ Fully managed registration service including Email Registration, Social Login, p
 
 ## CHANGE LOG
 
+###  5.2.0
+  *  Added full support of Drupal 10
+  
+
 ###  5.1.2
   *  Added Compatibility with Drupal 10 .
   *  Minor Enhancement
