@@ -1,0 +1,11 @@
+services:
+  lr_ciam.user_manager:
+    class: Drupal\lr_ciam\CiamUserManager
+  lr_ciam.route_subscriber:
+    class: Drupal\lr_ciam\Routing\RouteSubscriber
+    tags:
+      - { name: event_subscriber } 
+  lr_ciam.http_middleware:
+    class: Drupal\lr_ciam\RedirectMiddleware
+    tags:
+      - { name: http_middleware }      

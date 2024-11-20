@@ -1,0 +1,5 @@
+lr_identity_experience_framework.settings_form:
+  route_name: lr_identity_experience_framework.settings_form
+  title: 'Identity Experience Framework'
+  base_route: lr_ciam.settings_form
+  weight: 5
